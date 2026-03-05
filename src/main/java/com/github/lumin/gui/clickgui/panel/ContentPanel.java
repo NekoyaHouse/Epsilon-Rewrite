@@ -1,9 +1,9 @@
 package com.github.lumin.gui.clickgui.panel;
 
+import com.github.lumin.graphics.renderers.BlurRenderer;
 import com.github.lumin.graphics.renderers.RectRenderer;
 import com.github.lumin.graphics.renderers.RoundRectRenderer;
 import com.github.lumin.graphics.renderers.TextRenderer;
-import com.github.lumin.graphics.shaders.BlurShader;
 import com.github.lumin.graphics.text.StaticFontLoader;
 import com.github.lumin.gui.IComponent;
 import com.github.lumin.gui.clickgui.component.ModuleComponent;
@@ -36,7 +36,7 @@ public class ContentPanel implements IComponent {
     private float height;
     private Category currentCategory;
 
-    private final Animation viewAnimation = new Animation(Easing.EASE_OUT_QUAD, 150L);
+    private final Animation viewAnimation = new Animation(Easing.EASE_OUT_EXPO, 450L);
     private float sourceCardX, sourceCardY, sourceCardW, sourceCardH;
     private boolean closeSettingsRequested;
     private boolean exitAnimationStarted;
@@ -300,6 +300,8 @@ public class ContentPanel implements IComponent {
 
         float listBottom = this.y + this.height * guiScale - padding;
         int visibleIndex = 0;
+        Module expandingModule = settingsComponent != null ? settingsComponent.getModule() : null;
+
         for (ModuleCard card : moduleCards) {
             boolean matchesSearch = listSearchText.isEmpty() || card.module.getName().toLowerCase().startsWith(listSearchText.toLowerCase());
             card.updateVisibility(matchesSearch);
@@ -315,7 +317,9 @@ public class ContentPanel implements IComponent {
             card.width = cardWidth;
             card.height = cardHeight;
             if (card.shouldRender() && card.y + cardHeight >= lastListY && card.y <= listBottom) {
-                card.render(listRoundRect, listFont, mouseX, mouseY, guiScale, alpha);
+                if (expandingModule != card.module || currentState == 0) {
+                    card.render(listRoundRect, listFont, mouseX, mouseY, guiScale, alpha);
+                }
             }
             visibleIndex++;
         }
@@ -338,7 +342,10 @@ public class ContentPanel implements IComponent {
         if (!MouseUtils.isHovering(x, y, panelWidth, panelHeight, event.x(), event.y())) return false;
 
         if (MouseUtils.isHovering(lastSearchBoxX, lastSearchBoxY, lastSearchBoxW, lastSearchBoxH, event.x(), event.y())) {
-            if (event.button() == 1) { listSearchText = ""; listScrollTarget = 0.0f; }
+            if (event.button() == 1) {
+                listSearchText = "";
+                listScrollTarget = 0.0f;
+            }
             listSearchFocused = true;
             return true;
         }
@@ -398,7 +405,10 @@ public class ContentPanel implements IComponent {
 
     private boolean listViewKeyPressed(KeyEvent event) {
         if (!listSearchFocused) return false;
-        if (handleSearchKey(event, new StringBuilder(listSearchText), () -> { listSearchText = ""; listScrollTarget = 0.0f; })) {
+        if (handleSearchKey(event, new StringBuilder(listSearchText), () -> {
+            listSearchText = "";
+            listScrollTarget = 0.0f;
+        })) {
             if (event.key() == GLFW.GLFW_KEY_BACKSPACE && !listSearchText.isEmpty()) {
                 listSearchText = listSearchText.substring(0, listSearchText.length() - 1);
                 listScrollTarget = 0.0f;
@@ -561,7 +571,10 @@ public class ContentPanel implements IComponent {
         }
 
         if (MouseUtils.isHovering(lastSettingsSearchBoxX, lastSettingsSearchBoxY, lastSettingsSearchBoxW, lastSettingsSearchBoxH, event.x(), event.y())) {
-            if (event.button() == 1) { settingsSearchText = ""; settingsScrollTarget = 0.0f; }
+            if (event.button() == 1) {
+                settingsSearchText = "";
+                settingsScrollTarget = 0.0f;
+            }
             settingsSearchFocused = true;
             return true;
         }
@@ -715,7 +728,7 @@ public class ContentPanel implements IComponent {
             float renderX = centerX - rw / 2.0f;
             float renderY = centerY - rh / 2.0f;
 
-            int animAlpha = (int)(a * alpha * scaleProgress);
+            int animAlpha = (int) (a * alpha * scaleProgress);
             round.addRoundRect(renderX, renderY, rw, rh, 10f * guiScale * totalScale, new Color(r, g, b, animAlpha));
 
             float nameScale = 1.1f * guiScale * scaleProgress;
@@ -733,7 +746,7 @@ public class ContentPanel implements IComponent {
             float blockHeight = nameHeight + 3 * guiScale + descHeight;
             float startY = renderY + (rh - blockHeight) / 2f;
 
-            int textAlpha = (int)(255 * alpha * scaleProgress);
+            int textAlpha = (int) (255 * alpha * scaleProgress);
             text.addText(module.getName(), renderX + (rw - (Math.min(nameWidth, maxNameWidth))) / 2f, startY - 0.6f * guiScale, nameScale, new Color(255, 255, 255, textAlpha));
             text.addText(module.getDescription(), renderX + (rw - (Math.min(descWidth, maxDescWidth))) / 2f, startY + nameHeight + 3 * guiScale - 0.2f * guiScale, descScale, new Color(200, 200, 200, textAlpha));
         }
@@ -748,7 +761,7 @@ public class ContentPanel implements IComponent {
     public void render(RendererSet set, int mouseX, int mouseY, float deltaTicks, float alpha) {
         float guiScale = ClickGui.INSTANCE.scale.getValue().floatValue();
         float radius = guiScale * 20f;
-        BlurShader.drawRoundedBlur(x, y, this.width * guiScale, this.height * guiScale, 0, radius, radius, 0, new Color(0, 0, 0, 0), ClickGui.INSTANCE.blurStrength.getValue().floatValue(), 15.0f);
+        BlurRenderer.getInstance().drawBlur(x, y, this.width * guiScale, this.height * guiScale, 0, radius, radius, 0, ClickGui.INSTANCE.blurStrength.getValue().floatValue());
 
         targetState = (isSettingsActive() && !this.closeSettingsRequested) ? 1 : 0;
 
@@ -766,6 +779,7 @@ public class ContentPanel implements IComponent {
         if (currentState == 2) {
             viewAnimation.run(1.0f);
             if (viewAnimation.getValue() >= 0.99f) currentState = 1;
+            renderListView(set, mouseX, mouseY, deltaTicks, alpha);
             renderSettingsView(set, mouseX, mouseY, deltaTicks, alpha);
         } else if (currentState == 3) {
             closeSettingsRequested = true;
@@ -791,7 +805,7 @@ public class ContentPanel implements IComponent {
     }
 
     private static Color applyAlpha(Color color, float alpha) {
-        return new Color(color.getRed(), color.getGreen(), color.getBlue(), (int)(color.getAlpha() * alpha));
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), (int) (color.getAlpha() * alpha));
     }
 
     @Override

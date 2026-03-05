@@ -1,6 +1,6 @@
 package com.github.lumin.gui.clickgui.panel;
 
-import com.github.lumin.graphics.shaders.BlurShader;
+import com.github.lumin.graphics.renderers.BlurRenderer;
 import com.github.lumin.graphics.text.StaticFontLoader;
 import com.github.lumin.gui.IComponent;
 import com.github.lumin.modules.Category;
@@ -8,6 +8,7 @@ import com.github.lumin.modules.impl.client.ClickGui;
 import com.github.lumin.utils.render.MouseUtils;
 import com.github.lumin.utils.render.animation.Animation;
 import com.github.lumin.utils.render.animation.Easing;
+import com.mojang.blaze3d.textures.GpuSampler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -29,6 +30,7 @@ public class Sidebar implements IComponent {
     private Consumer<Category> onSelect;
     private final Animation selectedHighlightY = new Animation(Easing.EASE_OUT_QUAD, 160L);
     private boolean highlightInitialized;
+    private GpuSampler blurSampler;
 
     public Sidebar() {
         for (Category category : Category.values()) {
@@ -67,10 +69,8 @@ public class Sidebar implements IComponent {
         float width = this.width * guiScale;
         float height = this.height * guiScale;
 
-//        if (ClickGui.INSTANCE.backgroundBlur.getValue() && ClickGui.INSTANCE.blurMode.is("OnlyCategory")) {
-//            BlurShader.drawRoundedBlur(x, y, width, height, radius, ClickGui.INSTANCE.blurStrength.getValue().floatValue());
-//        }
-        BlurShader.drawRoundedBlur(x, y, width, height, radius, 0, 0, radius, new Color(0, 0, 0, 0), ClickGui.INSTANCE.blurStrength.getValue().floatValue(), 15.0f);
+        BlurRenderer.getInstance().drawBlur(x, y, width, height, radius, ClickGui.INSTANCE.blurStrength.getValue().floatValue());
+
         set.bottomRoundRect().addRoundRect(x, y, width, height, radius, 0, 0, radius, applyAlpha(new Color(0x5F000000, true), alpha));
 
         var player = mc.player;
