@@ -1,0 +1,48 @@
+plugins {
+    id 'java'
+}
+
+group = 'dev.sakura'
+version = '1.0.0'
+
+repositories {
+    maven { url 'https://maven.aliyun.com/repository/public/' }
+    mavenCentral()
+}
+
+dependencies {
+    implementation("org.tinylog:tinylog-api:2.7.0")
+    implementation("org.tinylog:tinylog-impl:2.7.0")
+
+    implementation("com.formdev:flatlaf:3.5.4")
+
+    implementation("com.google.code.gson:gson:2.13.2")
+    implementation("org.smartboot.socket:aio-core:1.5.38")
+    implementation("org.xerial:sqlite-jdbc:3.47.1.0")
+
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+jar {
+    archiveFileName = "Sakura-VerificationServer.jar"
+    manifest {
+        attributes(
+                'Main-Class': 'dev.sakura.server.impl.IRCServer'
+        )
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
