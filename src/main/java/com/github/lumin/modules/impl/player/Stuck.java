@@ -15,45 +15,50 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 public class Stuck extends Module {
     public static final Stuck INSTANCE = new Stuck();
+
     public Stuck() {
-        super("卡空","卡了",Category.PLAYER);
+        super("卡空", "卡了", Category.PLAYER);
     }
+
     float lastYaw;
     float lastPitch;
+
     @Override
-    public void onDisable(){
+    public void onDisable() {
         if (mc.player != null && !mc.player.onGround()) {
             PacketUtils.sendPacketNoEvent(new ServerboundMovePlayerPacket.PosRot(mc.player.getX() + 1337, mc.player.getY(), mc.player.getZ() + 1337, mc.player.getYRot() + 0.01f, mc.player.getXRot(), mc.player.onGround(), mc.player.horizontalCollision));
         }
     }
+
     @SubscribeEvent
-    public void onMove(MovementInputUpdateEvent e){
-        ((IClientInput) e.getInput()).setMoveVector(new Vec2(0,0));
+    public void onMove(MovementInputUpdateEvent e) {
+        ((IClientInput) e.getInput()).setMoveVector(new Vec2(0, 0));
     }
 
     @SubscribeEvent
-    public void onPacket(PacketEvent.Send e){
-        if (e.getPacket() instanceof ServerboundMovePlayerPacket || (e.getPacket() instanceof ClientboundSetEntityMotionPacket setEntityMotionPacket && setEntityMotionPacket.getId() == mc.player.getId())){
+    public void onPacket(PacketEvent.Send e) {
+        if (e.getPacket() instanceof ServerboundMovePlayerPacket || (e.getPacket() instanceof ClientboundSetEntityMotionPacket setEntityMotionPacket && setEntityMotionPacket.getId() == mc.player.getId())) {
             e.setCanceled(true);
         }
-        if (e.getPacket() instanceof ClientboundPlayerPositionPacket){
+        if (e.getPacket() instanceof ClientboundPlayerPositionPacket) {
             toggle();
         }
     }
-  /*  @EventTarget
-    public void onUseItem(EventUseItem e){
+
+    /*  @EventTarget
+      public void onUseItem(EventUseItem e){
+          if (mc.player.getYRot() != lastYaw || mc.player.getXRot() != lastPitch) {
+              PacketUtil.sendPacketNoEvent(new ServerboundMovePlayerPacket.Rot(mc.player.getYRot(), mc.player.getXRot(), mc.player.onGround(), mc.player.horizontalCollision));
+          }
+          lastPitch = mc.player.getXRot();
+          lastYaw = mc.player.getYRot();
+      }*/
+    @SubscribeEvent
+    public void onInteract(PlayerInteractEvent.RightClickItem event) {
         if (mc.player.getYRot() != lastYaw || mc.player.getXRot() != lastPitch) {
-            PacketUtil.sendPacketNoEvent(new ServerboundMovePlayerPacket.Rot(mc.player.getYRot(), mc.player.getXRot(), mc.player.onGround(), mc.player.horizontalCollision));
+            PacketUtils.sendPacketNoEvent(new ServerboundMovePlayerPacket.Rot(mc.player.getYRot(), mc.player.getXRot(), mc.player.onGround(), mc.player.horizontalCollision));
         }
         lastPitch = mc.player.getXRot();
         lastYaw = mc.player.getYRot();
-    }*/
-  @SubscribeEvent
-  public void onInteract(PlayerInteractEvent.RightClickItem event) {
-      if (mc.player.getYRot() != lastYaw || mc.player.getXRot() != lastPitch) {
-          PacketUtils.sendPacketNoEvent(new ServerboundMovePlayerPacket.Rot(mc.player.getYRot(), mc.player.getXRot(), mc.player.onGround(), mc.player.horizontalCollision));
-      }
-      lastPitch = mc.player.getXRot();
-      lastYaw = mc.player.getYRot();
-  }
+    }
 }

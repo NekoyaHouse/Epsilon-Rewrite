@@ -16,12 +16,11 @@ void main() {
         ((p.y > 0.0) ? f_Radius.z : f_Radius.y) : 
         ((p.y > 0.0) ? f_Radius.w : f_Radius.x);
 
-    // SDF for rounded box
     vec2 q = abs(p) - halfSize + r_current;
     float dist = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r_current;
 
-    // Smoothstep AA
-    float alpha = 1.0 - smoothstep(-0.5, 0.5, dist);
+    float delta = fwidth(dist);
+    float alpha = 1.0 - smoothstep(-delta, delta, dist);
 
     if (alpha < 0.001) discard;
     fragColor = vec4(f_Color.rgb, f_Color.a * alpha);

@@ -31,17 +31,8 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     public void render(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        final int guiW = getMinecraft().getWindow().getGuiScaledWidth();
-        final int guiH = getMinecraft().getWindow().getGuiScaledHeight();
-
         openAnimation.run(1f);
-        float alpha = openAnimation.getValue();
-
-        if (ClickGui.INSTANCE.backgroundBlur.getValue() && ClickGui.INSTANCE.blurMode.is("全屏")) {
-            //drawQuadBlur(0, 0, guiW, guiH, ClickGui.INSTANCE.blurStrength.getValue());
-        }
-
-        panel.render(null, mouseX, mouseY, partialTick, alpha);
+        panel.render(null, mouseX, mouseY, partialTick, openAnimation.getValue());
     }
 
     @Override

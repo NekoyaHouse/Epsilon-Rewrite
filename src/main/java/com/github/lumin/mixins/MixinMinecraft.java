@@ -1,6 +1,5 @@
 package com.github.lumin.mixins;
 
-import com.github.lumin.managers.Managers;
 import com.github.lumin.modules.impl.visual.Glow;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;

@@ -1,9 +1,6 @@
 package com.github.lumin.gui.clickgui.panel;
 
-import com.github.lumin.graphics.renderers.BlurRenderer;
-import com.github.lumin.graphics.renderers.RoundRectRenderer;
-import com.github.lumin.graphics.renderers.TextRenderer;
-import com.github.lumin.graphics.renderers.TextureRenderer;
+import com.github.lumin.graphics.renderers.*;
 import com.github.lumin.gui.IComponent;
 import com.github.lumin.modules.impl.client.ClickGui;
 import net.minecraft.client.Minecraft;
@@ -21,6 +18,7 @@ public class Panel implements IComponent {
     private final RoundRectRenderer topRoundRect = new RoundRectRenderer();
     private final TextureRenderer textureRenderer = new TextureRenderer();
     private final TextRenderer fontRenderer = new TextRenderer();
+    private final ShadowRenderer shadowRenderer = new ShadowRenderer();
 
     private final RendererSet set = new RendererSet(bottomRoundRect, topRoundRect, textureRenderer, fontRenderer, null, null, null, null);
 
@@ -61,6 +59,9 @@ public class Panel implements IComponent {
         float scaledHeight = height;
         float x = (screenWidth - scaledWidth) / 2.0f;
         float y = (screenHeight - scaledHeight) / 2.0f;
+
+        shadowRenderer.addShadow(x, y, scaledWidth, scaledHeight, 20f * guiScale, 12f * guiScale, new Color(0, 0, 0, 100));
+        shadowRenderer.drawAndClear();
 
         float sidebarWidth = Math.max(120f * guiScale, width / 4);
         float contentWidth = width - sidebarWidth;

@@ -58,6 +58,16 @@ public class LuminRenderPipelines {
             .withCull(false)
             .build();
 
+    public final static RenderPipeline SHADOW = RenderPipeline.builder(RenderPipelines.MATRICES_PROJECTION_SNIPPET)
+            .withLocation(ResourceLocationUtils.getIdentifier("pipelines/shadow"))
+            .withVertexFormat(LuminVertexFormats.ROUND_RECT, VertexFormat.Mode.QUADS)
+            .withVertexShader(ResourceLocationUtils.getIdentifier("shadow"))
+            .withFragmentShader(ResourceLocationUtils.getIdentifier("shadow"))
+            .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+            .withBlend(BlendFunction.TRANSLUCENT)
+            .withCull(false)
+            .build();
+
     public final static RenderPipeline TEXTURE = RenderPipeline.builder(RenderPipelines.MATRICES_PROJECTION_SNIPPET)
             .withLocation(ResourceLocationUtils.getIdentifier("pipelines/texture"))
             .withVertexFormat(LuminVertexFormats.TEXTURE, VertexFormat.Mode.QUADS)
@@ -103,6 +113,7 @@ public class LuminRenderPipelines {
         event.registerPipeline(TTF_FONT);
         event.registerPipeline(LINE);
         event.registerPipeline(ROUND_RECT);
+        event.registerPipeline(SHADOW);
         event.registerPipeline(TEXTURE);
         event.registerPipeline(BLUR_DOWN);
         event.registerPipeline(BLUR_UP);

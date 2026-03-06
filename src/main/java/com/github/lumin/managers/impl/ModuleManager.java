@@ -44,23 +44,21 @@ public class ModuleManager {
                 KillAura.INSTANCE,
 
                 // Player
+                AutoKouZi.INSTANCE,
                 BreakCooldown.INSTANCE,
+                Disabler.INSTANCE,
                 JumpCooldown.INSTANCE,
+                NoSlow.INSTANCE,
                 SafeWalk.INSTANCE,
                 Scaffold.INSTANCE,
                 Sprint.INSTANCE,
-                NoSlow.INSTANCE,
-                Disabler.INSTANCE,
-                Glow.INSTANCE,
-                FullBright.INSTANCE,
                 Stuck.INSTANCE,
 
                 // Visual
+                FullBright.INSTANCE,
+                Glow.INSTANCE,
                 Nametags.INSTANCE,
-                RenderTest.INSTANCE,
-
-                // Misc
-                AutoKouZi.INSTANCE
+                RenderTest.INSTANCE
 
         );
     }

@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(ServerboundMovePlayerPacket.class)
-public interface ServerboundMovePlayerAccessors {
+public interface IServerboundMovePlayerPacket {
     @Mutable
     @Accessor("onGround")
     void setOnGround(boolean onGround);

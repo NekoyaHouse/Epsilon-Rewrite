@@ -26,6 +26,6 @@
   },
   "mixins": [
     "MixinConnection",
-    "ServerboundMovePlayerAccessors"
+    "IServerboundMovePlayerPacket"
   ]
 }

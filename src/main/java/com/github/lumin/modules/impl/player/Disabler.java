@@ -1,7 +1,7 @@
 package com.github.lumin.modules.impl.player;
 
 import com.github.lumin.events.PacketEvent;
-import com.github.lumin.mixins.ServerboundMovePlayerAccessors;
+import com.github.lumin.mixins.IServerboundMovePlayerPacket;
 import com.github.lumin.modules.Category;
 import com.github.lumin.modules.Module;
 import com.github.lumin.settings.impl.BoolSetting;
@@ -12,44 +12,49 @@ import java.util.Random;
 
 public class Disabler extends Module {
     public static final Disabler INSTANCE = new Disabler();
-    private final BoolSetting DuplicateRotPlace = boolSetting("DuplicateRotPlace",true);
-    private final  BoolSetting aim360 = boolSetting("AimModule 360",false);
-    private final BoolSetting  AimDuplicateLook = new BoolSetting("AimDuplicateLook",false);
+    private final BoolSetting DuplicateRotPlace = boolSetting("DuplicateRotPlace", true);
+    private final BoolSetting aim360 = boolSetting("AimModulo360", false);
+    private final BoolSetting AimDuplicateLook = new BoolSetting("AimDuplicateLook", false);
+
     public Disabler() {
-        super("残疾人","",Category.PLAYER);
+        super("残疾人", "", Category.PLAYER);
     }
+
     private float playerYaw;
     private float deltaYaw;
-    float lastYaw,lastPitch = 0;
+    float lastYaw, lastPitch = 0;
     private float lastPlacedDeltaYaw;
+
     @SubscribeEvent
-    public void onPacket(PacketEvent.Send e){
+    public void onPacket(PacketEvent.Send event) {
         if (aim360.getValue()) {
-            if (e.getPacket() instanceof ServerboundMovePlayerPacket packet && packet.hasRotation()) {
+            if (event.getPacket() instanceof ServerboundMovePlayerPacket packet && packet.hasRotation()) {
                 float yaw = packet.getYRot(0);
                 if (yaw < 360.0f && yaw > -360.0f) {
-                    ((ServerboundMovePlayerAccessors) packet).setYaw(yaw + 720f);
+                    ((IServerboundMovePlayerPacket) packet).setYaw(yaw + 720f);
                 }
             }
         }
-        if (AimDuplicateLook.getValue()){
-            if (e.getPacket() instanceof ServerboundMovePlayerPacket c03){
-                if (c03.hasRotation()){
-                    if (lastYaw == c03.getYRot(0) && lastPitch == c03.getXRot(0)){
-                        ((ServerboundMovePlayerAccessors) c03).setYaw(c03.getYRot(0) + 0.001f);
+
+        if (AimDuplicateLook.getValue()) {
+            if (event.getPacket() instanceof ServerboundMovePlayerPacket c03) {
+                if (c03.hasRotation()) {
+                    if (lastYaw == c03.getYRot(0) && lastPitch == c03.getXRot(0)) {
+                        ((IServerboundMovePlayerPacket) c03).setYaw(c03.getYRot(0) + 0.001f);
                     }
                     lastYaw = c03.getYRot(0);
                     lastPitch = c03.getXRot(0);
                 }
             }
         }
-        if (DuplicateRotPlace.getValue()){
-            if (e.getPacket() instanceof ServerboundMovePlayerPacket packet) {
+
+        if (DuplicateRotPlace.getValue()) {
+            if (event.getPacket() instanceof ServerboundMovePlayerPacket packet) {
                 if (packet.hasRotation()) {
                     float originalYaw = packet.getYRot(0.0F);
 
                     if (originalYaw < 360.0F && originalYaw > -360.0F) {
-                        ((ServerboundMovePlayerAccessors) packet).setYaw(originalYaw + 720f);
+                        ((IServerboundMovePlayerPacket) packet).setYaw(originalYaw + 720f);
                     }
 
                     float lastPlayerYaw = this.playerYaw;
@@ -61,9 +66,9 @@ public class Disabler extends Module {
                         Random random = new Random();
                         float perturbation = 0.005f + random.nextFloat() * 0.015f;
                         if (random.nextBoolean()) {
-                            ((ServerboundMovePlayerAccessors) packet).setYaw(packet.getYRot(0) + perturbation);
+                            ((IServerboundMovePlayerPacket) packet).setYaw(packet.getYRot(0) + perturbation);
                         } else {
-                            ((ServerboundMovePlayerAccessors) packet).setYaw(packet.getYRot(0) - perturbation);
+                            ((IServerboundMovePlayerPacket) packet).setYaw(packet.getYRot(0) - perturbation);
                         }
 
                         this.lastPlacedDeltaYaw = this.deltaYaw;
