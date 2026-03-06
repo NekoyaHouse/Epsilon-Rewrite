@@ -24,6 +24,7 @@ public class HandlerManager {
         classToHandlerMap.put(RechargeC2S.class, new RechargeHandler());
         classToHandlerMap.put(CloudConfigC2S.class, new CloudConfigHandler());
         classToHandlerMap.put(RequestModC2S.class, new ModRequestHandler());
+        classToHandlerMap.put(GetModListC2S.class, new GetModListHandler());
     }
 
     public boolean allowNull(IRCPacket packet) {

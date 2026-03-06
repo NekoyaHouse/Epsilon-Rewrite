@@ -29,6 +29,7 @@ public final class AdminFrame extends JFrame {
         tabs.addTab("卡密", new CardsPanel(server));
         tabs.addTab("云配置", new CloudConfigPanel(server));
         tabs.addTab("会话", new SessionsPanel(server));
+        tabs.addTab("Mod管理", new ModsPanel(server));
         tabs.addTab("控制台", new ConsolePanel(server));
         add(tabs, BorderLayout.CENTER);
 

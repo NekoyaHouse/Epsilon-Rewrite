@@ -164,6 +164,13 @@ public class IRCTransport {
             }
             return;
         }
+        if (msg instanceof ModListS2C p) {
+            IRCHandler h = handler;
+            if (h != null) {
+                h.onModListResult(p.getNames(), p.getVersions());
+            }
+            return;
+        }
     }
 
     private void notifyDisconnected(String message) {

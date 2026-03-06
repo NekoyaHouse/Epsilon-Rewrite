@@ -22,12 +22,15 @@ public class MemoryJarUtil {
     public static Path loadJarToMemoryFileSystem(byte[] jarData) throws IOException {
         // 创建一个基于内存的文件系统 (模拟 Unix 路径结构)
         FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
-        Path root = fs.getPath("/");
+        // Use a subdirectory to ensure getFileName() is not null
+        Path root = fs.getPath("/secure_mod");
+        Files.createDirectories(root);
 
         // 读取字节流为 Zip
         try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(jarData))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
+                // Resolve path relative to the subdirectory
                 Path entryPath = root.resolve(entry.getName());
 
                 if (entry.isDirectory()) {

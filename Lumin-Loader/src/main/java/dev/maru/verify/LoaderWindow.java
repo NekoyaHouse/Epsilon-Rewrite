@@ -1,5 +1,8 @@
 package dev.maru.verify;
 
+import dev.maru.verify.client.IRCHandler;
+import dev.maru.verify.client.IRCTransport;
+import dev.maru.verify.packet.implemention.c2s.GetModListC2S;
 import dev.maru.verify.util.AuthUtil;
 import dev.maru.verify.util.HwidUtil;
 import niurendeobf.ZKMIndy;
@@ -27,12 +30,19 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @ZKMIndy
 public final class LoaderWindow {
+    public static class ModSelection {
+        public static String name;
+        public static String version;
+    }
+
     private static final int WIN_W = 900;
     private static final int WIN_H = 520;
     private static final int DESIGN_W = 820;
@@ -72,6 +82,12 @@ public final class LoaderWindow {
     private JLabel titleLabel;
     private JLabel subtitleLabel;
     private JLabel statusLabel;
+
+    private JComboBox<String> modNameCombo;
+    private JComboBox<String> modVersionCombo;
+    private GradientButton launchButton;
+    private List<String> availableNames = new ArrayList<>();
+    private List<String> availableVersions = new ArrayList<>();
 
     private Mode mode = Mode.Login;
     private Timer repaintTimer;
@@ -426,16 +442,12 @@ public final class LoaderWindow {
             } else {
                 clearSavedCredentials();
             }
-            success = true;
-            setStatus(result.getMessage() == null || result.getMessage().isBlank() ? "验证成功" : result.getMessage(), new Color(143, 238, 182, 235));
-            primaryButton.setEnabled(false);
-            secondaryButton.setEnabled(false);
-            usernameField.setEditable(false);
-            passwordField.setEditable(false);
-            licenseField.setEditable(false);
-            loginTab.setEnabled(false);
-            registerTab.setEnabled(false);
-            closeButton.setEnabled(false);
+            setStatus("验证成功，正在获取版本列表...", new Color(143, 238, 182, 235));
+            showVersionSelector();
+            try {
+                fetchModList();
+            } catch (IOException ignored) {
+            }
         } else {
             String message = result == null || result.getMessage() == null || result.getMessage().isBlank() ? "验证失败，请重试" : result.getMessage();
             setStatus(message, new Color(255, 119, 156, 235));
@@ -495,6 +507,142 @@ public final class LoaderWindow {
                     frame.dispose();
                 }
             });
+        }
+    }
+
+    private void showVersionSelector() {
+        formPanel.removeAll();
+
+        topBar.setVisible(true);
+        loginTab.setVisible(false);
+        registerTab.setVisible(false);
+
+        JPanel center = new JPanel();
+        center.setOpaque(false);
+        center.setLayout(new BorderLayout());
+
+        JLabel title = new JLabel("选择版本");
+        title.setForeground(new Color(248, 250, 255));
+        title.setFont(resolveFont(Font.BOLD, 28f));
+
+        JPanel titles = new JPanel();
+        titles.setOpaque(false);
+        titles.setLayout(new BoxLayout(titles, BoxLayout.Y_AXIS));
+        titles.setBorder(new EmptyBorder(0, 2, 20, 0));
+        titles.add(title);
+
+        JPanel selectorPanel = new JPanel();
+        selectorPanel.setOpaque(false);
+        selectorPanel.setLayout(new GridLayout(4, 1, 0, 10));
+
+        JLabel l1 = new JLabel("Mod 名称");
+        l1.setForeground(Color.WHITE);
+        modNameCombo = new JComboBox<>();
+        JLabel l2 = new JLabel("版本");
+        l2.setForeground(Color.WHITE);
+        modVersionCombo = new JComboBox<>();
+
+        modNameCombo.addActionListener(e -> updateVersionCombo());
+
+        selectorPanel.add(l1);
+        selectorPanel.add(modNameCombo);
+        selectorPanel.add(l2);
+        selectorPanel.add(modVersionCombo);
+
+        launchButton = new GradientButton("启动");
+        launchButton.setEnabled(false);
+        launchButton.addActionListener(e -> {
+            ModSelection.name = (String) modNameCombo.getSelectedItem();
+            ModSelection.version = (String) modVersionCombo.getSelectedItem();
+            if (ModSelection.name != null && ModSelection.version != null) {
+                success = true;
+            }
+        });
+
+        JPanel content = new JPanel();
+        content.setOpaque(false);
+        content.setLayout(new BorderLayout());
+        content.add(titles, BorderLayout.NORTH);
+        content.add(selectorPanel, BorderLayout.CENTER);
+
+        JPanel bottom = new JPanel(new BorderLayout());
+        bottom.setOpaque(false);
+        bottom.setBorder(new EmptyBorder(20, 0, 0, 0));
+        bottom.add(launchButton, BorderLayout.NORTH);
+        bottom.add(statusLabel, BorderLayout.SOUTH); // Re-add status label
+
+        content.add(bottom, BorderLayout.SOUTH);
+
+        center.add(content, BorderLayout.NORTH);
+
+        formPanel.add(topBar, BorderLayout.NORTH);
+        formPanel.add(center, BorderLayout.CENTER);
+
+        formPanel.revalidate();
+        formPanel.repaint();
+    }
+
+    private void fetchModList() throws IOException {
+        VerificationClient.connect(new IRCHandler() {
+            @Override
+            public void onMessage(String sender, String message) {
+
+            }
+
+            @Override
+            public void onDisconnected(String message) {
+
+            }
+
+            @Override
+            public void onConnected() {
+
+            }
+
+            @Override
+            public String getInGameUsername() {
+                return "";
+            }
+
+            @Override
+            public void onModListResult(List<String> names, List<String> versions) {
+                SwingUtilities.invokeLater(() -> updateModList(names, versions));
+            }
+        });
+        IRCTransport t = VerificationClient.getTransport();
+        if (t != null) {
+            t.sendPacket(new GetModListC2S());
+        }
+    }
+
+    private void updateModList(List<String> names, List<String> versions) {
+        availableNames = names;
+        availableVersions = versions;
+        Set<String> uniqueNames = new HashSet<>(names);
+
+        modNameCombo.removeAllItems();
+        for (String n : uniqueNames) {
+            modNameCombo.addItem(n);
+        }
+
+        if (modNameCombo.getItemCount() > 0) {
+            modNameCombo.setSelectedIndex(0);
+            updateVersionCombo();
+        }
+
+        launchButton.setEnabled(true);
+        setStatus("请选择版本并启动", new Color(200, 200, 200));
+    }
+
+    private void updateVersionCombo() {
+        String selectedName = (String) modNameCombo.getSelectedItem();
+        modVersionCombo.removeAllItems();
+        if (selectedName == null) return;
+
+        for (int i = 0; i < availableNames.size(); i++) {
+            if (availableNames.get(i).equals(selectedName)) {
+                modVersionCombo.addItem(availableVersions.get(i));
+            }
         }
     }
 

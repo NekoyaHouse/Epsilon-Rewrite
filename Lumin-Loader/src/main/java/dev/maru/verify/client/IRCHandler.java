@@ -1,5 +1,7 @@
 package dev.maru.verify.client;
 
+import java.util.List;
+
 public interface IRCHandler {
     void onMessage(String sender, String message);
 
@@ -44,10 +46,10 @@ public interface IRCHandler {
         onCloudConfigGetResult(success, owner, name, content);
     }
 
-    default void onCloudConfigListResult(boolean success, java.util.List<String> names, int max) {
+    default void onCloudConfigListResult(boolean success, List<String> names, int max) {
     }
 
-    default void onCloudConfigListResult(boolean success, java.util.List<String> names, int max, String message) {
+    default void onCloudConfigListResult(boolean success, List<String> names, int max, String message) {
         onCloudConfigListResult(success, names, max);
     }
 
@@ -55,6 +57,9 @@ public interface IRCHandler {
     }
 
     default void onModDownload(String content, String hash) {
+    }
+
+    default void onModListResult(List<String> names, List<String> versions) {
     }
 }
 

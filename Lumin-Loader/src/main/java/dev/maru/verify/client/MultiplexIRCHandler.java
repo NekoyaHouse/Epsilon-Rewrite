@@ -117,7 +117,7 @@ public final class MultiplexIRCHandler implements IRCHandler {
     }
 
     @Override
-    public void onCloudConfigListResult(boolean success, java.util.List<String> names, int max, String message) {
+    public void onCloudConfigListResult(boolean success, List<String> names, int max, String message) {
         for (IRCHandler h : handlers) {
             try {
                 h.onCloudConfigListResult(success, names, max, message);
@@ -131,6 +131,26 @@ public final class MultiplexIRCHandler implements IRCHandler {
         for (IRCHandler h : handlers) {
             try {
                 h.onCloudConfigDeleteResult(success, owner, name, message);
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    @Override
+    public void onModDownload(String content, String hash) {
+        for (IRCHandler h : handlers) {
+            try {
+                h.onModDownload(content, hash);
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    @Override
+    public void onModListResult(List<String> names, List<String> versions) {
+        for (IRCHandler h : handlers) {
+            try {
+                h.onModListResult(names, versions);
             } catch (Exception ignored) {
             }
         }

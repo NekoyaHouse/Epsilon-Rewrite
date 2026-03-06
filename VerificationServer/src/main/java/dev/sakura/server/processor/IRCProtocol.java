@@ -16,7 +16,7 @@ import java.util.Base64;
 
 public class IRCProtocol implements Protocol<IRCPacket> {
     private static final byte[] ENC_MAGIC = new byte[]{'E', 'N', 'C', 1};
-    private static final int MAX_FRAME_LENGTH = 8 * 1024 * 1024;
+    private static final int MAX_FRAME_LENGTH = 64 * 1024 * 1024;
     private static final String SHARED_KEY_TEXT = "SakuraVerifySecret-v1";
 
     private final PacketManager packetManager = new PacketManager();

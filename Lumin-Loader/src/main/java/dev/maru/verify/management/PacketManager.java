@@ -28,6 +28,9 @@ public class PacketManager {
 
         register(RequestModC2S.class);
         register(DownloadModS2C.class);
+
+        register(GetModListC2S.class);
+        register(ModListS2C.class);
     }
 
     @SafeVarargs

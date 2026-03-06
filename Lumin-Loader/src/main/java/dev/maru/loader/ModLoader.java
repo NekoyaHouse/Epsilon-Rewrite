@@ -1,6 +1,5 @@
 package dev.maru.loader;
 
-import com.mojang.logging.LogUtils;
 import dev.maru.verify.LoaderWindow;
 import dev.maru.verify.VerificationClient;
 import dev.maru.verify.client.IRCHandler;
@@ -13,9 +12,9 @@ import net.neoforged.neoforgespi.locating.IModFileCandidateLocator;
 import net.neoforged.neoforgespi.locating.IncompatibleFileReporting;
 import net.neoforged.neoforgespi.locating.ModFileDiscoveryAttributes;
 import niurendeobf.ZKMIndy;
-import org.slf4j.Logger;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -23,92 +22,65 @@ import java.util.concurrent.TimeUnit;
 @ZKMIndy
 public class ModLoader implements IModFileCandidateLocator {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
     private static byte[] modData = null;
     private static final CountDownLatch downloadLatch = new CountDownLatch(1);
 
     @Override
     public void findCandidates(ILaunchContext context, IDiscoveryPipeline pipeline) {
-        LOGGER.info("Lumin: ModLoader started. Verifying user...");
-        // 1. Verify user first
         LoaderWindow.verifyOrExitBlocking();
 
         try {
-            LOGGER.info("Lumin: User verified. Starting mod download...");
-            
-            // Connect to verification server
             VerificationClient.connect(new IRCHandler() {
                 @Override
-                public void onConnected() {
-                    // This might not be called if connection is already established
-                    // So we also check in main thread or rely on getTransport
+                public void onMessage(String sender, String message) {
+
                 }
 
                 @Override
                 public void onDisconnected(String message) {
-                    LOGGER.error("Lumin: Disconnected from server: {}", message);
-                    downloadLatch.countDown(); // Unblock if disconnected
+                    downloadLatch.countDown();
                 }
 
                 @Override
-                public void onMessage(String sender, String message) {
-                    // Ignore chat
+                public void onConnected() {
+
                 }
 
                 @Override
                 public String getInGameUsername() {
-                    return "LuminLoader";
+                    return "";
                 }
 
                 @Override
                 public void onModDownload(String content, String hash) {
-                    LOGGER.info("Lumin: Received mod data. Size: {}", content.length());
                     try {
                         modData = Base64.getDecoder().decode(content);
-                    } catch (Exception e) {
-                        LOGGER.error("Lumin: Failed to decode mod data", e);
+                    } catch (Exception ignored) {
                     } finally {
                         downloadLatch.countDown();
                     }
                 }
             });
 
-            // 2. Send request manually if connected (which should be true after verifyOrExitBlocking)
             IRCTransport transport = VerificationClient.getTransport();
             if (transport != null && !transport.isClosed()) {
-                LOGGER.info("Lumin: Connection active. Sending request...");
-                transport.sendPacket(new RequestModC2S(HwidUtil.getHWID()));
-            } else {
-                LOGGER.error("Lumin: Connection lost after verification!");
-                // Fallback: try to reconnect? Or just fail.
-                // VerificationClient.connect(...) above might trigger onConnected, but let's be safe
-                // Wait a bit to see if onConnected fires from the connect() call above?
-                // But connect() reuses existing transport if open.
+                String name = LoaderWindow.ModSelection.name;
+                String version = LoaderWindow.ModSelection.version;
+                transport.sendPacket(new RequestModC2S(HwidUtil.getHWID(), name, version));
             }
 
-            // Wait for download
-            LOGGER.info("Lumin: Waiting for mod download...");
-            if (!downloadLatch.await(60, TimeUnit.SECONDS)) {
-                LOGGER.error("Lumin: Mod download timed out.");
-            }
+            downloadLatch.await(60, TimeUnit.SECONDS);
 
-            // Load into memory
             if (modData != null) {
-                LOGGER.info("Lumin: Loading mod into memory...");
-                Path memoryRoot = MemoryJarUtil.loadJarToMemoryFileSystem(modData);
-                var result = pipeline.addPath(memoryRoot, ModFileDiscoveryAttributes.DEFAULT.withLocator(this), IncompatibleFileReporting.WARN_ALWAYS);
-                if (result.isPresent()) {
-                    LOGGER.info("Lumin: Mod loaded successfully: {}", result.get().getFileName());
-                } else {
-                    LOGGER.error("Lumin: Failed to add mod to pipeline! (NeoForge rejected it)");
+                try {
+                    Path memoryRoot = MemoryJarUtil.loadJarToMemoryFileSystem(modData);
+                    pipeline.addPath(memoryRoot, ModFileDiscoveryAttributes.DEFAULT.withLocator(this), IncompatibleFileReporting.WARN_ALWAYS);
+                } finally {
+                    Arrays.fill(modData, (byte) 0);
+                    modData = null;
                 }
-            } else {
-                LOGGER.error("Lumin: No mod data received.");
             }
-
-        } catch (Exception e) {
-            LOGGER.error("Lumin: Fatal error in ModLoader", e);
+        } catch (Exception ignored) {
         }
     }
-
 }
