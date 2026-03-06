@@ -29,12 +29,10 @@ public class ShadowRenderer implements IRenderer {
     public void addShadow(float x, float y, float width, float height, float rTL, float rTR, float rBR, float rBL, float blurRadius, Color color) {
         buffer.tryMap();
 
-        float margin = blurRadius + 1.0f;
-
-        float vx = x - margin;
-        float vy = y - margin;
-        float vx2 = x + width + margin;
-        float vy2 = y + height + margin;
+        float vx = x - blurRadius;
+        float vy = y - blurRadius;
+        float vx2 = x + width + blurRadius;
+        float vy2 = y + height + blurRadius;
 
         float bx2 = x + width;
         float by2 = y + height;
