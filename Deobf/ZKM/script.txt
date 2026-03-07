@@ -13,25 +13,50 @@ exclude     niurendeobf.^* and
             dev.maru.api.^* and
             dev.maru.api.^*^ * and
             dev.maru.api.^*^ *(*) and
-            dev.maru.api.jimfs.^* and
-            dev.maru.api.jimfs.^*^ * and
-            dev.maru.api.jimfs.^*^ *(*) and
-            dev.maru.loader.protocols.jimfs.^* and
-            dev.maru.loader.protocols.jimfs.^*^ * and
-            dev.maru.loader.protocols.jimfs.^*^ *(*) and
             jnic.^* and
             jnic.^*^ * and
             jnic.^*^ *(*) and
-            jimfs.^* and
-            jimfs.^*^ * and
-            jimfs.^*^ *(*) and
+            com.google.common.jimfs.^* and
+            com.google.common.jimfs.^*^ * and
+            com.google.common.jimfs.^*^ *(*) and
+            com.google.common.jimfs.** and
+            com.google.common.jimfs.**^ * and
+            com.google.common.jimfs.**^ *(*) and
             dev.maru.api.LuminAPI and
             dev.maru.api.LuminAPI * and
             dev.maru.api.LuminAPI *(*);
 
+obfuscateFlowExclude
+    @org.spongepowered.asm.mixin.Mixin *.* and
+    **.jimfs.^*^;
+
 obfuscateReferencesInclude 
     containedIn{ @niurendeobf.ZKMIndy *.* *(*) } *.* * and
     containedIn{ @niurendeobf.ZKMIndy *.* *(*) } *.* *(*);
+
+stringEncryptionExclude
+    *.jimfs*.* and
+    *.mixins*.*;
+
+integerEncryptionExclude
+    *.jimfs*.* and
+    *.mixins*.*;
+
+longEncryptionExclude
+    *.jimfs*.* and
+    *.mixins*.*;
+
+methodParameterChangesExclude
+    @org.spongepowered.asm.mixin.Mixin *.* *(*) and
+    *.* @*.EventHandler *(*) and
+    **.jimfs.^*^ *(*) and
+    com.heypixel.heypixelmod.obsoverlay.files.* *(*);
+
+methodParameterObfuscationExclude
+    @org.spongepowered.asm.mixin.Mixin *.* *(*) and
+    *.* @*.EventHandler *(*) and
+    **.jimfs.^*^ *(*);
+
 
 obfuscate   changeLogFileIn=""
             changeLogFileOut="ChangeLog.txt"
@@ -43,8 +68,8 @@ obfuscate   changeLogFileIn=""
             mixedCaseClassNames=ifInArchive
             aggressiveMethodRenaming=true
             randomize=true
-            collapsePackagesWithDefault="Lumin"
-            newNamesPrefix="Lumin_"
+            collapsePackagesWithDefault="L3MonKe"
+            newNamesPrefix="L3MonKe_"
             localVariables=delete
             lineNumbers=delete
             obfuscateReferences=normal
