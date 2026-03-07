@@ -54,7 +54,7 @@ public class RotationManager {
     }
 
     public void setRotations(final Vector2f rotations, final double rotationSpeed, final MovementFix correctMovement, Priority priority) {
-        AuthUtils.doSomethingImportant();
+        AuthUtils.checkConnection();
         setRotations(rotations, rotationSpeed, correctMovement, null, priority);
     }
 

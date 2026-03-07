@@ -85,7 +85,7 @@ public class Lumin {
     @SubscribeEvent
     private static void onClientSetup(FMLClientSetupEvent event) {
 
-        AuthUtils.doSomethingImportant();
+        AuthUtils.checkConnection();
 
         LOGGER.info("Welcome to Lumin, Meow~");
 

@@ -1,1 +1,0 @@
-java -jar ZKM.jar script.txt

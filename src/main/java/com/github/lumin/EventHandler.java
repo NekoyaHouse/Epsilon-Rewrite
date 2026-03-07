@@ -13,8 +13,6 @@ import net.neoforged.neoforge.client.event.RegisterRenderPipelinesEvent;
 @EventBusSubscriber(modid = Lumin.MODID, value = Dist.CLIENT)
 public class EventHandler {
 
-    private static int tickCounter = 0;
-
     @SubscribeEvent
     private static void onRegisterRenderPipelines(RegisterRenderPipelinesEvent event) {
         LuminRenderPipelines.onRegisterRenderPipelines(event);
@@ -23,15 +21,6 @@ public class EventHandler {
     @SubscribeEvent
     private static void onKeyPress(InputEvent.Key event) {
         Managers.MODULE.onKeyEvent(event.getKey(), event.getAction());
-    }
-
-    @SubscribeEvent
-    private static void onClientTick(ClientTickEvent.Post event) {
-        tickCounter++;
-        if (tickCounter >= 100) { // Check every 100 ticks (approx 5 seconds)
-            tickCounter = 0;
-            AuthUtils.doSomethingImportant();
-        }
     }
 
 }
