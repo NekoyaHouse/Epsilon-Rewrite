@@ -9,13 +9,13 @@ import com.github.lumin.utils.timer.TimerUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
-import net.minecraft.world.scores.*;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.scores.*;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -40,6 +40,7 @@ public class AutoAccount extends Module {
     private enum State {
         Hub,
         SelectingGame,
+        WaitingForPVPHub,
         PVPHub,
         SelectingMode,
         InGame,
@@ -54,22 +55,30 @@ public class AutoAccount extends Module {
     }
 
     @SubscribeEvent
+    private void on(EntityJoinLevelEvent event) {
+        if (event.getEntity() != mc.player) return;
+        timer.reset();
+    }
+
+    @SubscribeEvent
     private void onTick(ClientTickEvent.Pre event) {
         if (nullCheck()) return;
 
         switch (state) {
             case Hub -> {
-                if (mc.player.containerMenu instanceof InventoryMenu) {
-                    ItemStack stack = mc.player.getInventory().getItem(0);
-                    if (stack.is(Items.PAPER) && stack.getHoverName().getString().contains("玩法选择")) {
-                        if (mc.player.getInventory().getSelectedSlot() != 0) {
-                            mc.player.getInventory().setSelectedSlot(0);
-                        }
+                if (isScoreboardContains("大厅")) {
+                    if (mc.player.containerMenu instanceof InventoryMenu) {
+                        ItemStack stack = mc.player.getInventory().getItem(0);
+                        if (stack.is(Items.PAPER) && stack.getHoverName().getString().contains("玩法选择")) {
+                            if (timer.passedMillise(5000)) {
+                                if (mc.player.getInventory().getSelectedSlot() != 0) {
+                                    mc.player.getInventory().setSelectedSlot(0);
+                                }
 
-                        if (timer.passedMillise(500)) {
-                            mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
-                            state = State.SelectingGame;
-                            timer.reset();
+                                mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
+                                state = State.SelectingGame;
+                                timer.reset();
+                            }
                         }
                     }
                 }
@@ -81,11 +90,18 @@ public class AutoAccount extends Module {
                             ItemStack stack = chestMenu.getSlot(i).getItem();
                             if (stack.getHoverName().getString().contains("决斗竞技场")) {
                                 mc.gameMode.handleInventoryMouseClick(chestMenu.containerId, i, 0, ClickType.PICKUP, mc.player);
-                                state = State.PVPHub;
+                                state = State.WaitingForPVPHub;
                                 timer.reset();
+                                return;
                             }
                         }
                     }
+                }
+            }
+            case WaitingForPVPHub -> {
+                if (isScoreboardContains("竞技场")) {
+                    state = State.PVPHub;
+                    timer.reset();
                 }
             }
             case PVPHub -> {
@@ -189,6 +205,26 @@ public class AutoAccount extends Module {
         gamesPlayed++;
         ChatUtils.addChatMessage("检测到游戏结束，当前局数: " + gamesPlayed);
         timer.reset();
+    }
+
+    private boolean isScoreboardContains(String text) {
+        if (mc.level == null) return false;
+        Scoreboard scoreboard = mc.level.getScoreboard();
+        Objective objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
+
+        if (objective == null) return false;
+
+        Collection<PlayerScoreEntry> scores = scoreboard.listPlayerScores(objective);
+        for (PlayerScoreEntry score : scores) {
+            String owner = score.owner();
+            PlayerTeam team = scoreboard.getPlayersTeam(owner);
+            Component displayName = PlayerTeam.formatNameForTeam(team, Component.literal(owner));
+            if (displayName.getString().contains(text)) return true;
+        }
+
+        if (objective.getDisplayName().getString().contains(text)) return true;
+
+        return false;
     }
 
 }
