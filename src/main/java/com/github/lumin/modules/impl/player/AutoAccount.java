@@ -54,9 +54,16 @@ public class AutoAccount extends Module {
         state = State.Hub;
         gamesPlayed = 0;
         timer.reset();
+
+        mc.options.pauseOnLostFocus = false;
         if (mc.screen == null) {
             mc.mouseHandler.releaseMouse();
         }
+    }
+
+    @Override
+    protected void onDisable() {
+        mc.options.pauseOnLostFocus = true;
     }
 
     @SubscribeEvent
