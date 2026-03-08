@@ -3,6 +3,8 @@ package com.github.lumin.modules.impl.player;
 import com.github.lumin.events.PacketEvent;
 import com.github.lumin.modules.Category;
 import com.github.lumin.modules.Module;
+import com.github.lumin.modules.impl.combat.AimAssist;
+import com.github.lumin.modules.impl.combat.AutoClicker;
 import com.github.lumin.utils.math.MathUtils;
 import com.github.lumin.utils.player.ChatUtils;
 import com.github.lumin.utils.timer.TimerUtils;
@@ -55,7 +57,7 @@ public class AutoAccount extends Module {
     }
 
     @SubscribeEvent
-    private void on(EntityJoinLevelEvent event) {
+    private void onEntityJoinLevel(EntityJoinLevelEvent event) {
         if (event.getEntity() != mc.player) return;
         timer.reset();
     }
@@ -74,7 +76,6 @@ public class AutoAccount extends Module {
                                 if (mc.player.getInventory().getSelectedSlot() != 0) {
                                     mc.player.getInventory().setSelectedSlot(0);
                                 }
-
                                 mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
                                 state = State.SelectingGame;
                                 timer.reset();
@@ -122,10 +123,45 @@ public class AutoAccount extends Module {
             }
             case SelectingMode -> {
                 if (mc.player.containerMenu instanceof ChestMenu chestMenu) {
-                    if (timer.passedMillise(1000)) {
+                    if (timer.passedMillise(500)) {
+                        String[] whiteList = new String[]{"单刀赴会", "Boxing"};
+
+                        // 1. 优先选择数量为2且在白名单的物品
+                        for (int i = 0; i < chestMenu.slots.size(); i++) {
+                            ItemStack stack = chestMenu.getSlot(i).getItem();
+                            if (stack.isEmpty()) continue;
+
+                            String stackName = stack.getHoverName().getString();
+                            boolean isWhitelisted = false;
+                            for (String white : whiteList) {
+                                if (stackName.contains(white)) {
+                                    isWhitelisted = true;
+                                    break;
+                                }
+                            }
+
+                            if (isWhitelisted && stack.getCount() == 2) {
+                                mc.gameMode.handleInventoryMouseClick(chestMenu.containerId, i, 0, ClickType.PICKUP, mc.player);
+                                timer.reset();
+                                return;
+                            }
+                        }
+
+                        // 2. 随机选择（兜底，同样应用白名单）
                         int i = MathUtils.getRandom(0, chestMenu.slots.size());
                         ItemStack stack = chestMenu.getSlot(i).getItem();
-                        if (!stack.getHoverName().getString().contains("单刀赴会")) {
+                        if (stack.isEmpty()) return;
+
+                        String stackName = stack.getHoverName().getString();
+                        boolean isWhitelisted = false;
+                        for (String white : whiteList) {
+                            if (stackName.contains(white)) {
+                                isWhitelisted = true;
+                                break;
+                            }
+                        }
+
+                        if (isWhitelisted) {
                             mc.gameMode.handleInventoryMouseClick(chestMenu.containerId, i, 0, ClickType.PICKUP, mc.player);
                             timer.reset();
                         }
@@ -133,6 +169,10 @@ public class AutoAccount extends Module {
                 }
             }
             case InGame -> {
+                // Scoreboard Check
+                if (!isScoreboardContains("竞技场")) return;
+                if (!isScoreboardContains("对手")) return;
+
                 // 自动游玩逻辑
                 if (timer.passedMillise(500)) { // 每0.5秒执行一次动作
                     // 鼠标晃动
@@ -163,7 +203,7 @@ public class AutoAccount extends Module {
                 } else {
                     // 重置状态，准备下一局
                     if (timer.passedMillise(3000)) { // 等待3秒返回大厅或继续
-                        state = State.Hub;
+                        state = State.WaitingForPVPHub;
                         timer.reset();
                     }
                 }
@@ -198,6 +238,8 @@ public class AutoAccount extends Module {
         state = State.InGame;
         timer.reset();
         ChatUtils.addChatMessage("检测到游戏开始");
+        AimAssist.INSTANCE.setEnabled(true);
+        AutoClicker.INSTANCE.setEnabled(true);
     }
 
     private void gameEnd() {
@@ -205,6 +247,8 @@ public class AutoAccount extends Module {
         gamesPlayed++;
         ChatUtils.addChatMessage("检测到游戏结束，当前局数: " + gamesPlayed);
         timer.reset();
+        AimAssist.INSTANCE.setEnabled(false);
+        AutoClicker.INSTANCE.setEnabled(false);
     }
 
     private boolean isScoreboardContains(String text) {
