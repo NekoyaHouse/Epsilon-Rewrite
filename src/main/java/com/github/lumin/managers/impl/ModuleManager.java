@@ -32,8 +32,9 @@ public class ModuleManager {
                 KillAura.INSTANCE,
 
                 // Player
+                QQPhoneSearch.INSTANCE,
+                PhoneSpammer.INSTANCE,
                 AutoAccount.INSTANCE,
-                AutoKouZi.INSTANCE,
                 BreakCooldown.INSTANCE,
                 Disabler.INSTANCE,
                 JumpCooldown.INSTANCE,
