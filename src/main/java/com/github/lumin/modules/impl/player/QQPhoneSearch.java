@@ -23,7 +23,10 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -205,13 +208,14 @@ public class QQPhoneSearch extends Module {
                 StringBuilder publicMsg = new StringBuilder("[Q绑查询] ");
                 for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
                     String key = entry.getKey();
-                    if (key.equalsIgnoreCase("code") || key.equalsIgnoreCase("msg") || key.equalsIgnoreCase("status") || key.equalsIgnoreCase("message")) continue;
+                    if (key.equalsIgnoreCase("code") || key.equalsIgnoreCase("msg") || key.equalsIgnoreCase("status") || key.equalsIgnoreCase("message"))
+                        continue;
 
                     if (entry.getValue().isJsonPrimitive()) {
                         publicMsg.append(key).append(":").append(entry.getValue().getAsString()).append(" ");
                     }
                 }
-                
+
                 ClientPacketListener connection = mc.getConnection();
                 if (connection != null) {
                     connection.sendChat(publicMsg.toString());

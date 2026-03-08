@@ -52,7 +52,7 @@ public class Nametags extends Module {
         GuiGraphics guiGraphics = event.getGuiGraphics();
         RoundRectRenderer roundRectRenderer = roundRectRendererSupplier.get();
         TextRenderer textRenderer = textRendererSupplier.get();
-        
+
         for (TagInfo tag : tags) {
             if (showItems.getValue() && !tag.items().isEmpty()) {
                 float itemRowW = (tag.items().size() * 16.0f + (tag.items().size() - 1) * 2.0f) * tag.scale();

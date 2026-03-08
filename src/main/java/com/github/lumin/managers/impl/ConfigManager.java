@@ -68,7 +68,7 @@ public class ConfigManager {
                 continue;
             }
 
-            JsonObject moduleObj = getObject(modulesObj, module.getChineseName());
+            JsonObject moduleObj = getObject(modulesObj, module.getCnName());
             if (moduleObj == null) {
                 continue;
             }
@@ -180,7 +180,7 @@ public class ConfigManager {
             }
             moduleObj.add("settings", settingsObj);
 
-            modulesObj.add(module.getChineseName(), moduleObj);
+            modulesObj.add(module.getCnName(), moduleObj);
         }
 
         return modulesObj;

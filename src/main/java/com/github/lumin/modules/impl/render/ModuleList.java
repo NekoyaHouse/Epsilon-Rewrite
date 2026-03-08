@@ -28,6 +28,7 @@ public class ModuleList extends Module {
     public ModuleList() {
         super("功能列表", "ModuleList", Category.RENDER);
     }
+
     private final ModeSetting language = modeSetting("语言", "中文", new String[]{"中文", "英文"});
     private final DoubleSetting scale = doubleSetting("缩放", 1.0, 0.5, 2.0, 0.1);
     private final ColorSetting shadowColor = colorSetting("阴影颜色", new Color(68, 0, 0, 94));
@@ -59,7 +60,7 @@ public class ModuleList extends Module {
         List<ItemInfo> items = new ArrayList<>();
 
         for (Module module : enabledModules) {
-            String text = "中文".equals(language.getValue()) ? module.getChineseName() : module.getDescription();
+            String text = "中文".equals(language.getValue()) ? module.getCnName() : module.getDescription();
             if (showCategory.getValue()) {
                 text += " [" + module.category.getName() + "]";
             }
@@ -101,7 +102,7 @@ public class ModuleList extends Module {
                 float iconHeight = textRenderer.getHeight(iconScale, StaticFontLoader.ICONS);
                 float iconX = iconBoxX + (item.boxHeight() - iconWidth) / 3.0f;
                 float iconY = boxY + (item.boxHeight() - iconHeight) / 5.0f;
-                textRenderer.addGlowingText(iconChar, iconX, iconY, iconScale, new Color(255, 255, 255, 92), 3.0f,1, StaticFontLoader.ICONS);
+                textRenderer.addGlowingText(iconChar, iconX, iconY, iconScale, new Color(255, 255, 255, 92), 3.0f, 1, StaticFontLoader.ICONS);
             }
 
             currentY += item.boxHeight() + 2.0f * moduleScale;
@@ -113,12 +114,14 @@ public class ModuleList extends Module {
 
     private int getTextWidth(Module module) {
         TextRenderer textRenderer = textRendererSupplier.get();
-        String text = "中文".equals(language.getValue()) ? module.getChineseName() : module.getDescription();;
+        String text = "中文".equals(language.getValue()) ? module.getCnName() : module.getDescription();
+        ;
         if (showCategory.getValue()) {
             text += " [" + module.category.getName() + "]";
         }
         return (int) textRenderer.getWidth(text, scale.getValue().floatValue());
     }
 
-    private record ItemInfo(Module module, String text, float boxWidth, float boxHeight, float totalWidth) {}
+    private record ItemInfo(Module module, String text, float boxWidth, float boxHeight, float totalWidth) {
+    }
 }

@@ -16,11 +16,9 @@ import java.util.List;
 
 public final class WorldToScreen {
 
-    private WorldToScreen() {
-    }
+    private static final Minecraft mc = Minecraft.getInstance();
 
     public static Vector4d getEntityPositionsOn2D(LivingEntity target, float tickDelta) {
-        Minecraft mc = Minecraft.getInstance();
         int[] viewport = new int[]{0, 0, mc.getWindow().getWidth(), mc.getWindow().getHeight()};
         Matrix4f projectionMatrix = createProjectionMatrix(tickDelta);
 
@@ -79,7 +77,6 @@ public final class WorldToScreen {
     }
 
     public static Matrix4f createProjectionMatrix(final float tickDelta) {
-        Minecraft mc = Minecraft.getInstance();
         IGameRenderer gameRendererAccessor = (IGameRenderer) mc.gameRenderer;
         Matrix4fStack matrixStack = new Matrix4fStack();
         net.minecraft.client.Camera camera = mc.gameRenderer.getMainCamera();
@@ -90,7 +87,7 @@ public final class WorldToScreen {
 
         matrixStack.rotateX((float) Math.toRadians(camera.xRot()));
         matrixStack.rotateY((float) Math.toRadians(camera.yRot() + 180.0f));
-        
+
         return matrixStack;
     }
 
@@ -108,7 +105,7 @@ public final class WorldToScreen {
     }
 
     public static Vec3 interpolate(final LivingEntity entity, final float tickDelta) {
-        net.minecraft.client.Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+        net.minecraft.client.Camera camera = mc.gameRenderer.getMainCamera();
         return new Vec3(
                 Mth.lerp(tickDelta, entity.xOld, entity.getX()) - camera.position().x,
                 Mth.lerp(tickDelta, entity.yOld, entity.getY()) - camera.position().y,
@@ -117,7 +114,6 @@ public final class WorldToScreen {
     }
 
     public static Vector4d getHeadPositionOn2D(LivingEntity target, float tickDelta) {
-        Minecraft mc = Minecraft.getInstance();
         int[] viewport = new int[]{0, 0, mc.getWindow().getWidth(), mc.getWindow().getHeight()};
         Matrix4f projectionMatrix = createProjectionMatrix(tickDelta);
 
