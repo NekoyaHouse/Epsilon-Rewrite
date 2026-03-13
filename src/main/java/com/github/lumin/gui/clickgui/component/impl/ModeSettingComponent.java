@@ -2,7 +2,7 @@ package com.github.lumin.gui.clickgui.component.impl;
 
 import com.github.lumin.graphics.renderers.TextRenderer;
 import com.github.lumin.gui.Component;
-import com.github.lumin.settings.impl.ModeSetting;
+import com.github.lumin.settings.impl.EnumSetting;
 import com.github.lumin.utils.render.MouseUtils;
 import com.github.lumin.utils.render.animation.Animation;
 import com.github.lumin.utils.render.animation.Easing;
@@ -11,7 +11,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import java.awt.*;
 
 public class ModeSettingComponent extends Component {
-    private final ModeSetting setting;
+    private final EnumSetting setting;
     private final Animation selectedXAnimation = new Animation(Easing.EASE_OUT_QUAD, 150L);
     private boolean highlightInitialized;
     private float lastControlX;
@@ -19,11 +19,11 @@ public class ModeSettingComponent extends Component {
     private float lastControlW;
     private float lastControlH;
 
-    public ModeSettingComponent(ModeSetting setting) {
+    public ModeSettingComponent(EnumSetting setting) {
         this.setting = setting;
     }
 
-    public ModeSetting getSetting() {
+    public EnumSetting getSetting() {
         return setting;
     }
 
@@ -36,8 +36,7 @@ public class ModeSettingComponent extends Component {
         set.bottomRoundRect().addRoundRect(getX(), getY(), getWidth(), getHeight(), 6.0f * scale, bg);
 
         String name = setting.getDisplayName();
-        String[] modes = setting.getModes();
-        if (modes == null) modes = new String[0];
+        final var modes = setting.getModes();
 
         float textScale = 0.85f * scale;
         float textY = getY() + (getHeight() - set.font().getHeight(textScale)) / 2.0f - 0.5f * scale;
@@ -105,7 +104,7 @@ public class ModeSettingComponent extends Component {
             if (i > 0) {
                 set.bottomRoundRect().addRoundRect(segX, controlY + 2.0f * scale, 1.0f * scale, controlH - 4.0f * scale, 0.0f, new Color(255, 255, 255, (int) (14 * alpha)));
             }
-            String mode = modes[i] == null ? "" : modes[i];
+            String mode = setting.getTranslatedValue();
             float maxTextW = Math.max(0.0f, segW - segInnerPad * 2.0f);
             String display = ellipsize(mode, set.font(), textScale, maxTextW);
             Color textColor = (i == selectedIndex) ? new Color(255, 255, 255, (int) (255 * alpha)) : new Color(200, 200, 200, (int) (255 * alpha));
@@ -121,7 +120,7 @@ public class ModeSettingComponent extends Component {
     public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
         if (!setting.isAvailable()) return super.mouseClicked(event, focused);
         if (event.button() != 0) return super.mouseClicked(event, focused);
-        String[] modes = setting.getModes();
+        final var modes = setting.getModes();
         if (modes == null || modes.length == 0) return super.mouseClicked(event, focused);
         if (!MouseUtils.isHovering(lastControlX, lastControlY, lastControlW, lastControlH, event.x(), event.y())) {
             return super.mouseClicked(event, focused);

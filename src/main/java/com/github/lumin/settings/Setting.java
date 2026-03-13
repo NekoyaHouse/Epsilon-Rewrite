@@ -1,29 +1,30 @@
 package com.github.lumin.settings;
 
-public class Setting<V> {
+import com.github.lumin.assets.i18n.TranslateComponent;
+import com.github.lumin.modules.Module;
 
-    protected final String chineseName;
+public abstract class Setting<V> {
 
+    protected final String name;
     protected V value;
     protected V defaultValue;
-
     protected final Dependency dependency;
+    protected final TranslateComponent translateComponent;
 
-    public Setting(String chineseName, Dependency dependency) {
-        this.chineseName = chineseName;
+    public Setting(String name, Module module, Dependency dependency) {
+        this.name = name;
         this.dependency = dependency;
+        // lumin.modules.<module>.<setting>
+        String prefix = "modules." + module.getName().toLowerCase();
+        this.translateComponent = TranslateComponent.create(prefix, name.toLowerCase());
     }
 
-    public Setting(String chineseName) {
-        this(chineseName, () -> true);
+    public String getName() {
+        return name;
     }
 
     public String getDisplayName() {
-        return chineseName;
-    }
-
-    public String getChineseName() {
-        return chineseName;
+        return translateComponent.getTranslatedName();
     }
 
     public V getValue() {
@@ -54,5 +55,4 @@ public class Setting<V> {
     public Dependency getDependency() {
         return dependency;
     }
-
 }

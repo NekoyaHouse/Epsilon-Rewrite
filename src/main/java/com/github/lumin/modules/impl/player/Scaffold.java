@@ -8,7 +8,7 @@ import com.github.lumin.modules.Module;
 import com.github.lumin.settings.impl.BoolSetting;
 import com.github.lumin.settings.impl.ColorSetting;
 import com.github.lumin.settings.impl.IntSetting;
-import com.github.lumin.settings.impl.ModeSetting;
+import com.github.lumin.settings.impl.EnumSetting;
 import com.github.lumin.utils.math.MathUtils;
 import com.github.lumin.utils.player.FindItemResult;
 import com.github.lumin.utils.player.InvUtils;
@@ -32,6 +32,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.common.NeoForge;
@@ -84,8 +85,8 @@ public class Scaffold extends Module {
         });
     }
 
-    private final ModeSetting mode = modeSetting("模式", "Telly", new String[]{"神桥", "Telly"});
-    private final ModeSetting swapMode = modeSetting("切换模式", "普通", new String[]{"无", "普通", "物品栏切换", "静默"});
+    private final EnumSetting mode = enumSetting("模式", Mode.TellyBridge);
+    private final EnumSetting swapMode = enumSetting("切换模式", SwapMode.Normal);
     private final BoolSetting swapBack = boolSetting("停用还原", true, () -> swapMode.is("普通"));
     private final BoolSetting swingHand = boolSetting("挥手", true);
     private final IntSetting tellyTick = intSetting("Telly延迟", 0, 0, 8, 1, () -> mode.is("Telly"));
@@ -144,7 +145,7 @@ public class Scaffold extends Module {
         updateBlockInfo();
 
         MovementFix movementFix = moveFix.getValue() ? MovementFix.ON : MovementFix.OFF;
-        if (mode.is("Telly")) {
+        if (mode.getValue() == Mode.TellyBridge) {
             if (mc.player.onGround()) {
                 yLevel = Mth.floor(mc.player.getY()) - 1;
                 airTicks = 0;
@@ -170,18 +171,19 @@ public class Scaffold extends Module {
         }
 
         switch (swapMode.getValue()) {
-            case "静默" -> {
+            case SwapMode.Silent -> {
                 if (swapped) {
                     swapped = false;
                     InvUtils.swapBack();
                 }
             }
-            case "物品栏切换" -> {
+            case SwapMode.HotbarSwitch -> {
                 if (invSwapped) {
                     invSwapped = false;
                     InvUtils.invSwapBack();
                 }
             }
+            default -> {}
         }
     }
 
@@ -249,7 +251,7 @@ public class Scaffold extends Module {
 
     private FindItemResult findItem() {
         switch (swapMode.getValue()) {
-            case "无" -> {
+            case SwapMode.None -> {
                 if (InvUtils.testInOffHand(itemStack -> validItem(itemStack, blockInfo.position))) {
                     return new FindItemResult(40, mc.player.getOffhandItem().getCount(), mc.player.getOffhandItem().getMaxStackSize());
                 }
@@ -258,7 +260,7 @@ public class Scaffold extends Module {
                 }
                 return new FindItemResult(-1, 0, 0);
             }
-            case "物品栏切换" -> {
+            case SwapMode.HotbarSwitch -> {
                 return InvUtils.find(itemStack -> validItem(itemStack, blockInfo.position));
             }
             default -> {
@@ -272,13 +274,14 @@ public class Scaffold extends Module {
         if (!BlockUtils.canPlaceAt(blockInfo.blockPos)) return;
 
         switch (swapMode.getValue()) {
-            case "普通" -> {
+            case SwapMode.Normal -> {
                 boolean should = swapBack.getValue();
                 InvUtils.swap(item.slot(), should);
                 shouldSwapBack = should;
             }
-            case "静默" -> swapped = InvUtils.swap(item.slot(), true);
-            case "物品栏切换" -> invSwapped = InvUtils.invSwap(item.slot());
+            case SwapMode.Silent -> swapped = InvUtils.swap(item.slot(), true);
+            case SwapMode.HotbarSwitch -> invSwapped = InvUtils.invSwap(item.slot());
+            default -> {}
         }
 
         boolean hasRotated = RaytraceUtils.overBlock(Managers.ROTATION.getRotation(), blockInfo.dir, blockInfo.position, sideCheck.getValue());
@@ -370,6 +373,18 @@ public class Scaffold extends Module {
 
     private record RenderBox(AABB aabb, Color lineColor, Color sideColor, long startTime, boolean fade,
                              boolean shrink) {
+    }
+
+    private enum Mode {
+        GodBridge,
+        TellyBridge,
+    }
+
+    private enum SwapMode {
+        None,
+        Normal,
+        HotbarSwitch,
+        Silent,
     }
 
 }

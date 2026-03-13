@@ -90,8 +90,8 @@ public class ModuleComponent implements IComponent {
                 settings.add(new IntSettingComponent(intSetting));
             } else if (setting instanceof DoubleSetting doubleSetting) {
                 settings.add(new DoubleSettingComponent(doubleSetting));
-            } else if (setting instanceof ModeSetting modeSetting) {
-                settings.add(new ModeSettingComponent(modeSetting));
+            } else if (setting instanceof EnumSetting enumSetting) {
+                settings.add(new ModeSettingComponent(enumSetting));
             } else if (setting instanceof ColorSetting colorSetting) {
                 settings.add(new ColorSettingComponent(colorSetting));
             } else if (setting instanceof StringSetting stringSetting) {

@@ -34,12 +34,16 @@ public class ConfigManager {
     private boolean modulesApplied;
 
     private ConfigManager() {
-        loadFromDisk();
-        if (!root.has("version")) {
-            root.addProperty("version", CONFIG_VERSION);
-            dirty = true;
+        try {
+            loadFromDisk();
+            if (!root.has("version")) {
+                root.addProperty("version", CONFIG_VERSION);
+                dirty = true;
+            }
+            applyToModules(Managers.MODULE.getModules());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        applyToModules(Managers.MODULE.getModules());
     }
 
     public synchronized Path getConfigFile() {
@@ -93,7 +97,7 @@ public class ConfigManager {
             JsonObject settingsObj = getObject(moduleObj, "settings");
             if (settingsObj != null) {
                 for (Setting<?> setting : module.getSettings()) {
-                    JsonElement value = settingsObj.get(setting.getChineseName());
+                    JsonElement value = settingsObj.get(setting.getName());
                     applySetting(setting, value);
                 }
             }
@@ -177,7 +181,7 @@ public class ConfigManager {
                 }
                 JsonElement value = serializeSetting(setting);
                 if (value != null) {
-                    settingsObj.add(setting.getChineseName(), value);
+                    settingsObj.add(setting.getName(), value);
                 }
             }
             moduleObj.add("settings", settingsObj);
@@ -231,8 +235,8 @@ public class ConfigManager {
         if (setting instanceof StringSetting s) {
             return new JsonPrimitive(s.getValue());
         }
-        if (setting instanceof ModeSetting s) {
-            return new JsonPrimitive(s.getValue());
+        if (setting instanceof EnumSetting s) {
+            return new JsonPrimitive(s.getValue().toString());
         }
         if (setting instanceof ColorSetting s) {
             Color c = s.getValue();
@@ -258,7 +262,7 @@ public class ConfigManager {
                 s.setValue(value.getAsDouble());
             } else if (setting instanceof StringSetting s) {
                 s.setValue(value.getAsString());
-            } else if (setting instanceof ModeSetting s) {
+            } else if (setting instanceof EnumSetting s) {
                 s.setMode(value.getAsString());
             } else if (setting instanceof ColorSetting s) {
                 int argb = value.getAsInt();

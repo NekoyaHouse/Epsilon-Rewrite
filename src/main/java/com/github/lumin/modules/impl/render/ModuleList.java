@@ -9,7 +9,7 @@ import com.github.lumin.modules.Module;
 import com.github.lumin.settings.impl.BoolSetting;
 import com.github.lumin.settings.impl.ColorSetting;
 import com.github.lumin.settings.impl.DoubleSetting;
-import com.github.lumin.settings.impl.ModeSetting;
+import com.github.lumin.settings.impl.EnumSetting;
 import com.google.common.base.Suppliers;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
@@ -29,7 +29,6 @@ public class ModuleList extends Module {
         super("功能列表", "ModuleList", Category.RENDER);
     }
 
-    private final ModeSetting language = modeSetting("语言", "中文", new String[]{"中文", "英文"});
     private final DoubleSetting scale = doubleSetting("缩放", 1.0, 0.5, 2.0, 0.1);
     private final ColorSetting shadowColor = colorSetting("阴影颜色", new Color(68, 0, 0, 94));
     private final DoubleSetting glowRadius = doubleSetting("发光半径", 3.0, 1.0, 10.0, 0.5);
@@ -60,7 +59,8 @@ public class ModuleList extends Module {
         List<ItemInfo> items = new ArrayList<>();
 
         for (Module module : enabledModules) {
-            String text = "中文".equals(language.getValue()) ? module.getCnName() : module.getDescription();
+//            String text = "中文".equals(language.getValue()) ? module.getCnName() : module.getDescription();
+            String text = module.getName();
             if (showCategory.getValue()) {
                 text += " [" + module.category.getName() + "]";
             }
@@ -87,11 +87,11 @@ public class ModuleList extends Module {
 
             float textX = textBoxX + 4.0f * moduleScale - 1.5f;
             float textY = boxY + (item.boxHeight() - textRenderer.getHeight(moduleScale)) / 5.0f;
-            if ("中文".equals(language.getValue())) {
+//            if ("中文".equals(language.getValue())) {
                 textRenderer.addGlowingText(item.text(), textX + 1, textY, moduleScale, new Color(255, 255, 255, 126), glowRadius.getValue().floatValue(), glowIntensity.getValue().intValue());
-            } else {
-                textRenderer.addGlowingText(item.text(), textX + 0.7f, textY - 0.5f, moduleScale, new Color(255, 255, 255, 126), glowRadius.getValue().floatValue(), glowIntensity.getValue().intValue());
-            }
+//            } else {
+//                textRenderer.addGlowingText(item.text(), textX + 0.7f, textY - 0.5f, moduleScale, new Color(255, 255, 255, 126), glowRadius.getValue().floatValue(), glowIntensity.getValue().intValue());
+//            }
 
             if (showIcon.getValue()) {
                 shadowRenderer.addShadow(iconBoxX, boxY, item.boxHeight(), item.boxHeight(), 6.0f * moduleScale, 10.0f * moduleScale, shadowColor.getValue());
@@ -114,8 +114,8 @@ public class ModuleList extends Module {
 
     private int getTextWidth(Module module) {
         TextRenderer textRenderer = textRendererSupplier.get();
-        String text = "中文".equals(language.getValue()) ? module.getCnName() : module.getDescription();
-        ;
+//        String text = "中文".equals(language.getValue()) ? module.getCnName() : module.getDescription();
+        String text = module.getName();
         if (showCategory.getValue()) {
             text += " [" + module.category.getName() + "]";
         }

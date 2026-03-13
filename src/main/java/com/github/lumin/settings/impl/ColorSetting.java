@@ -1,32 +1,31 @@
 package com.github.lumin.settings.impl;
 
 import com.github.lumin.settings.Setting;
+import com.github.lumin.modules.Module;
 
 import java.awt.*;
 
 public class ColorSetting extends Setting<Color> {
     private final boolean allowAlpha;
 
-    public ColorSetting(String chineseName, Color defaultValue) {
-        this(chineseName, defaultValue, () -> true, true);
+    public ColorSetting(String name, Module module, Color defaultValue) {
+        this(name, module, defaultValue, () -> true, true);
     }
 
-    public ColorSetting(String chineseName, Color defaultValue, boolean allowAlpha) {
-        this(chineseName, defaultValue, () -> true, allowAlpha);
+    public ColorSetting(String name, Module module, Color defaultValue, boolean allowAlpha) {
+        this(name, module, defaultValue, () -> true, allowAlpha);
     }
 
-    public ColorSetting(String chineseName, Color defaultValue, Dependency dependency) {
-        this(chineseName, defaultValue, dependency, true);
+    public ColorSetting(String name, Module module, Color defaultValue, Dependency dependency) {
+        this(name, module, defaultValue, dependency, true);
     }
-
-    public ColorSetting(String chineseName, Color defaultValue, Dependency dependency, boolean allowAlpha) {
-        super(chineseName, dependency);
+    
+    public ColorSetting(String name, Module module, Color defaultValue, Dependency dependency, boolean allowAlpha) {
+        super(name, module, dependency);
         this.value = defaultValue;
         this.defaultValue = defaultValue;
         this.allowAlpha = allowAlpha;
     }
 
-    public boolean isAllowAlpha() {
-        return allowAlpha;
-    }
+    public boolean isAllowAlpha() { return allowAlpha; }
 }

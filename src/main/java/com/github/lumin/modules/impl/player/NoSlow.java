@@ -4,7 +4,7 @@ import com.github.lumin.events.SlowdownEvent;
 import com.github.lumin.modules.Category;
 import com.github.lumin.modules.Module;
 import com.github.lumin.settings.impl.BoolSetting;
-import com.github.lumin.settings.impl.ModeSetting;
+import com.github.lumin.settings.impl.EnumSetting;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -17,7 +17,7 @@ public class NoSlow extends Module {
         super("无减速", "NoSlow", Category.PLAYER);
     }
 
-    private final ModeSetting mode = modeSetting("Mode", "Grim 1/2", new String[]{"Vanilla", "Jump", "Grim 1/2", "Grim 1/3"});
+    private final EnumSetting<Mode> mode = enumSetting("Mode", Mode.Jump);
     private final BoolSetting food = boolSetting("Food", true);
     private final BoolSetting bow = boolSetting("Bow", true);
     private final BoolSetting crossbow = boolSetting("Crossbow", true);
@@ -43,10 +43,10 @@ public class NoSlow extends Module {
         if (!crossbow.getValue() && checkItem(Items.CROSSBOW)) return;
 
         switch (mode.getValue()) {
-            case "Vanilla" -> cancel(event);
-            case "Jump" -> jump(event);
-            case "Grim 1/2" -> grim50(event);
-            case "Grim 1/3" -> grim33(event);
+            case Mode.Vanilla -> cancel(event);
+            case Mode.Jump -> jump(event);
+            case Mode.Grim1_2 -> grim50(event);
+            case Mode.Grim1_3 -> grim33(event);
         }
     }
 
@@ -80,6 +80,13 @@ public class NoSlow extends Module {
         ItemStack mainHandItem = mc.player.getMainHandItem();
         ItemStack offhandItem = mc.player.getOffhandItem();
         return mainHandItem.is(Items.GOLDEN_APPLE) || offhandItem.is(Items.GOLDEN_APPLE) || mainHandItem.is(Items.ENCHANTED_GOLDEN_APPLE) || offhandItem.is(Items.ENCHANTED_GOLDEN_APPLE) || mainHandItem.is(Items.POTION) || offhandItem.is(Items.POTION);
+    }
+
+    private enum Mode {
+        Vanilla,
+        Jump,
+        Grim1_2,
+        Grim1_3,
     }
 
 }

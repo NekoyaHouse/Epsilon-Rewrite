@@ -4,17 +4,18 @@ import com.github.lumin.modules.Category;
 import com.github.lumin.modules.Module;
 import com.github.lumin.settings.impl.BoolSetting;
 import com.github.lumin.settings.impl.IntSetting;
-import com.github.lumin.settings.impl.ModeSetting;
+import com.github.lumin.settings.impl.EnumSetting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.world.phys.HitResult;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 public class AutoClicker extends Module {
 
     public static final AutoClicker INSTANCE = new AutoClicker();
 
-    private final ModeSetting mode = modeSetting("模式", "1.8", new String[]{"1.8", "1.9+"});
+    private final EnumSetting<Mode> mode = enumSetting("模式", Mode.VERSION_ABOVE_1_9);
     private final IntSetting minCPS = intSetting("最小CPS", 8, 1, 20, 1, () -> mode.is("1.8"));
     private final IntSetting maxCPS = intSetting("最大CPS", 12, 1, 20, 1, () -> mode.is("1.8"));
     private final BoolSetting jitter = boolSetting("抖动", false, () -> mode.is("1.8"));
@@ -108,5 +109,21 @@ public class AutoClicker extends Module {
         // Add some randomness
         double cps = min + (Math.random() * (max - min));
         nextDelay = (long) (1000 / cps);
+    }
+
+    private enum Mode {
+        VERSION_1_8("1.8"),
+        VERSION_ABOVE_1_9("1.9+");
+
+        public final String name;
+
+        Mode(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
     }
 }

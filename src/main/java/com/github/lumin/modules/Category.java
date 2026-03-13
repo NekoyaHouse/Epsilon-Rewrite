@@ -1,24 +1,35 @@
 package com.github.lumin.modules;
 
+import com.github.lumin.assets.i18n.TranslateComponent;
+
 public enum Category {
 
-    COMBAT("b", "战斗", "ComBat"),
-    PLAYER("5", "玩家", "Player"),
-    RENDER("a", "渲染", "Render"),
-    WORLD("3", "世界", "World"),
-    CLIENT("7", "客户端", "Client");
+    COMBAT("b", "combat", "ComBat"),
+    PLAYER("5", "player", "Player"),
+    RENDER("a", "render", "Render"),
+    WORLD("3", "world", "World"),
+    CLIENT("7", "client", "Client");
 
     public final String icon;
-    private final String cnName;
+    private final String name;
     public final String description;
 
-    Category(String icon, String cnName, String description) {
+    private final TranslateComponent translateComponent;
+
+    Category(String icon, String name, String description) {
         this.icon = icon;
-        this.cnName = cnName;
+        this.name = name;
         this.description = description;
+
+        translateComponent = TranslateComponent.create("categories", name);
     }
 
     public String getName() {
-        return cnName;
+        return translateComponent.getTranslatedName();
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }

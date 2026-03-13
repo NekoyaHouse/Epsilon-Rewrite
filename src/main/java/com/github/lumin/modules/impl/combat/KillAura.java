@@ -6,7 +6,7 @@ import com.github.lumin.modules.Module;
 import com.github.lumin.settings.impl.BoolSetting;
 import com.github.lumin.settings.impl.DoubleSetting;
 import com.github.lumin.settings.impl.IntSetting;
-import com.github.lumin.settings.impl.ModeSetting;
+import com.github.lumin.settings.impl.EnumSetting;
 import com.github.lumin.utils.math.MathUtils;
 import com.github.lumin.utils.player.FindItemResult;
 import com.github.lumin.utils.player.InvUtils;
@@ -43,8 +43,8 @@ public class KillAura extends Module {
         super("杀戮光环", "KillAura", Category.COMBAT);
     }
 
-    public ModeSetting movefix = modeSetting("移动修正模式", "静默", new String[]{"静默", "严格"});
-    public ModeSetting targetMode = modeSetting("目标选择方式", "单个", new String[]{"单个", "切换", "多个"});
+    public EnumSetting<MoveFixMode> moveFix = enumSetting("移动修正模式", MoveFixMode.Silent);
+    public EnumSetting<TargetMode> targetMode = enumSetting("目标选择方式", TargetMode.Single);
     public DoubleSetting range = doubleSetting("最大攻击距离", 3.0, 1.0, 6.0, 0.01);
     public DoubleSetting aimRange = doubleSetting("最大瞄准距离", 4.0, 1.0, 6.0, 0.1);
     public IntSetting speed = intSetting("视角旋转速度", 10, 1, 10, 1);
@@ -100,7 +100,7 @@ public class KillAura extends Module {
 
         if (target != null) {
             float[] rotations = RotationUtils.getRotationsToEntity(target);
-            boolean silent = movefix.is("静默");
+            boolean silent = moveFix.is("静默");
             Managers.ROTATION.setRotations(new Vector2f(rotations[0], rotations[1]), speed.getValue().floatValue(), MovementFix.ON, Priority.Medium);
         }
     }
@@ -220,4 +220,16 @@ public class KillAura extends Module {
 
         return RaytraceUtils.facingEnemy(mc.player, entity, rotation, range.getValue(), wallsRange.getValue());
     }
+
+    public enum MoveFixMode {
+        Silent,
+        Strict,
+    }
+
+    public enum TargetMode {
+        Single,
+        Switch,
+        Multiple,
+    }
+
 }

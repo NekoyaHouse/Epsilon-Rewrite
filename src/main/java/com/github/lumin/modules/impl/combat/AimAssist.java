@@ -4,7 +4,7 @@ import com.github.lumin.modules.Category;
 import com.github.lumin.modules.Module;
 import com.github.lumin.settings.impl.BoolSetting;
 import com.github.lumin.settings.impl.DoubleSetting;
-import com.github.lumin.settings.impl.ModeSetting;
+import com.github.lumin.settings.impl.EnumSetting;
 import com.github.lumin.utils.rotation.RotationUtils;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.util.Mth;
@@ -25,7 +25,7 @@ import java.util.List;
 public class AimAssist extends Module {
     public static final AimAssist INSTANCE = new AimAssist();
 
-    public ModeSetting mode = modeSetting("平滑模式", "快速", new String[]{"快速", "平稳"});
+    public EnumSetting<SmoothMode> mode = enumSetting("平滑模式", SmoothMode.Fast);
     public DoubleSetting range = doubleSetting("目标距离", 4.2, 1.0, 8.0, 0.1);
     public DoubleSetting speed = doubleSetting("旋转速度", 10.0, 1.0, 180.0, 1.0);
     public DoubleSetting strength = doubleSetting("插值强度", 0.1, 0.01, 1.0, 0.01);
@@ -150,9 +150,8 @@ public class AimAssist extends Module {
 
     private AngleSmooth getAngleSmooth() {
         return switch (mode.getValue()) {
-            case "快速" -> new LinearAngleSmooth(speed.getValue().floatValue());
-            case "平稳" -> new InterpolationAngleSmooth(strength.getValue().floatValue());
-            default -> null;
+            case SmoothMode.Fast -> new LinearAngleSmooth(speed.getValue().floatValue());
+            case SmoothMode.Stable -> new InterpolationAngleSmooth(strength.getValue().floatValue());
         };
     }
 
@@ -185,5 +184,10 @@ public class AimAssist extends Module {
 
             return new Vector2f(current.x + yawChange, current.y + pitchChange);
         }
+    }
+
+    public enum SmoothMode {
+        Fast,
+        Stable,
     }
 }

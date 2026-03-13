@@ -6,7 +6,7 @@ import com.github.lumin.modules.Module;
 import com.github.lumin.settings.impl.BoolSetting;
 import com.github.lumin.settings.impl.ColorSetting;
 import com.github.lumin.settings.impl.DoubleSetting;
-import com.github.lumin.settings.impl.ModeSetting;
+import com.github.lumin.settings.impl.EnumSetting;
 
 import java.awt.*;
 
@@ -24,7 +24,7 @@ public class ClickGui extends Module {
     public final BoolSetting backgroundBlackColor = boolSetting("黑色背景", true);
     public final BoolSetting backgroundBlur = boolSetting("背景模糊", true);
     public final DoubleSetting blurStrength = doubleSetting("模糊强度", 10.5, 1.0, 15, 0.5, backgroundBlur::getValue);
-    public final ModeSetting blurMode = modeSetting("模糊方式", "全屏", new String[]{"全屏", "仅侧边栏"}, backgroundBlur::getValue);
+    public final EnumSetting<BlurMode> blurMode = enumSetting("模糊方式", BlurMode.FullScreen, backgroundBlur::getValue);
 
     @Override
     protected void onEnable() {
@@ -38,6 +38,12 @@ public class ClickGui extends Module {
             mc.setScreen(null);
         }
     }
+
+    public enum BlurMode {
+        FullScreen,
+        OnlySideBar,
+    }
+
 }
 
 //    public static Color getMainColor() {

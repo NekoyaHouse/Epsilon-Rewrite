@@ -13,7 +13,7 @@ public class Disabler extends Module {
     public static final Disabler INSTANCE = new Disabler();
     private final BoolSetting DuplicateRotPlace = boolSetting("DuplicateRotPlace", true);
     private final BoolSetting aim360 = boolSetting("AimModulo360", false);
-    private final BoolSetting AimDuplicateLook = new BoolSetting("AimDuplicateLook", false);
+    private final BoolSetting AimDuplicateLook = boolSetting("AimDuplicateLook", false);
 
     private Disabler() {
         super("残疾人", "Disabler", Category.PLAYER);
