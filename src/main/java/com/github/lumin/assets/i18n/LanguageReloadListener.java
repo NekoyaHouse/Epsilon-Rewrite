@@ -1,6 +1,7 @@
 package com.github.lumin.assets.i18n;
 
-import com.github.lumin.managers.impl.TranslateManager;
+import com.github.lumin.assets.holders.TextureCacheHolder;
+import com.github.lumin.assets.holders.TranslateHolder;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import org.jspecify.annotations.NonNull;
 
@@ -20,7 +21,8 @@ public class LanguageReloadListener implements PreparableReloadListener {
                 .thenCompose(barrier::wait)
                 .thenRunAsync(() -> {
 
-                    TranslateManager.INSTANCE.refresh();
+                    TranslateHolder.INSTANCE.refresh();
+                    TextureCacheHolder.INSTANCE.clearCache();
 
                 }, applyExectutor);
     }

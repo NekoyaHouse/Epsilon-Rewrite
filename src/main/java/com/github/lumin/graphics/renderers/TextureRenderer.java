@@ -1,5 +1,6 @@
 package com.github.lumin.graphics.renderers;
 
+import com.github.lumin.assets.holders.TextureCacheHolder;
 import com.github.lumin.graphics.LuminRenderPipelines;
 import com.github.lumin.graphics.LuminRenderSystem;
 import com.github.lumin.graphics.LuminTexture;
@@ -31,7 +32,6 @@ public class TextureRenderer implements IRenderer {
     private static final int STRIDE = 56;
     private final long bufferSize;
     private final Map<Object, Batch> batches = new LinkedHashMap<>();
-    private final Map<Identifier, LuminTexture> textureCache = new HashMap<>();
 
     public TextureRenderer() {
         this(32 * 1024);
@@ -153,7 +153,9 @@ public class TextureRenderer implements IRenderer {
 
             LuminTexture texture;
             if (textureKey instanceof Identifier id) {
-                texture = textureCache.computeIfAbsent(id, key -> loadTexture(key, batch.useLinearFilter));
+                texture = TextureCacheHolder.INSTANCE.textureCache.computeIfAbsent(
+                        id, key -> loadTexture(key, batch.useLinearFilter)
+                );
             } else if (textureKey instanceof LuminTexture tex) {
                 texture = tex;
             } else {
@@ -217,7 +219,6 @@ public class TextureRenderer implements IRenderer {
     @Override
     public void clear() {
         for (Batch batch : batches.values()) {
-            // 2. 轮转缓冲区：只有确实绘制过数据才 rotate
             if (batch.vertexCount > 0) {
                 if (batch.buffer.isMapped()) {
                     batch.buffer.unmap();
@@ -236,10 +237,7 @@ public class TextureRenderer implements IRenderer {
             batch.buffer.close();
         }
         batches.clear();
-        for (LuminTexture texture : textureCache.values()) {
-            texture.close();
-        }
-        textureCache.clear();
+        TextureCacheHolder.INSTANCE.clearCache();
     }
 
     private static final class Batch {

@@ -12,13 +12,12 @@ public record LuminTexture(
         @Nonnull GpuSampler sampler,
         boolean closeTexture,
         boolean closeSampler
-) implements AutoCloseable {
+) {
 
     public LuminTexture(@Nonnull GpuTexture texture, @Nonnull GpuTextureView textureView, @Nonnull GpuSampler sampler) {
         this(texture, textureView, sampler, true, true);
     }
 
-    @Override
     public void close() {
         if (closeSampler) {
             sampler.close();

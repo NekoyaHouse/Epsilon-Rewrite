@@ -1,17 +1,17 @@
-package com.github.lumin.managers.impl;
+package com.github.lumin.assets.holders;
 
 import com.github.lumin.assets.i18n.TranslateComponent;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class TranslateManager {
+public class TranslateHolder {
 
-    public static TranslateManager INSTANCE = new TranslateManager();
+    public static TranslateHolder INSTANCE = new TranslateHolder();
 
     private final List<TranslateComponent> components = new ArrayList<>();
 
-    private TranslateManager() {
+    private TranslateHolder() {
     }
 
     public void refresh() {
