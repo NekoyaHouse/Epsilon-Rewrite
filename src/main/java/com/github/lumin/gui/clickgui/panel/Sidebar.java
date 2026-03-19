@@ -215,9 +215,8 @@ public class Sidebar implements IComponent {
             float nameScale = guiScale * 0.8f;
             float descScale = guiScale * 0.5f;
             float nameHeight = set.font().getHeight(nameScale);
-            float descHeight = set.font().getHeight(descScale);
             float textGap = 2 * guiScale;
-            float textBlockHeight = nameHeight + textGap + descHeight;
+            float textBlockHeight = nameHeight + textGap + set.font().getHeight(descScale);
             float textBlockY = y + (height - textBlockHeight) / 2f;
 
             set.font().addText(category.getName(), textX, textBlockY, nameScale, ColorUtils.applyOpacity(Color.WHITE, alpha));

@@ -46,10 +46,6 @@ public class RotationManager {
         NeoForge.EVENT_BUS.register(this);
     }
 
-    public void setRotations(final Vector2f rotations, final double rotationSpeed) {
-        setRotations(rotations, rotationSpeed, MovementFix.OFF, null, Priority.Lowest);
-    }
-
     public void setRotations(final Vector2f rotations, final double rotationSpeed, final MovementFix correctMovement) {
         setRotations(rotations, rotationSpeed, correctMovement, null, Priority.Lowest);
     }

@@ -40,6 +40,7 @@ public class ModuleManager {
                 InvManager.INSTANCE,
                 JumpCooldown.INSTANCE,
                 NoSlow.INSTANCE,
+                Phase.INSTANCE,
                 SafeWalk.INSTANCE,
                 Scaffold.INSTANCE,
                 Sprint.INSTANCE,

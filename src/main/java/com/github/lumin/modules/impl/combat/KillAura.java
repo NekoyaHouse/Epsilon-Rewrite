@@ -21,7 +21,6 @@ import net.minecraft.world.phys.HitResult;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-import org.joml.Vector2f;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -153,8 +152,10 @@ public class KillAura extends Module {
         if (nullCheck() || !esp.getValue() || target == null) return;
 
         switch (espMode.getValue()) {
-            case CaptureMark -> captureMark.render(event.getPoseStack(), target, espSize.getValue(), espRotSpeed.getValue(), waveSpeed.getValue(), espColor1.getValue(), espColor2.getValue());
-            case Firefly -> firefly.render(event.getPoseStack(), target, fireflyLength.getValue(), fireflyFactor.getValue(), fireflyShaking.getValue(), fireflyAmplitude.getValue(), fireflyColor.getValue());
+            case CaptureMark ->
+                    captureMark.render(event.getPoseStack(), target, espSize.getValue(), espRotSpeed.getValue(), waveSpeed.getValue(), espColor1.getValue(), espColor2.getValue());
+            case Firefly ->
+                    firefly.render(event.getPoseStack(), target, fireflyLength.getValue(), fireflyFactor.getValue(), fireflyShaking.getValue(), fireflyAmplitude.getValue(), fireflyColor.getValue());
         }
 
     }
