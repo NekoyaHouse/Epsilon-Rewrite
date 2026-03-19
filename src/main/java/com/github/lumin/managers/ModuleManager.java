@@ -12,6 +12,7 @@ import com.github.lumin.modules.impl.player.*;
 import com.github.lumin.modules.impl.render.*;
 import com.mojang.blaze3d.platform.InputConstants;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ModuleManager {
@@ -24,44 +25,38 @@ public class ModuleManager {
     }
 
     public void initModules() {
-        modules = List.of(
+        modules = new ArrayList<>();
 
-                // Client
-                ClickGui.INSTANCE,
+        modules.add(ClickGui.INSTANCE);
 
-                // Combat
-                AimAssist.INSTANCE,
-                AntiBot.INSTANCE,
-                AutoClicker.INSTANCE,
-                AutoCrystal.INSTANCE,
-                FakePlayer.INSTANCE,
-                KillAura.INSTANCE,
+        modules.add(AimAssist.INSTANCE);
+        modules.add(AntiBot.INSTANCE);
+        modules.add(AutoClicker.INSTANCE);
+        modules.add(AutoCrystal.INSTANCE);
+        modules.add(FakePlayer.INSTANCE);
+        modules.add(KillAura.INSTANCE);
 
-                // Player
-                AutoAccount.INSTANCE,
-                BreakCooldown.INSTANCE,
-                Disabler.INSTANCE,
-                InvManager.INSTANCE,
-                JumpCooldown.INSTANCE,
-                MoveFix.INSTANCE,
-                NoSlow.INSTANCE,
-                SafeWalk.INSTANCE,
-                Scaffold.INSTANCE,
-                Speedmine.INSTANCE,
-                Sprint.INSTANCE,
-                Stealer.INSTANCE,
-                Stuck.INSTANCE,
-                Velocity.INSTANCE,
+        modules.add(AutoAccount.INSTANCE);
+        modules.add(BreakCooldown.INSTANCE);
+        modules.add(Disabler.INSTANCE);
+        modules.add(InvManager.INSTANCE);
+        modules.add(JumpCooldown.INSTANCE);
+        modules.add(MoveFix.INSTANCE);
+        modules.add(NoSlow.INSTANCE);
+        modules.add(SafeWalk.INSTANCE);
+        modules.add(Scaffold.INSTANCE);
+        modules.add(Speedmine.INSTANCE);
+        modules.add(Sprint.INSTANCE);
+        modules.add(Stealer.INSTANCE);
+        modules.add(Stuck.INSTANCE);
+        modules.add(Velocity.INSTANCE);
 
-                // Render
-                ESP.INSTANCE,
-                Fullbright.INSTANCE,
-                HUD.INSTANCE,
-                ModuleList.INSTANCE,
-                Nametags.INSTANCE,
-                NoRender.INSTANCE
-
-        );
+        modules.add(ESP.INSTANCE);
+        modules.add(Fullbright.INSTANCE);
+        modules.add(HUD.INSTANCE);
+        modules.add(ModuleList.INSTANCE);
+        modules.add(Nametags.INSTANCE);
+        modules.add(NoRender.INSTANCE);
     }
 
     public List<Module> getModules() {
