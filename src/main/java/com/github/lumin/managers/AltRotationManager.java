@@ -2,13 +2,14 @@ package com.github.lumin.managers;
 
 import com.github.lumin.events.JumpEvent;
 import com.github.lumin.events.MotionEvent;
+import com.github.lumin.events.PacketEvent;
 import com.github.lumin.events.RayTraceEvent;
 import com.github.lumin.events.StrafeEvent;
 import com.github.lumin.utils.player.MoveUtils;
 import com.github.lumin.utils.rotation.MovementFix;
 import com.github.lumin.utils.rotation.Priority;
-import com.github.lumin.utils.rotation.RotationUtils;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.util.Mth;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -17,117 +18,180 @@ import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import org.joml.Vector2f;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 public class AltRotationManager {
 
     public static final AltRotationManager INSTANCE = new AltRotationManager();
 
     private final Minecraft mc = Minecraft.getInstance();
+    private final List<RotationRequest> requests = new CopyOnWriteArrayList<>();
 
-    public Vector2f rotations;
-    public Vector2f lastRotations = new Vector2f(0, 0);
-    public Vector2f targetRotations;
-    private boolean active;
-    private double rotationSpeed;
-    private MovementFix correctMovement = MovementFix.OFF;
-    private int priority;
+    private RotationRequest rotation;
+    private boolean rotate;
+    private int rotateTicks;
+    private float serverYaw;
+    private float serverPitch;
+    private float lastServerYaw;
+    private float lastServerPitch;
 
     private AltRotationManager() {
         NeoForge.EVENT_BUS.register(this);
     }
 
-    public void setRotations(final Vector2f rotations, final double rotationSpeed, final MovementFix correctMovement, Priority priority) {
-        if (rotations == null || Double.isNaN(rotations.x) || Double.isNaN(rotations.y) || Double.isInfinite(rotations.x) || Double.isInfinite(rotations.y)) {
+    public void setRotations(Vector2f rotations, double rotationSpeed, MovementFix correctMovement, Priority priority) {
+        if (mc.player == null || rotations == null) {
             return;
         }
-        if (active && priority != null && priority.priority < this.priority) {
+        if (Float.isNaN(rotations.x) || Float.isNaN(rotations.y) || Float.isInfinite(rotations.x) || Float.isInfinite(rotations.y)) {
             return;
         }
-        this.targetRotations = rotations;
-        this.rotationSpeed = rotationSpeed * 18;
-        this.correctMovement = correctMovement;
-        this.priority = priority != null ? priority.priority : Priority.Lowest.priority;
-        active = true;
-        smooth();
-    }
+        RotationRequest request = new RotationRequest(
+                priority != null ? priority.priority : Priority.Lowest.priority,
+                Mth.wrapDegrees(rotations.x),
+                Mth.clamp(rotations.y, -90.0f, 90.0f),
+                correctMovement,
+                true
+        );
 
-    private void smooth() {
-        if (targetRotations == null) return;
-        rotations = RotationUtils.smooth(new Vector2f(targetRotations.x, targetRotations.y), rotationSpeed + Math.random());
-        if (Float.isNaN(rotations.x) || Float.isInfinite(rotations.x)) {
-            rotations.x = mc.player.getYRot();
-        }
-        if (Float.isNaN(rotations.y) || Float.isInfinite(rotations.y)) {
-            rotations.y = mc.player.getXRot();
+        RotationRequest existing = requests.stream().filter(r -> r.priority == request.priority).findFirst().orElse(null);
+        if (existing == null) {
+            requests.add(request);
+        } else {
+            existing.yaw = request.yaw;
+            existing.pitch = request.pitch;
+            existing.movementFix = request.movementFix;
+            existing.snap = request.snap;
         }
     }
 
     public boolean isActive() {
-        return active;
+        return rotation != null;
     }
 
     public boolean isMovementFixEnabled() {
-        return active && correctMovement == MovementFix.ON && rotations != null;
+        return rotation != null && rotation.movementFix == MovementFix.ON;
     }
 
     public float getYaw() {
-        if (rotations == null) return mc.player.getYRot();
-        return rotations.x;
+        return rotation != null ? rotation.yaw : (mc.player != null ? mc.player.getYRot() : 0.0f);
+    }
+
+    public float getPitch() {
+        return rotation != null ? rotation.pitch : (mc.player != null ? mc.player.getXRot() : 0.0f);
+    }
+
+    public float getServerYaw() {
+        return serverYaw;
+    }
+
+    public float getServerPitch() {
+        return serverPitch;
+    }
+
+    @SubscribeEvent
+    private void onPacketSend(PacketEvent.Send event) {
+        if (event.getPacket() instanceof ServerboundMovePlayerPacket packet && packet.hasRotation()) {
+            lastServerYaw = serverYaw;
+            lastServerPitch = serverPitch;
+            serverYaw = packet.getYRot(0.0f);
+            serverPitch = packet.getXRot(0.0f);
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     private void onClientTick(ClientTickEvent.Pre event) {
-        if (mc.player == null || mc.level == null) return;
-        if (active) smooth();
+        if (mc.player == null || mc.level == null) {
+            return;
+        }
+        RotationRequest request = getRotationRequest();
+        if (request == null) {
+            if (rotation != null) {
+                rotateTicks++;
+                if (rotateTicks > 1) {
+                    rotation = null;
+                }
+            }
+            return;
+        }
+        rotation = request;
+        rotate = true;
+        rotateTicks = 0;
     }
 
     @SubscribeEvent
     private void onMoveInput(MovementInputUpdateEvent event) {
-        if (active && correctMovement == MovementFix.ON && rotations != null) {
-            MoveUtils.fixMovement(event, rotations.x);
+        if (rotation != null && rotation.movementFix == MovementFix.ON) {
+            MoveUtils.fixMovement(event, rotation.yaw);
         }
     }
 
     @SubscribeEvent
-    private void onRaytrace(RayTraceEvent event) {
-        if (active && rotations != null) {
-            event.setYaw(rotations.x);
-            event.setPitch(rotations.y);
+    private void onRayTrace(RayTraceEvent event) {
+        if (rotation != null) {
+            event.setYaw(rotation.yaw);
+            event.setPitch(rotation.pitch);
         }
     }
 
     @SubscribeEvent
     private void onStrafe(StrafeEvent event) {
-        if (active && correctMovement == MovementFix.ON && rotations != null) {
-            event.setYaw(rotations.x);
+        if (rotation != null && rotation.movementFix == MovementFix.ON) {
+            event.setYaw(rotation.yaw);
         }
     }
 
     @SubscribeEvent
     private void onJump(JumpEvent event) {
-        if (active && correctMovement == MovementFix.ON && rotations != null) {
-            event.setYaw(rotations.x);
+        if (rotation != null && rotation.movementFix == MovementFix.ON) {
+            event.setYaw(rotation.yaw);
         }
     }
 
     @SubscribeEvent
     private void onMotion(MotionEvent event) {
-        if (active && rotations != null) {
-            float yaw = rotations.x;
-            float pitch = rotations.y;
-            if (Float.isNaN(yaw) || Float.isInfinite(yaw)) yaw = mc.player.getYRot();
-            if (Float.isNaN(pitch) || Float.isInfinite(pitch)) pitch = mc.player.getXRot();
-            pitch = Mth.clamp(pitch, -90.0f, 90.0f);
-            event.setYaw(yaw);
-            event.setPitch(pitch);
+        if (rotation == null) {
+            return;
+        }
+        if (rotate) {
+            removeRotation(rotation);
+            event.setYaw(rotation.yaw);
+            event.setPitch(rotation.pitch);
+            rotate = false;
+        }
+        if (rotation.snap) {
+            rotation = null;
+        }
+    }
 
-            if (Math.abs((rotations.x - mc.player.getYRot()) % 360) < 1 && Math.abs((rotations.y - mc.player.getXRot())) < 1) {
-                active = false;
-                priority = 0;
+    private RotationRequest getRotationRequest() {
+        RotationRequest best = null;
+        for (RotationRequest request : requests) {
+            if (best == null || request.priority > best.priority) {
+                best = request;
             }
+        }
+        return best;
+    }
 
-            lastRotations = rotations;
-        } else {
-            lastRotations = new Vector2f(mc.player.getYRot(), mc.player.getXRot());
+    private void removeRotation(RotationRequest request) {
+        requests.remove(request);
+    }
+
+    private static final class RotationRequest {
+        private final int priority;
+        private float yaw;
+        private float pitch;
+        private MovementFix movementFix;
+        private boolean snap;
+
+        private RotationRequest(int priority, float yaw, float pitch, MovementFix movementFix, boolean snap) {
+            this.priority = priority;
+            this.yaw = yaw;
+            this.pitch = pitch;
+            this.movementFix = movementFix;
+            this.snap = snap;
         }
     }
 }
