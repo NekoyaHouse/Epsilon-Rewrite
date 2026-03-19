@@ -3,8 +3,11 @@
   "package": "com.github.lumin.mixins",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "MixinClientboundEntityEventPacket",
     "MixinClientLevel",
     "MixinConnection",
+    "MixinEndCrystal",
+    "MixinEndCrystalRenderer",
     "MixinEntity",
     "MixinEntityRenderer",
     "MixinGlDebug",
