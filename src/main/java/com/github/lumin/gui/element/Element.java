@@ -2,11 +2,9 @@ package com.github.lumin.gui.element;
 
 import com.github.lumin.graphics.renderers.TextRenderer;
 import com.github.lumin.utils.render.MouseUtils;
-import com.google.common.base.Suppliers;
 import net.minecraft.client.gui.GuiGraphics;
 
 import java.awt.*;
-import java.util.function.Supplier;
 
 /**
  * @author LangYa466

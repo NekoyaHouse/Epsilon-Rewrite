@@ -1,7 +1,7 @@
 package com.github.lumin.gui.element;
 
+import com.github.lumin.graphics.renderers.TextRenderer;
 import com.github.lumin.modules.Module;
-import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,7 +27,7 @@ public class ElementManager {
         return null;
     }
 
-    private final com.github.lumin.graphics.renderers.TextRenderer textRenderer = new com.github.lumin.graphics.renderers.TextRenderer();
+    private final TextRenderer textRenderer = new TextRenderer();
 
     public void render(int mouseX, int mouseY) {
         for (Element element : elements.values()) {
@@ -44,7 +44,7 @@ public class ElementManager {
         return false;
     }
 
-    public void mouseReleased(double mouseX, double mouseY, int button) {
+    public void mouseReleased(int button) {
         for (Element element : elements.values()) {
             element.onRelease(button);
         }

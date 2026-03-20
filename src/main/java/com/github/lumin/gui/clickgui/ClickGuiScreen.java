@@ -50,7 +50,7 @@ public class ClickGuiScreen extends Screen {
     @Override
     public boolean mouseReleased(@NonNull MouseButtonEvent event) {
         if (panel.isHudEditorActive()) {
-            ElementManager.INSTANCE.mouseReleased(event.x(), event.y(), event.button());
+            ElementManager.INSTANCE.mouseReleased(event.button());
         }
         return panel.mouseReleased(event) || super.mouseReleased(event);
     }
