@@ -197,6 +197,7 @@
   "lumin.modules.norender.potioneffects": "Potion Effects",
   "lumin.modules.norender.potionparticles": "Potion Particles",
   "lumin.modules.norender.totems": "Totems",
+  "lumin.modules.norender.totemanimation": "Totem Animation",
   "lumin.modules.norender.vignette": "Vignette",
   "lumin.modules.norotate": "No Rotate",
   "lumin.modules.noslow": "No Slow",

@@ -197,6 +197,7 @@
   "lumin.modules.norender.potioneffects": "药水效果",
   "lumin.modules.norender.potionparticles": "药水粒子",
   "lumin.modules.norender.totems": "图腾粒子",
+  "lumin.modules.norender.totemanimation": "图腾动画",
   "lumin.modules.norender.vignette": "晕影效果",
   "lumin.modules.norotate": "禁止旋转",
   "lumin.modules.noslow": "无减速",

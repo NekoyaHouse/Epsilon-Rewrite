@@ -32,23 +32,38 @@ public class MixinParticleManager {
     }
 
     private boolean shouldCancel(ParticleOptions particleOptions) {
-        if (!NoRender.INSTANCE.isEnabled() || !NoRender.INSTANCE.explosions.getValue() || particleOptions == null) {
+        if (!NoRender.INSTANCE.isEnabled() || particleOptions == null) {
             return false;
         }
-        return particleOptions.getType() == ParticleTypes.EXPLOSION
+        if (NoRender.INSTANCE.explosions.getValue()
+                && (particleOptions.getType() == ParticleTypes.EXPLOSION
                 || particleOptions.getType() == ParticleTypes.EXPLOSION_EMITTER
                 || particleOptions.getType() == ParticleTypes.POOF
                 || particleOptions.getType() == ParticleTypes.SMOKE
                 || particleOptions.getType() == ParticleTypes.LARGE_SMOKE
-                || particleOptions.getType() == ParticleTypes.CLOUD
-                || NoRender.INSTANCE.potionParticles.getValue() && (
-                particleOptions.getType() == ParticleTypes.EFFECT
-                        || particleOptions.getType() == ParticleTypes.ENTITY_EFFECT
-                        || particleOptions.getType() == ParticleTypes.INSTANT_EFFECT
-                        || particleOptions.getType() == ParticleTypes.SPLASH)
-                || NoRender.INSTANCE.fireworks.getValue() && (particleOptions.getType() == ParticleTypes.FIREWORK || particleOptions.getType() == ParticleTypes.FLASH)
-                || NoRender.INSTANCE.portal.getValue() && (particleOptions.getType() == ParticleTypes.PORTAL || particleOptions.getType() == ParticleTypes.REVERSE_PORTAL)
-                || NoRender.INSTANCE.totems.getValue() && particleOptions.getType() == ParticleTypes.TOTEM_OF_UNDYING;
+                || particleOptions.getType() == ParticleTypes.CLOUD)) {
+            return true;
+        }
+
+        if (NoRender.INSTANCE.potionParticles.getValue()
+                && (particleOptions.getType() == ParticleTypes.EFFECT
+                || particleOptions.getType() == ParticleTypes.ENTITY_EFFECT
+                || particleOptions.getType() == ParticleTypes.INSTANT_EFFECT
+                || particleOptions.getType() == ParticleTypes.SPLASH)) {
+            return true;
+        }
+
+        if (NoRender.INSTANCE.fireworks.getValue()
+                && (particleOptions.getType() == ParticleTypes.FIREWORK || particleOptions.getType() == ParticleTypes.FLASH)) {
+            return true;
+        }
+
+        if (NoRender.INSTANCE.portal.getValue()
+                && (particleOptions.getType() == ParticleTypes.PORTAL || particleOptions.getType() == ParticleTypes.REVERSE_PORTAL)) {
+            return true;
+        }
+
+        return NoRender.INSTANCE.totems.getValue() && particleOptions.getType() == ParticleTypes.TOTEM_OF_UNDYING;
     }
 
 }
