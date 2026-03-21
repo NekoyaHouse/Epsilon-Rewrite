@@ -49,6 +49,7 @@ public class ModuleDetailPanel {
     private final Map<Setting<?>, Animation> hoverAnimations = new HashMap<>();
     private final Map<Setting<?>, SettingRow<?>> rowCache = new HashMap<>();
     private SettingEntry draggingSliderEntry;
+    private boolean contentPending;
 
     public ModuleDetailPanel(DropdownState state, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, ShadowRenderer shadowRenderer, TextRenderer textRenderer, DropdownPopupHost popupHost) {
         this.state = state;
@@ -104,11 +105,7 @@ public class ModuleDetailPanel {
             row.render(guiGraphics, contentRoundRectRenderer, contentRectRenderer, contentTextRenderer, rowBounds, hoverAnimation.getValue(), effectiveMouseX, effectiveMouseY, partialTick);
             y += row.getHeight() + DropdownTheme.ROW_GAP;
         }
-        contentShadowRenderer.drawAndClear();
-        contentRoundRectRenderer.drawAndClear();
-        contentRectRenderer.drawAndClear();
-        contentTextRenderer.drawAndClear();
-        DropdownScissor.clear(contentRectRenderer, contentRoundRectRenderer, contentShadowRenderer, contentTextRenderer);
+        contentPending = true;
     }
 
     public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {
@@ -219,5 +216,17 @@ public class ModuleDetailPanel {
             popupY = chipBounds.y() - popupHeight - 4.0f;
         }
         return new EnumSelectPopup(new DropdownLayout.Rect(popupX, popupY, popupWidth, popupHeight), chipBounds, enumRow.getSetting());
+    }
+
+    public void flushContent() {
+        if (!contentPending) {
+            return;
+        }
+        contentShadowRenderer.drawAndClear();
+        contentRoundRectRenderer.drawAndClear();
+        contentRectRenderer.drawAndClear();
+        contentTextRenderer.drawAndClear();
+        DropdownScissor.clear(contentRectRenderer, contentRoundRectRenderer, contentShadowRenderer, contentTextRenderer);
+        contentPending = false;
     }
 }

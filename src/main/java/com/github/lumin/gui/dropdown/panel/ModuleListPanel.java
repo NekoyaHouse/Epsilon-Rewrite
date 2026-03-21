@@ -38,6 +38,7 @@ public class ModuleListPanel {
     private final List<ModuleRow> rows = new ArrayList<>();
     private final Map<Module, Animation> hoverAnimations = new HashMap<>();
     private final Map<Module, Animation> selectionAnimations = new HashMap<>();
+    private boolean contentPending;
 
     public ModuleListPanel(DropdownState state, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, ShadowRenderer shadowRenderer, TextRenderer textRenderer) {
         this.state = state;
@@ -72,11 +73,19 @@ public class ModuleListPanel {
             row.render(contentRoundRectRenderer, contentRectRenderer, contentTextRenderer, hoverAnimation.getValue(), selectionAnimation.getValue());
             y += ModuleRow.HEIGHT + DropdownTheme.ROW_GAP;
         }
+        contentPending = true;
+    }
+
+    public void flushContent() {
+        if (!contentPending) {
+            return;
+        }
         contentShadowRenderer.drawAndClear();
         contentRoundRectRenderer.drawAndClear();
         contentRectRenderer.drawAndClear();
         contentTextRenderer.drawAndClear();
         DropdownScissor.clear(contentRectRenderer, contentRoundRectRenderer, contentShadowRenderer, contentTextRenderer);
+        contentPending = false;
     }
 
     public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {

@@ -4,7 +4,6 @@ import com.github.lumin.graphics.renderers.RectRenderer;
 import com.github.lumin.graphics.renderers.RoundRectRenderer;
 import com.github.lumin.graphics.renderers.ShadowRenderer;
 import com.github.lumin.graphics.renderers.TextRenderer;
-import com.github.lumin.graphics.shaders.BlurShader;
 import com.github.lumin.gui.dropdown.input.DropdownInputRouter;
 import com.github.lumin.gui.dropdown.panel.CategoryRailPanel;
 import com.github.lumin.gui.dropdown.panel.ModuleDetailPanel;
@@ -63,6 +62,8 @@ public class DropdownScreen extends Screen {
         roundRectRendererSupplier.get().drawAndClear();
         rectRendererSupplier.get().drawAndClear();
         textRendererSupplier.get().drawAndClear();
+        moduleListPanel.flushContent();
+        moduleDetailPanel.flushContent();
         categoryRailPanel.flushClippedText();
         popupHost.render(guiGraphics, mouseX, mouseY, partialTick);
     }
@@ -79,7 +80,8 @@ public class DropdownScreen extends Screen {
         RoundRectRenderer roundRectRenderer = roundRectRendererSupplier.get();
 
         if (clickGui.shouldBlur()) {
-            BlurShader.INSTANCE.drawBlur(layout.panel().x(), layout.panel().y(), layout.panel().width(), layout.panel().height(), DropdownTheme.PANEL_RADIUS, clickGui.getBlurStrength());
+            // 我感觉blur没必要好吧因为几乎看不到捏
+            //BlurShader.INSTANCE.drawBlur(layout.panel().x(), layout.panel().y(), layout.panel().width(), layout.panel().height(), DropdownTheme.PANEL_RADIUS, clickGui.getBlurStrength());
         }
 
         shadowRenderer.addShadow(layout.panel().x(), layout.panel().y(), layout.panel().width(), layout.panel().height(), DropdownTheme.PANEL_RADIUS, 18.0f, DropdownTheme.SHADOW);
