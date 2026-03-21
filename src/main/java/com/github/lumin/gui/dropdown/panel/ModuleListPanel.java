@@ -1,0 +1,94 @@
+package com.github.lumin.gui.dropdown.panel;
+
+import com.github.lumin.graphics.renderers.RectRenderer;
+import com.github.lumin.graphics.renderers.RoundRectRenderer;
+import com.github.lumin.graphics.renderers.ShadowRenderer;
+import com.github.lumin.graphics.renderers.TextRenderer;
+import com.github.lumin.graphics.text.StaticFontLoader;
+import com.github.lumin.gui.dropdown.DropdownLayout;
+import com.github.lumin.gui.dropdown.DropdownState;
+import com.github.lumin.gui.dropdown.DropdownTheme;
+import com.github.lumin.gui.dropdown.adapter.ModuleViewModel;
+import com.github.lumin.gui.dropdown.component.ModuleRow;
+import com.github.lumin.gui.dropdown.util.DropdownScissor;
+import com.github.lumin.modules.Module;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.input.MouseButtonEvent;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class ModuleListPanel {
+
+    protected final DropdownState state;
+    private final RoundRectRenderer roundRectRenderer;
+    private final RectRenderer rectRenderer;
+    private final ShadowRenderer shadowRenderer;
+    private final TextRenderer textRenderer;
+    private DropdownLayout.Rect bounds;
+    private int guiHeight;
+    private final List<ModuleRow> rows = new ArrayList<>();
+
+    public ModuleListPanel(DropdownState state, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, ShadowRenderer shadowRenderer, TextRenderer textRenderer) {
+        this.state = state;
+        this.roundRectRenderer = roundRectRenderer;
+        this.rectRenderer = rectRenderer;
+        this.shadowRenderer = shadowRenderer;
+        this.textRenderer = textRenderer;
+    }
+
+    public void render(GuiGraphics guiGraphics, DropdownLayout.Rect bounds, int mouseX, int mouseY, float partialTick) {
+        this.bounds = bounds;
+        this.guiHeight = guiGraphics.guiHeight();
+        rows.clear();
+
+        textRenderer.addText(state.getSelectedCategory().getName(), bounds.x() + 12.0f, bounds.y() + 12.0f, 0.88f, DropdownTheme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
+        textRenderer.addText("Modules", bounds.x() + 12.0f, bounds.y() + 25.0f, 0.62f, DropdownTheme.TEXT_SECONDARY);
+
+        DropdownLayout.Rect viewport = getViewport();
+        List<Module> modules = state.getVisibleModules();
+        float contentHeight = modules.size() * (ModuleRow.HEIGHT + DropdownTheme.ROW_GAP);
+        state.setMaxModuleScroll(contentHeight - viewport.height());
+
+        DropdownScissor.apply(viewport, rectRenderer, roundRectRenderer, shadowRenderer, textRenderer, guiHeight);
+        float y = viewport.y() - state.getModuleScroll();
+        for (Module module : modules) {
+            ModuleRow row = new ModuleRow(ModuleViewModel.from(module), new DropdownLayout.Rect(viewport.x(), y, viewport.width(), ModuleRow.HEIGHT));
+            rows.add(row);
+            row.render(roundRectRenderer, rectRenderer, textRenderer, row.getBounds().contains(mouseX, mouseY), state.getSelectedModule() == module);
+            y += ModuleRow.HEIGHT + DropdownTheme.ROW_GAP;
+        }
+        DropdownScissor.clear(rectRenderer, roundRectRenderer, shadowRenderer, textRenderer);
+    }
+
+    public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {
+        if (bounds == null || event.button() != 0) {
+            return false;
+        }
+        for (ModuleRow row : rows) {
+            if (!row.getBounds().contains(event.x(), event.y())) {
+                continue;
+            }
+            if (row.getToggleBounds().contains(event.x(), event.y())) {
+                row.getModule().module().toggle();
+            } else {
+                state.setSelectedModule(row.getModule().module());
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        DropdownLayout.Rect viewport = getViewport();
+        if (bounds != null && viewport.contains(mouseX, mouseY)) {
+            state.scrollModules(-scrollY * 20.0f);
+            return true;
+        }
+        return false;
+    }
+
+    private DropdownLayout.Rect getViewport() {
+        return new DropdownLayout.Rect(bounds.x() + 8.0f, bounds.y() + 40.0f, bounds.width() - 16.0f, bounds.height() - 48.0f);
+    }
+}

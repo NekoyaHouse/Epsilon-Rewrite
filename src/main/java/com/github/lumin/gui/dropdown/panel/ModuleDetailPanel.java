@@ -1,0 +1,143 @@
+package com.github.lumin.gui.dropdown.panel;
+
+import com.github.lumin.graphics.renderers.RectRenderer;
+import com.github.lumin.graphics.renderers.RoundRectRenderer;
+import com.github.lumin.graphics.renderers.ShadowRenderer;
+import com.github.lumin.graphics.renderers.TextRenderer;
+import com.github.lumin.graphics.text.StaticFontLoader;
+import com.github.lumin.gui.dropdown.DropdownLayout;
+import com.github.lumin.gui.dropdown.DropdownState;
+import com.github.lumin.gui.dropdown.DropdownTheme;
+import com.github.lumin.gui.dropdown.adapter.SettingViewFactory;
+import com.github.lumin.gui.dropdown.component.SettingRow;
+import com.github.lumin.gui.dropdown.util.DropdownScissor;
+import com.github.lumin.modules.Module;
+import com.github.lumin.settings.Setting;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class ModuleDetailPanel {
+
+    protected final DropdownState state;
+    private final RoundRectRenderer roundRectRenderer;
+    private final RectRenderer rectRenderer;
+    private final ShadowRenderer shadowRenderer;
+    private final TextRenderer textRenderer;
+    private DropdownLayout.Rect bounds;
+    private int guiHeight;
+    private DropdownLayout.Rect headerBounds;
+    private final List<SettingEntry> settingEntries = new ArrayList<>();
+
+    public ModuleDetailPanel(DropdownState state, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, ShadowRenderer shadowRenderer, TextRenderer textRenderer) {
+        this.state = state;
+        this.roundRectRenderer = roundRectRenderer;
+        this.rectRenderer = rectRenderer;
+        this.shadowRenderer = shadowRenderer;
+        this.textRenderer = textRenderer;
+    }
+
+    public void render(GuiGraphics guiGraphics, DropdownLayout.Rect bounds, int mouseX, int mouseY, float partialTick) {
+        this.bounds = bounds;
+        this.guiHeight = guiGraphics.guiHeight();
+        settingEntries.clear();
+
+        Module module = state.getSelectedModule();
+        String detailTitle = module == null ? "No Module" : module.getTranslatedName();
+        textRenderer.addText(detailTitle, bounds.x() + 12.0f, bounds.y() + 12.0f, 0.88f, DropdownTheme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
+        textRenderer.addText("Settings", bounds.x() + 12.0f, bounds.y() + 25.0f, 0.62f, DropdownTheme.TEXT_SECONDARY);
+
+        if (module == null) {
+            return;
+        }
+
+        headerBounds = new DropdownLayout.Rect(bounds.x() + 8.0f, bounds.y() + 40.0f, bounds.width() - 16.0f, 60.0f);
+        roundRectRenderer.addRoundRect(headerBounds.x(), headerBounds.y(), headerBounds.width(), headerBounds.height(), DropdownTheme.CARD_RADIUS, DropdownTheme.SURFACE_CONTAINER);
+        textRenderer.addText(module.getTranslatedName(), headerBounds.x() + 12.0f, headerBounds.y() + 10.0f, 0.8f, DropdownTheme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
+        textRenderer.addText(module.category.getName(), headerBounds.x() + 12.0f, headerBounds.y() + 22.0f, 0.62f, DropdownTheme.TEXT_SECONDARY);
+        textRenderer.addText(module.getDescription(), headerBounds.x() + 12.0f, headerBounds.y() + 34.0f, 0.62f, DropdownTheme.TEXT_MUTED);
+        drawSwitch(new DropdownLayout.Rect(headerBounds.right() - 42.0f, headerBounds.y() + 10.0f, 28.0f, 16.0f), module.isEnabled());
+        textRenderer.addText(module.getBindMode().name(), headerBounds.right() - 54.0f, headerBounds.y() + 34.0f, 0.62f, DropdownTheme.TEXT_SECONDARY);
+
+        DropdownLayout.Rect viewport = getViewport();
+        List<Setting<?>> settings = module.getSettings().stream().filter(Setting::isAvailable).toList();
+        float contentHeight = settings.size() * (32.0f + DropdownTheme.ROW_GAP);
+        state.setMaxDetailScroll(contentHeight - viewport.height());
+
+        DropdownScissor.apply(viewport, rectRenderer, roundRectRenderer, shadowRenderer, textRenderer, guiHeight);
+        float y = viewport.y() - state.getDetailScroll();
+        for (Setting<?> setting : settings) {
+            SettingRow<?> row = SettingViewFactory.create(setting);
+            if (row == null) {
+                continue;
+            }
+            DropdownLayout.Rect rowBounds = new DropdownLayout.Rect(viewport.x(), y, viewport.width(), row.getHeight());
+            settingEntries.add(new SettingEntry(row, rowBounds));
+            row.render(guiGraphics, roundRectRenderer, rectRenderer, textRenderer, rowBounds, rowBounds.contains(mouseX, mouseY), mouseX, mouseY, partialTick);
+            y += row.getHeight() + DropdownTheme.ROW_GAP;
+        }
+        DropdownScissor.clear(rectRenderer, roundRectRenderer, shadowRenderer, textRenderer);
+    }
+
+    public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {
+        if (bounds == null || event.button() != 0) {
+            return false;
+        }
+        Module module = state.getSelectedModule();
+        if (module == null || headerBounds == null) {
+            return false;
+        }
+
+        DropdownLayout.Rect toggle = new DropdownLayout.Rect(headerBounds.right() - 42.0f, headerBounds.y() + 10.0f, 28.0f, 16.0f);
+        if (toggle.contains(event.x(), event.y())) {
+            module.toggle();
+            return true;
+        }
+
+        for (SettingEntry entry : settingEntries) {
+            if (entry.row.mouseClicked(entry.bounds, event, isDoubleClick)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        DropdownLayout.Rect viewport = getViewport();
+        if (bounds != null && viewport.contains(mouseX, mouseY)) {
+            state.scrollDetail(-scrollY * 20.0f);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean keyPressed(KeyEvent event) {
+        return false;
+    }
+
+    private DropdownLayout.Rect getViewport() {
+        if (bounds == null) {
+            return new DropdownLayout.Rect(0, 0, 0, 0);
+        }
+        if (headerBounds == null) {
+            return new DropdownLayout.Rect(bounds.x(), bounds.y(), bounds.width(), bounds.height());
+        }
+        return new DropdownLayout.Rect(bounds.x() + 8.0f, headerBounds.bottom() + 8.0f, bounds.width() - 16.0f, bounds.bottom() - headerBounds.bottom() - 12.0f);
+    }
+
+    private void drawSwitch(DropdownLayout.Rect rect, boolean enabled) {
+        Color track = enabled ? DropdownTheme.PRIMARY : DropdownTheme.SURFACE_CONTAINER_HIGHEST;
+        Color knob = enabled ? DropdownTheme.ON_PRIMARY_CONTAINER : DropdownTheme.TEXT_SECONDARY;
+        roundRectRenderer.addRoundRect(rect.x(), rect.y(), rect.width(), rect.height(), DropdownTheme.CHIP_RADIUS, track);
+        float knobSize = rect.height() - 6.0f;
+        float knobX = enabled ? rect.right() - knobSize - 3.0f : rect.x() + 3.0f;
+        roundRectRenderer.addRoundRect(knobX, rect.y() + 3.0f, knobSize, knobSize, DropdownTheme.CHIP_RADIUS, knob);
+    }
+
+    private record SettingEntry(SettingRow<?> row, DropdownLayout.Rect bounds) {
+    }
+}
