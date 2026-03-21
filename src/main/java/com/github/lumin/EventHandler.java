@@ -6,6 +6,8 @@ import com.github.lumin.graphics.LuminRenderPipelines;
 import com.github.lumin.gui.clickgui.ClickGuiScreen;
 import com.github.lumin.gui.menu.MainMenuScreen;
 import com.github.lumin.managers.Managers;
+import com.github.lumin.managers.impl.RenderManager;
+
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -35,11 +37,7 @@ public class EventHandler {
 
     @SubscribeEvent
     public static void onRenderFramePost(RenderFrameEvent.Post event) {
-        MainMenuScreen.INSTANCE.luminRender(event.getPartialTick());
-
-        if (Minecraft.getInstance().level != null) {
-            ClickGuiScreen.INSTANCE.luminRender(event.getPartialTick());
-        }
+        RenderManager.INSTANCE.callAndClear(event.getPartialTick());
     }
 
 }

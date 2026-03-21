@@ -1,12 +1,12 @@
 package com.github.lumin.gui.menu;
 
 import com.github.lumin.assets.resources.ResourceLocationUtils;
-import com.github.lumin.graphics.LuminRenderable;
 import com.github.lumin.graphics.LuminTexture;
 import com.github.lumin.graphics.renderers.RectRenderer;
 import com.github.lumin.graphics.renderers.RoundRectRenderer;
 import com.github.lumin.graphics.renderers.TextRenderer;
 import com.github.lumin.graphics.renderers.TextureRenderer;
+import com.github.lumin.managers.impl.RenderManager;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -34,7 +34,7 @@ import java.awt.*;
 import java.io.InputStream;
 import java.util.Optional;
 
-public class MainMenuScreen extends Screen implements LuminRenderable {
+public class MainMenuScreen extends Screen {
 
     public static final MainMenuScreen INSTANCE = new MainMenuScreen();
 
@@ -96,7 +96,7 @@ public class MainMenuScreen extends Screen implements LuminRenderable {
         textRenderer.addText("Lumin", titleX, height / 2f - 180 / guiScale, 4.0f / guiScale, new Color(255, 255, 255, 115));
 
         float subTitleX = 30 / guiScale + 35 / guiScale + (200 / guiScale - textRenderer.getWidth("NeoForge 1.21.11", 1.3f / guiScale)) / 2f;
-        textRenderer.addText("NeoForge 1.21.11", subTitleX, height / 2f - 180 / guiScale + textRenderer.getHeight(4.0f / guiScale) + 10 / guiScale, 1.3f / guiScale, Color.WHITE);
+        textRenderer.addText("NeoForge 26.1", subTitleX, height / 2f - 180 / guiScale + textRenderer.getHeight(4.0f / guiScale) + 10 / guiScale, 1.3f / guiScale, Color.WHITE);
 
         rectRenderer.addRect(0, 0, 30 / guiScale + (200 / guiScale + 15 / guiScale * 2) + 30 / guiScale, height, new Color(15, 15, 15, 200));
 
@@ -125,10 +125,11 @@ public class MainMenuScreen extends Screen implements LuminRenderable {
             float textY = by + (bh - textRenderer.getHeight(1.5f / guiScale)) / 2f;
             textRenderer.addText(buttons[i], textX, textY, 1.5f / guiScale, Color.WHITE);
         }
+        
+        RenderManager.INSTANCE.applyRenderAfterFrame(this::renderGui);
     }
 
-    @Override
-    public void luminRender(DeltaTracker partialTick) {
+    public void renderGui(DeltaTracker partialTick) {
         if (mc.screen != this) return;
 
         textureRenderer.drawAndClear();

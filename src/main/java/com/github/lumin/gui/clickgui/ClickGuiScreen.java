@@ -1,8 +1,8 @@
 package com.github.lumin.gui.clickgui;
 
-import com.github.lumin.graphics.LuminRenderable;
 import com.github.lumin.gui.clickgui.component.impl.ColorSettingComponent;
 import com.github.lumin.gui.clickgui.panel.Panel;
+import com.github.lumin.managers.impl.RenderManager;
 import com.github.lumin.modules.impl.client.ClickGui;
 import com.github.lumin.utils.render.animation.Animation;
 import com.github.lumin.utils.render.animation.Easing;
@@ -16,7 +16,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
 
-public class ClickGuiScreen extends Screen implements LuminRenderable {
+public class ClickGuiScreen extends Screen {
 
     public static final ClickGuiScreen INSTANCE = new ClickGuiScreen();
 
@@ -38,13 +38,14 @@ public class ClickGuiScreen extends Screen implements LuminRenderable {
     public void render(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         openAnimation.run(1f);
         panel.render(null, mouseX, mouseY, partialTick, openAnimation.getValue());
+        
+        RenderManager.INSTANCE.applyRenderAfterFrame(this::renderGui);
     }
 
-    @Override
-    public void luminRender(DeltaTracker partialTick) {
+    public void renderGui(DeltaTracker partialTick) {
         if (Minecraft.getInstance().screen != this) return;
 
-        panel.luminRender(partialTick);
+        panel.renderGui(partialTick);
     }
 
     @Override

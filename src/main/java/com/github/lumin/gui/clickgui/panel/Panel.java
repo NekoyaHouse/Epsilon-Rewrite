@@ -1,6 +1,5 @@
 package com.github.lumin.gui.clickgui.panel;
 
-import com.github.lumin.graphics.LuminRenderable;
 import com.github.lumin.graphics.renderers.*;
 import com.github.lumin.graphics.shaders.BlurShader;
 import com.github.lumin.gui.IComponent;
@@ -13,7 +12,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 
 import java.awt.*;
 
-public class Panel implements IComponent, LuminRenderable {
+public class Panel implements IComponent {
 
     private final Minecraft mc = Minecraft.getInstance();
 
@@ -98,8 +97,7 @@ public class Panel implements IComponent, LuminRenderable {
         return sidebar.mouseScrolled(mouseX, mouseY, scrollX, scrollY) || contentPanel.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
-    @Override
-    public void luminRender(DeltaTracker partialTick) {
+    public void renderGui(DeltaTracker partialTick) {
         rectRenderer.drawAndClear();
 
         if (ClickGui.INSTANCE.isFullScreenBlur()) {
@@ -115,6 +113,6 @@ public class Panel implements IComponent, LuminRenderable {
         textureRenderer.drawAndClear();
         fontRenderer.drawAndClear();
 
-        contentPanel.luminRender(partialTick);
+        contentPanel.renderGui(partialTick);
     }
 }
