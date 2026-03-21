@@ -3,6 +3,7 @@ package com.github.lumin.gui.dropdown.component.setting;
 import com.github.lumin.graphics.renderers.RectRenderer;
 import com.github.lumin.graphics.renderers.RoundRectRenderer;
 import com.github.lumin.graphics.renderers.TextRenderer;
+import com.github.lumin.graphics.text.StaticFontLoader;
 import com.github.lumin.gui.dropdown.DropdownLayout;
 import com.github.lumin.gui.dropdown.DropdownTheme;
 import com.github.lumin.gui.dropdown.component.SettingRow;
@@ -11,6 +12,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.input.MouseButtonEvent;
 
 public class EnumSettingRow extends SettingRow<EnumSetting<?>> {
+
+    private static final String DROPDOWN_ICON = "v";
 
     public EnumSettingRow(EnumSetting<?> setting) {
         super(setting);
@@ -25,7 +28,8 @@ public class EnumSettingRow extends SettingRow<EnumSetting<?>> {
         float chipWidth = chipBounds.width();
         roundRectRenderer.addRoundRect(chipX, chipBounds.y(), chipWidth, chipBounds.height(), DropdownTheme.CARD_RADIUS, DropdownTheme.SECONDARY_CONTAINER);
         textRenderer.addText(setting.getTranslatedValue(), chipX + 8.0f, bounds.y() + 9.0f, 0.60f, DropdownTheme.ON_SECONDARY_CONTAINER);
-        textRenderer.addText("V", chipBounds.right() - 10.0f, bounds.y() + 9.0f, 0.54f, DropdownTheme.ON_SECONDARY_CONTAINER);
+        float iconWidth = textRenderer.getWidth(DROPDOWN_ICON, 0.58f, StaticFontLoader.ICONS);
+        textRenderer.addText(DROPDOWN_ICON, chipBounds.right() - 8.0f - iconWidth, bounds.y() + 8.5f, 0.58f, DropdownTheme.ON_SECONDARY_CONTAINER, StaticFontLoader.ICONS);
     }
 
     public DropdownLayout.Rect getChipBounds(TextRenderer textRenderer, DropdownLayout.Rect bounds) {

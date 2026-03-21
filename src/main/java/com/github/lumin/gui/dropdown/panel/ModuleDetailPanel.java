@@ -141,6 +141,9 @@ public class ModuleDetailPanel {
     }
 
     public boolean mouseReleased(MouseButtonEvent event) {
+        if (draggingSliderEntry != null) {
+            draggingSliderEntry.row.mouseReleased(draggingSliderEntry.bounds, event);
+        }
         draggingSliderEntry = null;
         return false;
     }
@@ -149,12 +152,13 @@ public class ModuleDetailPanel {
         if (draggingSliderEntry == null || event.button() != 0) {
             return false;
         }
+        double currentMouseX = event.x();
         if (draggingSliderEntry.row instanceof IntSettingRow intRow) {
-            intRow.updateFromMouse(draggingSliderEntry.bounds, mouseX);
+            intRow.updateFromMouse(draggingSliderEntry.bounds, currentMouseX);
             return true;
         }
         if (draggingSliderEntry.row instanceof DoubleSettingRow doubleRow) {
-            doubleRow.updateFromMouse(draggingSliderEntry.bounds, mouseX);
+            doubleRow.updateFromMouse(draggingSliderEntry.bounds, currentMouseX);
             return true;
         }
         return false;
