@@ -11,6 +11,7 @@ import com.github.lumin.utils.player.InvUtils;
 import com.github.lumin.utils.timer.TimerUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
@@ -18,6 +19,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.SugarCaneBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -39,12 +41,13 @@ public class AutoFarm extends Module {
     private final BoolSetting rotate = boolSetting("Rotate", true);
     private final IntSetting rotationSpeed = intSetting("RotationSpeed", 10, 1, 10, 1, rotate::getValue);
     private final DoubleSetting harvestDelay = doubleSetting("HarvestDelay", 0.15, 0.0, 2.0, 0.05);
-    private final BoolSetting onlyHarvestGrown = boolSetting("OnlyHarvestGrown", true);
     private final BoolSetting wheat = boolSetting("Wheat", true);
     private final BoolSetting carrots = boolSetting("Carrots", true);
     private final BoolSetting potatoes = boolSetting("Potatoes", true);
     private final BoolSetting beetroot = boolSetting("Beetroot", true);
+    private final BoolSetting sugarCane = boolSetting("SugarCane", true);
 
+    private final TimerUtils actionTimer = new TimerUtils();
     private final TimerUtils harvestTimer = new TimerUtils();
     private int actionsThisTick;
 
@@ -55,6 +58,7 @@ public class AutoFarm extends Module {
     @Override
     protected void onEnable() {
         actionsThisTick = 0;
+        actionTimer.reset();
         harvestTimer.reset();
     }
 
@@ -65,11 +69,11 @@ public class AutoFarm extends Module {
 
     @SubscribeEvent
     private void onTick(ClientTickEvent.Pre event) {
-        if (nullCheck() || mc.gameMode == null || mc.screen != null || !autoHarvest.getValue()) {
+        if (nullCheck() || mc.gameMode == null || mc.screen != null) {
             return;
         }
 
-        if (!harvestTimer.passedMillise(harvestDelay.getValue() * 1000.0)) {
+        if (!autoPlant.getValue() && !autoHarvest.getValue()) {
             return;
         }
 
@@ -82,27 +86,38 @@ public class AutoFarm extends Module {
             BlockState state = mc.level.getBlockState(pos);
             if (autoPlant.getValue()) {
                 FindItemResult plantingItem = findPlantingItem();
-                if (plantingItem.found() && canPlantAt(pos, state, getPlantingItem(plantingItem))) {
+                if (plantingItem.found() && canPlantAt(pos, state, getPlantingItem(plantingItem)) && actionTimer.passedMillise(50.0)) {
+                    if (shouldWaitForRotation(pos)) {
+                        continue;
+                    }
                     plantAt(pos, plantingItem);
                     continue;
                 }
             }
 
-            if (!isSupportedCrop(state.getBlock())) {
+            if (!autoHarvest.getValue() || !isSupportedCrop(state.getBlock())) {
                 continue;
             }
 
-            boolean grown = isHarvestReady(state);
-            if (!grown && onlyHarvestGrown.getValue()) {
+            boolean grown = isHarvestReady(state, pos);
+            if (state.is(Blocks.SUGAR_CANE) && !grown) {
+                continue;
+            }
+            if (!grown) {
                 continue;
             }
 
-            if (rotate.getValue()) {
-                RotationManager.INSTANCE.setRotations(getRotation(pos), rotationSpeed.getValue(), com.github.lumin.utils.rotation.MovementFix.OFF);
+            if (!harvestTimer.passedMillise(harvestDelay.getValue() * 1000.0)) {
+                continue;
+            }
+
+            if (shouldWaitForRotation(pos)) {
+                continue;
             }
 
             if (mc.gameMode.startDestroyBlock(pos, Direction.UP)) {
                 mc.player.swing(InteractionHand.MAIN_HAND);
+                actionTimer.reset();
                 harvestTimer.reset();
                 actionsThisTick++;
             }
@@ -141,12 +156,18 @@ public class AutoFarm extends Module {
         if (block == Blocks.POTATOES) {
             return potatoes.getValue();
         }
-        return block == Blocks.BEETROOTS && beetroot.getValue();
+        if (block == Blocks.BEETROOTS) {
+            return beetroot.getValue();
+        }
+        return block == Blocks.SUGAR_CANE && sugarCane.getValue();
     }
 
-    private boolean isHarvestReady(BlockState state) {
+    private boolean isHarvestReady(BlockState state, BlockPos pos) {
         if (state.getBlock() instanceof CropBlock crop) {
             return crop.getAge(state) == crop.getMaxAge();
+        }
+        if (state.getBlock() instanceof SugarCaneBlock) {
+            return mc.level.getBlockState(pos.below()).is(Blocks.SUGAR_CANE);
         }
         return false;
     }
@@ -154,6 +175,20 @@ public class AutoFarm extends Module {
     private Vector2f getRotation(BlockPos pos) {
         float[] rotation = RotationManager.INSTANCE.getRotation(Vec3.atCenterOf(pos));
         return new Vector2f(rotation[0], rotation[1]);
+    }
+
+    private boolean shouldWaitForRotation(BlockPos pos) {
+        if (!rotate.getValue()) {
+            return false;
+        }
+
+        Vector2f targetRotation = getRotation(pos);
+        RotationManager.INSTANCE.setRotations(targetRotation, rotationSpeed.getValue(), com.github.lumin.utils.rotation.MovementFix.OFF);
+
+        Vector2f currentRotation = RotationManager.INSTANCE.getRotation();
+        float yawDiff = Math.abs(Mth.wrapDegrees(targetRotation.x - currentRotation.x));
+        float pitchDiff = Math.abs(targetRotation.y - currentRotation.y);
+        return yawDiff > 8.0f || pitchDiff > 8.0f;
     }
 
     private FindItemResult findPlantingItem() {
@@ -192,14 +227,11 @@ public class AutoFarm extends Module {
             return;
         }
 
-        if (rotate.getValue()) {
-            RotationManager.INSTANCE.setRotations(getRotation(pos), rotationSpeed.getValue(), com.github.lumin.utils.rotation.MovementFix.OFF);
-        }
-
         InteractionHand hand = result.getHand();
         InteractionResult interaction = mc.gameMode.useItemOn(mc.player, hand, new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false));
         if (interaction.consumesAction()) {
             mc.player.swing(hand);
+            actionTimer.reset();
             harvestTimer.reset();
             actionsThisTick++;
         }
