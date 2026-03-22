@@ -21,15 +21,20 @@ public class EnumSettingRow extends SettingRow<EnumSetting<?>> {
 
     @Override
     public void render(GuiGraphics guiGraphics, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer, DropdownLayout.Rect bounds, float hoverProgress, int mouseX, int mouseY, float partialTick) {
+        float labelScale = 0.68f;
+        float labelY = bounds.y() + (bounds.height() - textRenderer.getHeight(labelScale)) / 2.0f - 1.0f;
+        float chipTextScale = 0.60f;
         roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), DropdownTheme.CARD_RADIUS, DropdownTheme.lerp(DropdownTheme.SURFACE_CONTAINER, DropdownTheme.SURFACE_CONTAINER_HIGH, hoverProgress));
-        textRenderer.addText(setting.getDisplayName(), bounds.x() + DropdownTheme.ROW_CONTENT_INSET, bounds.y() + 7.0f, 0.68f, DropdownTheme.TEXT_PRIMARY);
+        textRenderer.addText(setting.getDisplayName(), bounds.x() + DropdownTheme.ROW_CONTENT_INSET, labelY, labelScale, DropdownTheme.TEXT_PRIMARY);
         DropdownLayout.Rect chipBounds = getChipBounds(textRenderer, bounds);
         float chipX = chipBounds.x();
         float chipWidth = chipBounds.width();
-        roundRectRenderer.addRoundRect(chipX, chipBounds.y(), chipWidth, chipBounds.height(), DropdownTheme.CARD_RADIUS, DropdownTheme.SECONDARY_CONTAINER);
-        textRenderer.addText(setting.getTranslatedValue(), chipX + 8.0f, bounds.y() + 9.0f, 0.60f, DropdownTheme.ON_SECONDARY_CONTAINER);
+        roundRectRenderer.addRoundRect(chipX, chipBounds.y(), chipWidth, chipBounds.height(), 7.0f, DropdownTheme.SECONDARY_CONTAINER);
+        float chipTextY = chipBounds.y() + (chipBounds.height() - textRenderer.getHeight(chipTextScale)) / 2.0f - 1.0f;
+        textRenderer.addText(setting.getTranslatedValue(), chipX + 8.0f, chipTextY, chipTextScale, DropdownTheme.ON_SECONDARY_CONTAINER);
         float iconWidth = textRenderer.getWidth(DROPDOWN_ICON, 0.58f, StaticFontLoader.ICONS);
-        textRenderer.addText(DROPDOWN_ICON, chipBounds.right() - 8.0f - iconWidth, bounds.y() + 8.5f, 0.58f, DropdownTheme.ON_SECONDARY_CONTAINER, StaticFontLoader.ICONS);
+        float iconY = chipBounds.y() + (chipBounds.height() - textRenderer.getHeight(0.58f, StaticFontLoader.ICONS)) / 2.0f - 1.0f;
+        textRenderer.addText(DROPDOWN_ICON, chipBounds.right() - 8.0f - iconWidth, iconY, 0.58f, DropdownTheme.ON_SECONDARY_CONTAINER, StaticFontLoader.ICONS);
     }
 
     public DropdownLayout.Rect getChipBounds(TextRenderer textRenderer, DropdownLayout.Rect bounds) {

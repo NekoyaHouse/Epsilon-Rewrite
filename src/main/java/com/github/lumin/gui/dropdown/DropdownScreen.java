@@ -14,6 +14,7 @@ import com.google.common.base.Suppliers;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
@@ -146,6 +147,14 @@ public class DropdownScreen extends Screen {
             return true;
         }
         return super.keyPressed(event);
+    }
+
+    @Override
+    public boolean charTyped(CharacterEvent event) {
+        if (inputRouter.routeCharTyped(event, popupHost, moduleDetailPanel)) {
+            return true;
+        }
+        return super.charTyped(event);
     }
 
     @Override

@@ -35,6 +35,16 @@ public class ModuleRow {
     }
 
     public void render(RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer, float hoverProgress, float selectedProgress) {
+        float titleScale = 0.70f;
+        float subScale = 0.60f;
+        float keyScale = 0.58f;
+        float titleHeight = textRenderer.getHeight(titleScale, StaticFontLoader.DUCKSANS);
+        float subHeight = textRenderer.getHeight(subScale);
+        float lineGap = 2.0f;
+        float totalTextHeight = titleHeight + lineGap + subHeight;
+        float titleY = bounds.y() + (bounds.height() - totalTextHeight) / 2.0f - 1.0f;
+        float subY = titleY + titleHeight + lineGap - 1.0f;
+        float keyY = bounds.y() + (bounds.height() - textRenderer.getHeight(keyScale)) / 2.0f - 1.0f;
         Color hoverBackground = DropdownTheme.lerp(DropdownTheme.SURFACE_CONTAINER, DropdownTheme.SURFACE_CONTAINER_HIGH, hoverProgress);
         Color background = DropdownTheme.lerp(hoverBackground, DropdownTheme.PRIMARY_CONTAINER, selectedProgress);
         Color titleColor = DropdownTheme.lerp(DropdownTheme.TEXT_PRIMARY, DropdownTheme.ON_PRIMARY_CONTAINER, selectedProgress);
@@ -42,10 +52,10 @@ public class ModuleRow {
 
         roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), DropdownTheme.CARD_RADIUS, background);
 
-        textRenderer.addText(module.displayName(), bounds.x() + DropdownTheme.ROW_CONTENT_INSET + 4.0f, bounds.y() + 7.0f, 0.70f, titleColor, StaticFontLoader.DUCKSANS);
-        textRenderer.addText(module.category().getName(), bounds.x() + DropdownTheme.ROW_CONTENT_INSET + 4.0f, bounds.y() + 18.0f, 0.60f, subColor);
+        textRenderer.addText(module.displayName(), bounds.x() + DropdownTheme.ROW_CONTENT_INSET + 4.0f, titleY, titleScale, titleColor, StaticFontLoader.DUCKSANS);
+        textRenderer.addText(module.category().getName(), bounds.x() + DropdownTheme.ROW_CONTENT_INSET + 4.0f, subY, subScale, subColor);
         drawSwitch(roundRectRenderer, getToggleBounds(), module.enabled());
-        textRenderer.addText(module.module().getKeyBind() == -1 ? "-" : Integer.toString(module.module().getKeyBind()), getToggleBounds().x() - 16.0f, bounds.y() + 10.0f, 0.58f, DropdownTheme.TEXT_MUTED);
+        textRenderer.addText(module.module().getKeyBind() == -1 ? "-" : Integer.toString(module.module().getKeyBind()), getToggleBounds().x() - 16.0f, keyY, keyScale, DropdownTheme.TEXT_MUTED);
     }
 
     private void drawSwitch(RoundRectRenderer roundRectRenderer, DropdownLayout.Rect rect, boolean enabled) {

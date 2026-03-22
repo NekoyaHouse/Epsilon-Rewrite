@@ -21,6 +21,7 @@ import com.github.lumin.settings.Setting;
 import com.github.lumin.utils.render.animation.Animation;
 import com.github.lumin.utils.render.animation.Easing;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 
@@ -79,11 +80,19 @@ public class ModuleDetailPanel {
 
         headerBounds = new DropdownLayout.Rect(bounds.x() + DropdownTheme.PANEL_VIEWPORT_INSET, bounds.y() + 34.0f, bounds.width() - DropdownTheme.PANEL_VIEWPORT_INSET * 2.0f, 52.0f);
         roundRectRenderer.addRoundRect(headerBounds.x(), headerBounds.y(), headerBounds.width(), headerBounds.height(), DropdownTheme.CARD_RADIUS, DropdownTheme.SURFACE_CONTAINER);
-        textRenderer.addText(module.getTranslatedName(), headerBounds.x() + DropdownTheme.PANEL_TITLE_INSET, headerBounds.y() + 8.0f, 0.72f, DropdownTheme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
-        textRenderer.addText(module.category.getName(), headerBounds.x() + DropdownTheme.PANEL_TITLE_INSET, headerBounds.y() + 18.0f, 0.56f, DropdownTheme.TEXT_SECONDARY);
-        textRenderer.addText(module.getDescription(), headerBounds.x() + DropdownTheme.PANEL_TITLE_INSET, headerBounds.y() + 28.0f, 0.56f, DropdownTheme.TEXT_MUTED);
+        float titleScale = 0.72f;
+        float metaScale = 0.56f;
+        float titleHeight = textRenderer.getHeight(titleScale, StaticFontLoader.DUCKSANS);
+        float metaHeight = textRenderer.getHeight(metaScale);
+        float headerTextX = headerBounds.x() + DropdownTheme.PANEL_TITLE_INSET;
+        float titleY = headerBounds.y() + 7.0f;
+        float categoryY = titleY + titleHeight + 2.0f;
+        float descriptionY = categoryY + metaHeight + 2.0f;
+        textRenderer.addText(module.getTranslatedName(), headerTextX, titleY, titleScale, DropdownTheme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
+        textRenderer.addText(module.category.getName(), headerTextX, categoryY, metaScale, DropdownTheme.TEXT_SECONDARY);
+        textRenderer.addText(module.getDescription(), headerTextX, descriptionY, metaScale, DropdownTheme.TEXT_MUTED);
         drawSwitch(new DropdownLayout.Rect(headerBounds.right() - DropdownTheme.ROW_TRAILING_INSET - 24.0f, headerBounds.y() + 8.0f, 24.0f, 14.0f), module.isEnabled());
-        textRenderer.addText(module.getBindMode().name(), headerBounds.right() - DropdownTheme.ROW_TRAILING_INSET - 34.0f, headerBounds.y() + 28.0f, 0.56f, DropdownTheme.TEXT_SECONDARY);
+        textRenderer.addText(module.getBindMode().name(), headerBounds.right() - DropdownTheme.ROW_TRAILING_INSET - 34.0f, descriptionY, metaScale, DropdownTheme.TEXT_SECONDARY);
 
         DropdownLayout.Rect viewport = getViewport();
         List<Setting<?>> settings = module.getSettings().stream().filter(Setting::isAvailable).toList();
@@ -123,15 +132,24 @@ public class ModuleDetailPanel {
             return true;
         }
 
+        clearRowFocus();
         for (SettingEntry entry : settingEntries) {
             if (entry.row instanceof IntSettingRow intRow && intRow.mouseClicked(entry.bounds, event, isDoubleClick)) {
-                draggingSliderEntry = entry;
-                intRow.updateFromMouse(entry.bounds, event.x());
+                if (intRow.isDragging()) {
+                    draggingSliderEntry = entry;
+                    intRow.updateFromMouse(entry.bounds, event.x());
+                } else {
+                    draggingSliderEntry = null;
+                }
                 return true;
             }
             if (entry.row instanceof DoubleSettingRow doubleRow && doubleRow.mouseClicked(entry.bounds, event, isDoubleClick)) {
-                draggingSliderEntry = entry;
-                doubleRow.updateFromMouse(entry.bounds, event.x());
+                if (doubleRow.isDragging()) {
+                    draggingSliderEntry = entry;
+                    doubleRow.updateFromMouse(entry.bounds, event.x());
+                } else {
+                    draggingSliderEntry = null;
+                }
                 return true;
             }
             if (entry.row instanceof EnumSettingRow enumRow && entry.row.mouseClicked(entry.bounds, event, isDoubleClick)) {
@@ -179,6 +197,20 @@ public class ModuleDetailPanel {
     }
 
     public boolean keyPressed(KeyEvent event) {
+        for (SettingEntry entry : settingEntries) {
+            if (entry.row.keyPressed(event)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean charTyped(CharacterEvent event) {
+        for (SettingEntry entry : settingEntries) {
+            if (entry.row.charTyped(event)) {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -228,5 +260,11 @@ public class ModuleDetailPanel {
         contentTextRenderer.drawAndClear();
         DropdownScissor.clear(contentRectRenderer, contentRoundRectRenderer, contentShadowRenderer, contentTextRenderer);
         contentPending = false;
+    }
+
+    private void clearRowFocus() {
+        for (SettingRow<?> row : rowCache.values()) {
+            row.setFocused(false);
+        }
     }
 }

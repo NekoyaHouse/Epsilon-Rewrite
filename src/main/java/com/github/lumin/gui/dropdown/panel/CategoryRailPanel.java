@@ -82,9 +82,9 @@ public class CategoryRailPanel {
         if (titleProgress > 0.02f) {
             Color brandColor = DropdownTheme.withAlpha(DropdownTheme.TEXT_PRIMARY, (int) (255 * titleProgress));
             Color subColor = DropdownTheme.withAlpha(DropdownTheme.TEXT_SECONDARY, (int) (210 * subtitleProgress));
-            float titleY = bounds.y() + 8.0f;
+            float titleY = bounds.y() + 7.0f;
             float titleHeight = clippedTextRenderer.getHeight(titleScale, StaticFontLoader.DUCKSANS);
-            float pad = 2.0f;
+            float pad = 3.0f;
             float subtitleY = titleY + titleHeight + pad;
             float titleOffset = (1.0f - titleProgress) * 8.0f;
             float subtitleOffset = (1.0f - subtitleProgress) * 10.0f;
@@ -93,7 +93,7 @@ public class CategoryRailPanel {
                 clippedTextRenderer.addText("1.21.11 Rewrite", bounds.x() + 38.0f + subtitleOffset, subtitleY, subtitleScale, subColor);
             }
             if (dividerProgress > 0.02f) {
-                float dividerY = bounds.y() + 35.0f;
+                float dividerY = subtitleY + clippedTextRenderer.getHeight(subtitleScale) + 4.0f;
                 float dividerBaseX = bounds.x() + 7.0f;
                 float dividerTargetWidth = bounds.width() - 14.0f;
                 float dividerWidth = dividerTargetWidth * dividerProgress;

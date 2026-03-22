@@ -4,6 +4,7 @@ import com.github.lumin.gui.dropdown.panel.CategoryRailPanel;
 import com.github.lumin.gui.dropdown.panel.ModuleDetailPanel;
 import com.github.lumin.gui.dropdown.panel.ModuleListPanel;
 import com.github.lumin.gui.dropdown.popup.DropdownPopupHost;
+import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 
@@ -41,6 +42,13 @@ public class DropdownInputRouter {
             return false;
         }
         return detailPanel.mouseDragged(event, mouseX, mouseY);
+    }
+
+    public boolean routeCharTyped(CharacterEvent event, DropdownPopupHost popupHost, ModuleDetailPanel detailPanel) {
+        if (popupHost.getActivePopup() != null) {
+            return false;
+        }
+        return detailPanel.charTyped(event);
     }
 
 }

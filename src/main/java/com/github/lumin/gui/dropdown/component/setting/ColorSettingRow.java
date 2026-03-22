@@ -17,10 +17,13 @@ public class ColorSettingRow extends SettingRow<ColorSetting> {
 
     @Override
     public void render(GuiGraphics guiGraphics, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer, DropdownLayout.Rect bounds, float hoverProgress, int mouseX, int mouseY, float partialTick) {
+        float labelScale = 0.68f;
+        float labelY = bounds.y() + (bounds.height() - textRenderer.getHeight(labelScale)) / 2.0f - 1.0f;
         roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), DropdownTheme.CARD_RADIUS, DropdownTheme.lerp(DropdownTheme.SURFACE_CONTAINER, DropdownTheme.SURFACE_CONTAINER_HIGH, hoverProgress));
-        textRenderer.addText(setting.getDisplayName(), bounds.x() + DropdownTheme.ROW_CONTENT_INSET, bounds.y() + 7.0f, 0.68f, DropdownTheme.TEXT_PRIMARY);
+        textRenderer.addText(setting.getDisplayName(), bounds.x() + DropdownTheme.ROW_CONTENT_INSET, labelY, labelScale, DropdownTheme.TEXT_PRIMARY);
         float swatchX = bounds.right() - DropdownTheme.ROW_TRAILING_INSET - 12.0f;
-        roundRectRenderer.addRoundRect(swatchX, bounds.y() + 7.0f, 12.0f, 12.0f, 5.0f, setting.getValue());
-        rectRenderer.addRect(swatchX, bounds.y() + 20.0f, 12.0f, 1.0f, DropdownTheme.OUTLINE_SOFT);
+        float swatchY = bounds.y() + (bounds.height() - 12.0f) / 2.0f;
+        roundRectRenderer.addRoundRect(swatchX, swatchY, 12.0f, 12.0f, 5.0f, setting.getValue());
+        rectRenderer.addRect(swatchX, swatchY + 13.0f, 12.0f, 1.0f, DropdownTheme.OUTLINE_SOFT);
     }
 }

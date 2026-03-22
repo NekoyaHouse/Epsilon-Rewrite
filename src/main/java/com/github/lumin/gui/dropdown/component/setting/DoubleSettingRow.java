@@ -10,6 +10,8 @@ import com.github.lumin.settings.impl.DoubleSetting;
 import com.github.lumin.utils.render.animation.Animation;
 import com.github.lumin.utils.render.animation.Easing;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 
 public class DoubleSettingRow extends SettingRow<DoubleSetting> {
@@ -17,7 +19,11 @@ public class DoubleSettingRow extends SettingRow<DoubleSetting> {
     private final Animation hoverAnimation = new Animation(Easing.EASE_OUT_QUART, 150L);
     private final Animation pressAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
     private final Animation indicatorAnimation = new Animation(Easing.EASE_OUT_QUART, 150L);
+    private final TextRenderer measureTextRenderer = new TextRenderer();
     private boolean dragging;
+    private boolean focused;
+    private String inputBuffer;
+    private int cursorIndex;
 
     public DoubleSettingRow(DoubleSetting setting) {
         super(setting);
@@ -28,6 +34,8 @@ public class DoubleSettingRow extends SettingRow<DoubleSetting> {
 
     @Override
     public void render(GuiGraphics guiGraphics, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer, DropdownLayout.Rect bounds, float hoverProgress, int mouseX, int mouseY, float partialTick) {
+        float labelScale = 0.68f;
+        float labelY = bounds.y() + (bounds.height() - textRenderer.getHeight(labelScale)) / 2.0f - 1.0f;
         hoverAnimation.run(dragging ? 1.0f : hoverProgress);
         pressAnimation.run(dragging ? 1.0f : 0.0f);
         indicatorAnimation.run((dragging || hoverProgress > 0.01f) ? 1.0f : 0.0f);
@@ -37,9 +45,10 @@ public class DoubleSettingRow extends SettingRow<DoubleSetting> {
         float indicatorProgress = indicatorAnimation.getValue();
 
         roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), DropdownTheme.CARD_RADIUS, DropdownTheme.lerp(DropdownTheme.SURFACE_CONTAINER, DropdownTheme.SURFACE_CONTAINER_HIGH, animatedHover));
-        textRenderer.addText(setting.getDisplayName(), bounds.x() + DropdownTheme.ROW_CONTENT_INSET, bounds.y() + 7.0f, 0.68f, DropdownTheme.TEXT_PRIMARY);
+        textRenderer.addText(setting.getDisplayName(), bounds.x() + DropdownTheme.ROW_CONTENT_INSET, labelY, labelScale, DropdownTheme.TEXT_PRIMARY);
 
         DropdownLayout.Rect trackBounds = getTrackBounds(bounds);
+        DropdownLayout.Rect fieldBounds = getFieldBounds(bounds);
         float progress = getProgress();
         float handleWidth = 4.0f - animatedPress * 2.0f;
         float handleHeight = 14.0f;
@@ -73,17 +82,43 @@ public class DoubleSettingRow extends SettingRow<DoubleSetting> {
             float textY = bubbleY + (bubbleHeight - textHeight) / 2.0f - 1.0f;
             textRenderer.addText(label, textX, textY, textScale, DropdownTheme.withAlpha(DropdownTheme.INVERSE_ON_SURFACE, bubbleAlpha));
         }
+
+        roundRectRenderer.addRoundRect(fieldBounds.x(), fieldBounds.y(), fieldBounds.width(), fieldBounds.height(), 7.0f, focused ? DropdownTheme.SURFACE_CONTAINER_HIGHEST : DropdownTheme.SURFACE_CONTAINER_LOW);
+        String display = focused ? getDisplayBuffer() : formatValue();
+        float displayScale = 0.60f;
+        float displayWidth = textRenderer.getWidth(display, displayScale);
+        float displayHeight = textRenderer.getHeight(displayScale);
+        float displayX = fieldBounds.x() + (fieldBounds.width() - displayWidth) / 2.0f;
+        float displayY = fieldBounds.y() + (fieldBounds.height() - displayHeight) / 2.0f - 1.0f;
+        textRenderer.addText(display, displayX, displayY, displayScale, DropdownTheme.TEXT_PRIMARY);
+        if (focused) {
+            float caretX = displayX + textRenderer.getWidth(display.substring(0, Math.min(cursorIndex, display.length())), displayScale);
+            rectRenderer.addRect(caretX, fieldBounds.y() + 4.0f, 1.0f, fieldBounds.height() - 8.0f, DropdownTheme.TEXT_PRIMARY);
+        }
     }
 
     public DropdownLayout.Rect getTrackBounds(DropdownLayout.Rect bounds) {
-        return new DropdownLayout.Rect(bounds.right() - DropdownTheme.ROW_TRAILING_INSET - 128.0f, bounds.y() + 12.0f, 100.0f, 6.0f);
+        return new DropdownLayout.Rect(bounds.right() - DropdownTheme.ROW_TRAILING_INSET - 116.0f, bounds.y() + 12.0f, 72.0f, 6.0f);
+    }
+
+    public DropdownLayout.Rect getFieldBounds(DropdownLayout.Rect bounds) {
+        return new DropdownLayout.Rect(bounds.right() - DropdownTheme.ROW_TRAILING_INSET - 40.0f, bounds.y() + 4.0f, 40.0f, 18.0f);
     }
 
     @Override
     public boolean mouseClicked(DropdownLayout.Rect bounds, MouseButtonEvent event, boolean isDoubleClick) {
+        DropdownLayout.Rect fieldBounds = getFieldBounds(bounds);
+        if (event.button() == 0 && fieldBounds.contains(event.x(), event.y())) {
+            dragging = false;
+            focused = true;
+            inputBuffer = formatPlainValue();
+            cursorIndex = getCursorIndex(event.x(), fieldBounds);
+            return true;
+        }
         if (event.button() != 0 || !getInteractiveBounds(bounds).contains(event.x(), event.y())) {
             return false;
         }
+        focused = false;
         dragging = true;
         updateFromMouse(bounds, event.x());
         return true;
@@ -93,6 +128,80 @@ public class DoubleSettingRow extends SettingRow<DoubleSetting> {
     public boolean mouseReleased(DropdownLayout.Rect bounds, MouseButtonEvent event) {
         dragging = false;
         return false;
+    }
+
+    @Override
+    public boolean keyPressed(KeyEvent event) {
+        if (!focused) {
+            return false;
+        }
+        return switch (event.key()) {
+            case 257, 335 -> {
+                commitInput();
+                focused = false;
+                yield true;
+            }
+            case 256 -> {
+                focused = false;
+                inputBuffer = null;
+                yield true;
+            }
+            case 259 -> {
+                if (inputBuffer != null && cursorIndex > 0) {
+                    inputBuffer = inputBuffer.substring(0, cursorIndex - 1) + inputBuffer.substring(cursorIndex);
+                    cursorIndex--;
+                }
+                yield true;
+            }
+            case 261 -> {
+                if (inputBuffer != null && cursorIndex < inputBuffer.length()) {
+                    inputBuffer = inputBuffer.substring(0, cursorIndex) + inputBuffer.substring(cursorIndex + 1);
+                }
+                yield true;
+            }
+            case 263 -> {
+                cursorIndex = Math.max(0, cursorIndex - 1);
+                yield true;
+            }
+            case 262 -> {
+                cursorIndex = Math.min(getDisplayBuffer().length(), cursorIndex + 1);
+                yield true;
+            }
+            default -> false;
+        };
+    }
+
+    @Override
+    public boolean charTyped(CharacterEvent event) {
+        if (!focused || !event.isAllowedChatCharacter()) {
+            return false;
+        }
+        String value = event.codepointAsString();
+        if (!value.matches("[0-9.-]")) {
+            return false;
+        }
+        String current = getDisplayBuffer();
+        inputBuffer = current.substring(0, cursorIndex) + value + current.substring(cursorIndex);
+        cursorIndex++;
+        return true;
+    }
+
+    @Override
+    public void setFocused(boolean focused) {
+        if (!focused && this.focused) {
+            commitInput();
+            inputBuffer = null;
+        }
+        this.focused = focused;
+        if (focused && inputBuffer == null) {
+            inputBuffer = formatPlainValue();
+            cursorIndex = inputBuffer.length();
+        }
+    }
+
+    @Override
+    public boolean isFocused() {
+        return focused;
     }
 
     public void updateFromMouse(DropdownLayout.Rect bounds, double mouseX) {
@@ -147,6 +256,42 @@ public class DoubleSettingRow extends SettingRow<DoubleSetting> {
             label += "%";
         }
         return label;
+    }
+
+    private String formatPlainValue() {
+        return Math.abs(setting.getValue() - Math.round(setting.getValue())) < 0.0001 ? Integer.toString((int) Math.round(setting.getValue())) : String.format("%.2f", setting.getValue());
+    }
+
+    private String getDisplayBuffer() {
+        return inputBuffer == null ? formatPlainValue() : inputBuffer;
+    }
+
+    private void commitInput() {
+        if (inputBuffer == null || inputBuffer.isBlank() || "-".equals(inputBuffer) || ".".equals(inputBuffer)) {
+            inputBuffer = formatPlainValue();
+            cursorIndex = inputBuffer.length();
+            return;
+        }
+        try {
+            setting.setValue(Double.parseDouble(inputBuffer));
+        } catch (NumberFormatException ignored) {
+        }
+        inputBuffer = formatPlainValue();
+        cursorIndex = inputBuffer.length();
+    }
+
+    private int getCursorIndex(double mouseX, DropdownLayout.Rect fieldBounds) {
+        String text = getDisplayBuffer();
+        float scale = 0.60f;
+        float textWidth = measureTextRenderer.getWidth(text, scale);
+        float textStart = fieldBounds.x() + (fieldBounds.width() - textWidth) / 2.0f;
+        for (int i = 0; i <= text.length(); i++) {
+            float width = measureTextRenderer.getWidth(text.substring(0, i), scale);
+            if (mouseX <= textStart + width) {
+                return i;
+            }
+        }
+        return text.length();
     }
 
 }

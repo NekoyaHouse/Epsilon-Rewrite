@@ -6,6 +6,8 @@ import com.github.lumin.graphics.renderers.TextRenderer;
 import com.github.lumin.gui.dropdown.DropdownLayout;
 import com.github.lumin.settings.Setting;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 
 public abstract class SettingRow<T extends Setting<?>> {
@@ -36,6 +38,21 @@ public abstract class SettingRow<T extends Setting<?>> {
     }
 
     public boolean mouseScrolled(DropdownLayout.Rect bounds, double mouseX, double mouseY, double scrollX, double scrollY) {
+        return false;
+    }
+
+    public boolean keyPressed(KeyEvent event) {
+        return false;
+    }
+
+    public boolean charTyped(CharacterEvent event) {
+        return false;
+    }
+
+    public void setFocused(boolean focused) {
+    }
+
+    public boolean isFocused() {
         return false;
     }
 
