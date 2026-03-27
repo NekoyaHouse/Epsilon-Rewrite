@@ -1,0 +1,46 @@
+package com.github.epsilon;
+
+import com.github.epsilon.assets.i18n.I18NFileGenerator;
+import com.github.epsilon.managers.ConfigManager;
+import com.github.epsilon.managers.ModuleManager;
+import com.mojang.logging.LogUtils;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import org.slf4j.Logger;
+
+@Mod(value = Epsilon.MODID, dist = Dist.CLIENT)
+@EventBusSubscriber(modid = Epsilon.MODID, value = Dist.CLIENT)
+public class Epsilon {
+
+    public static final String MODID = "epsilon_rewrite";
+    public static String VERSION = "Loading ...";
+    public static final Logger LOGGER = LogUtils.getLogger();
+
+    public static int skipTicks;
+
+    @SubscribeEvent
+    private static void onClientSetup(FMLClientSetupEvent event) {
+        LOGGER.info("Welcome to Epsilon, Meow~");
+
+        VERSION = event.getContainer().getModInfo().getVersion().toString();
+
+        // 初始化 Managers
+        ModuleManager.INSTANCE.initModules();
+        ConfigManager.INSTANCE.initConfig();
+
+        // 生成空的 i18n 文件
+        I18NFileGenerator.generate("epsilon-config/empty-i18n.json");
+
+        // 添加一个退出游戏时候的钩子
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            ConfigManager.INSTANCE.saveNow();
+            Epsilon.LOGGER.info("お兄ちゃん、私はあなたを一番愛しています~");
+        }));
+
+        Epsilon.LOGGER.info("Epsilon has loaded successfully, Meow~");
+    }
+
+}

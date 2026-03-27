@@ -1,0 +1,67 @@
+package com.github.epsilon.assets.i18n;
+
+import com.github.epsilon.managers.ModuleManager;
+import com.github.epsilon.modules.Category;
+import com.github.epsilon.modules.Module;
+import com.github.epsilon.settings.Setting;
+import com.github.epsilon.settings.impl.EnumSetting;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
+public class I18NFileGenerator {
+
+    public static void generate(String filePath) {
+        JsonObject root = new JsonObject();
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+        for (Category category : Category.values()) {
+            String catKey = "lumin.categories." + category.toString().toLowerCase();
+            root.addProperty(catKey, "");
+        }
+
+        root.addProperty("lumin.keybind.none", "");
+        root.addProperty("lumin.keybind.toggle", "");
+        root.addProperty("lumin.keybind.hold", "");
+
+        root.addProperty("lumin.gui.search", "");
+        root.addProperty("lumin.gui.gameaccount", "");
+
+        for (Module module : ModuleManager.INSTANCE.getModules()) {
+            String modulePrefix = "modules." + module.getName().toLowerCase();
+            root.addProperty("lumin." + modulePrefix, "");
+
+            for (Setting<?> setting : module.getSettings()) {
+                String settingKey = "lumin." + modulePrefix + "." + setting.getName().toLowerCase();
+                root.addProperty(settingKey, "");
+
+                if (setting instanceof EnumSetting<?> enumSetting) {
+                    for (final var mode : enumSetting.getModes()) {
+                        root.addProperty(settingKey + "." + mode.toString().toLowerCase(), "");
+                    }
+                }
+            }
+        }
+
+        final var file = new File(filePath);
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        try (FileWriter writer = new FileWriter(filePath)) {
+            gson.toJson(root, writer);
+            System.out.println("I18N file generated successfully at: " + filePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+}
