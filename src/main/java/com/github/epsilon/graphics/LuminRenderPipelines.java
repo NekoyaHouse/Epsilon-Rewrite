@@ -12,11 +12,11 @@ import net.neoforged.neoforge.client.event.RegisterRenderPipelinesEvent;
 
 
 public class LuminRenderPipelines {
-    
+
     private final static RenderPipeline.Snippet NO_BLEND_DEPTH_SNIPPET = RenderPipeline.builder(RenderPipelines.MATRICES_PROJECTION_SNIPPET)
             .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
             .buildSnippet();
-    
+
     public final static RenderPipeline RECTANGLE = RenderPipeline.builder(NO_BLEND_DEPTH_SNIPPET)
             .withLocation(ResourceLocationUtils.getIdentifier("pipelines/rectangle"))
             .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS)

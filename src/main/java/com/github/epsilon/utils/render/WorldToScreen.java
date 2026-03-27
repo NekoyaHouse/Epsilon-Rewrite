@@ -47,9 +47,9 @@ public final class WorldToScreen {
 
         for (int i = 0; i < 8; i++) {
             Vector3f point = new Vector3f(
-                    (i & 1) == 0 ? (float)boundingBox.minX : (float)boundingBox.maxX,
-                    (i & 2) == 0 ? (float)boundingBox.minY : (float)boundingBox.maxY,
-                    (i & 4) == 0 ? (float)boundingBox.minZ : (float)boundingBox.maxZ
+                    (i & 1) == 0 ? (float) boundingBox.minX : (float) boundingBox.maxX,
+                    (i & 2) == 0 ? (float) boundingBox.minY : (float) boundingBox.maxY,
+                    (i & 4) == 0 ? (float) boundingBox.minZ : (float) boundingBox.maxZ
             );
 
             matrix.project(point, viewport, out);

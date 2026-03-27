@@ -17,6 +17,7 @@ public class Epsilon {
 
     public static final String MODID = "epsilon_rewrite";
     public static String VERSION = "Loading ...";
+
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public static int skipTicks;

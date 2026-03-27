@@ -4,6 +4,7 @@ import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.ShadowRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
+import com.github.epsilon.graphics.shaders.BlurShader;
 import com.github.epsilon.gui.panel.input.PanelInputRouter;
 import com.github.epsilon.gui.panel.panel.CategoryRailPanel;
 import com.github.epsilon.gui.panel.panel.ModuleDetailPanel;
@@ -49,10 +50,6 @@ public class PanelScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
-    }
-
-    @Override
-    public void extractBackground(@NonNull GuiGraphicsExtractor GuiGraphicsExtractor, int mouseX, int mouseY, float partialTick) {
     }
 
     @Override
@@ -110,9 +107,9 @@ public class PanelScreen extends Screen {
     }
 
     private void drawChrome(PanelLayout.Layout layout) {
-        if (ClickGui.INSTANCE.shouldBlur()) {
-            // 我感觉blur没必要好吧因为几乎看不到捏
-            //BlurShader.INSTANCE.drawBlur(layout.panel().x(), layout.panel().y(), layout.panel().width(), layout.panel().height(), MD3Theme.PANEL_RADIUS, clickGui.getBlurStrength());
+        ClickGui clickGui = ClickGui.INSTANCE;
+        if (clickGui.shouldBlur()) {
+            BlurShader.INSTANCE.drawBlur(layout.panel().x(), layout.panel().y(), layout.panel().width(), layout.panel().height(), MD3Theme.PANEL_RADIUS, 10.0f);
         }
 
         shadowRenderer.addShadow(layout.panel().x(), layout.panel().y(), layout.panel().width(), layout.panel().height(), MD3Theme.PANEL_RADIUS, 18.0f, MD3Theme.SHADOW);

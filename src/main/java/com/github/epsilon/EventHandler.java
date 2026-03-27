@@ -6,15 +6,14 @@ import com.github.epsilon.graphics.LuminRenderPipelines;
 import com.github.epsilon.managers.ModuleManager;
 import com.github.epsilon.managers.RenderManager;
 import net.minecraft.client.Minecraft;
-
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RegisterRenderPipelinesEvent;
-import org.lwjgl.glfw.GLFW;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
+import org.lwjgl.glfw.GLFW;
 
 @EventBusSubscriber(modid = Epsilon.MODID, value = Dist.CLIENT)
 public class EventHandler {

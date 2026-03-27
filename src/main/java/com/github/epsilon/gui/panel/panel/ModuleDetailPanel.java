@@ -5,9 +5,9 @@ import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.ShadowRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.graphics.text.StaticFontLoader;
+import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
 import com.github.epsilon.gui.panel.PanelState;
-import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.adapter.SettingViewFactory;
 import com.github.epsilon.gui.panel.component.SettingRow;
 import com.github.epsilon.gui.panel.component.setting.ColorSettingRow;
@@ -15,8 +15,8 @@ import com.github.epsilon.gui.panel.component.setting.DoubleSettingRow;
 import com.github.epsilon.gui.panel.component.setting.EnumSettingRow;
 import com.github.epsilon.gui.panel.component.setting.IntSettingRow;
 import com.github.epsilon.gui.panel.popup.ColorPickerPopup;
-import com.github.epsilon.gui.panel.popup.PanelPopupHost;
 import com.github.epsilon.gui.panel.popup.EnumSelectPopup;
+import com.github.epsilon.gui.panel.popup.PanelPopupHost;
 import com.github.epsilon.gui.panel.util.PanelScissor;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.settings.Setting;
@@ -29,11 +29,8 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 public class ModuleDetailPanel {
 

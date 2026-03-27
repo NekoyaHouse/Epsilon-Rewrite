@@ -5,9 +5,9 @@ import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.ShadowRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.graphics.text.StaticFontLoader;
+import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
 import com.github.epsilon.gui.panel.PanelState;
-import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.adapter.ModuleViewModel;
 import com.github.epsilon.gui.panel.component.ModuleRow;
 import com.github.epsilon.gui.panel.util.PanelScissor;
@@ -20,11 +20,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.language.I18n;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public class ModuleListPanel {
 

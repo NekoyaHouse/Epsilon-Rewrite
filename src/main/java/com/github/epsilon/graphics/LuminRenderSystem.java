@@ -27,8 +27,8 @@ public class LuminRenderSystem {
 
         guiOrthoProjection
                 .setupOrtho(-1000.0F, 1000.0F,
-                        (float)windowState.width / windowState.guiScale,
-                        (float)windowState.height / windowState.guiScale,
+                        (float) windowState.width / windowState.guiScale,
+                        (float) windowState.height / windowState.guiScale,
                         true
                 );
         RenderSystem.setProjectionMatrix(

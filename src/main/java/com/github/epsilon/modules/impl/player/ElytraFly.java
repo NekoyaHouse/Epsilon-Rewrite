@@ -245,7 +245,8 @@ public class ElytraFly extends Module {
                 mc.player.setPos(armoredFreezePos.x, armoredFreezePos.y, armoredFreezePos.z);
             }
             case Timer -> mc.player.setDeltaMovement(0.0, mc.player.getDeltaMovement().y * 0.9, 0.0);
-            case Tick -> mc.player.setDeltaMovement(mc.player.getDeltaMovement().x * 0.5, mc.player.getDeltaMovement().y * 0.9, mc.player.getDeltaMovement().z * 0.5);
+            case Tick ->
+                    mc.player.setDeltaMovement(mc.player.getDeltaMovement().x * 0.5, mc.player.getDeltaMovement().y * 0.9, mc.player.getDeltaMovement().z * 0.5);
         }
     }
 
