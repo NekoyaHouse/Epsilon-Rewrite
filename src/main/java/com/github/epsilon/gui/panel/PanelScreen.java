@@ -24,6 +24,7 @@ public class PanelScreen extends Screen {
     public static final PanelScreen INSTANCE = new PanelScreen();
 
     private final PanelState state = new PanelState();
+    private final PanelDirtyState dirtyState = new PanelDirtyState();
     private final TextRenderer textRenderer = new TextRenderer();
     private final RectRenderer backgroundRectRenderer = new RectRenderer();
     private final RectRenderer rectRenderer = new RectRenderer();
@@ -34,6 +35,12 @@ public class PanelScreen extends Screen {
     private final CategoryRailPanel categoryRailPanel = new CategoryRailPanel(state, rectRenderer, roundRectRenderer, textRenderer);
     private final ModuleListPanel moduleListPanel = new ModuleListPanel(state, roundRectRenderer, rectRenderer, shadowRenderer, textRenderer);
     private final ModuleDetailPanel moduleDetailPanel = new ModuleDetailPanel(state, roundRectRenderer, rectRenderer, shadowRenderer, textRenderer, popupHost);
+    private int lastWidth = -1;
+    private int lastHeight = -1;
+    private String lastSelectedCategory = "";
+    private String lastSelectedModule = "";
+    private String lastSearchQuery = "";
+    private boolean lastSidebarExpanded;
 
     private PanelScreen() {
         super(Component.literal("PanelGui"));
@@ -50,6 +57,39 @@ public class PanelScreen extends Screen {
 
     @Override
     public void extractRenderState(@NonNull GuiGraphicsExtractor GuiGraphicsExtractor, int mouseX, int mouseY, float partialTick) {
+        String currentCategory = state.getSelectedCategory().name();
+        String currentModule = state.getSelectedModule() == null ? "" : state.getSelectedModule().getName();
+        String currentQuery = state.getSearchQuery();
+        boolean sidebarExpanded = state.isSidebarExpanded();
+        if (!lastSelectedCategory.equals(currentCategory)
+                || !lastSelectedModule.equals(currentModule)
+                || !lastSearchQuery.equals(currentQuery)
+                || lastSidebarExpanded != sidebarExpanded) {
+            dirtyState.markAllDirty();
+            lastSelectedCategory = currentCategory;
+            lastSelectedModule = currentModule;
+            lastSearchQuery = currentQuery;
+            lastSidebarExpanded = sidebarExpanded;
+        }
+
+        if (categoryRailPanel.hasActiveAnimations() || moduleListPanel.hasActiveAnimations() || moduleDetailPanel.hasActiveAnimations()) {
+            // Keep rebuilding cached sections while animations are still interpolating.
+            dirtyState.markAllDirty();
+        }
+
+        if (width != lastWidth || height != lastHeight) {
+            dirtyState.markLayoutDirty();
+            lastWidth = width;
+            lastHeight = height;
+        }
+
+        if (dirtyState.consumeModuleListDirty()) {
+            moduleListPanel.markDirty();
+        }
+        if (dirtyState.consumeDetailDirty()) {
+            moduleDetailPanel.markDirty();
+        }
+
         MD3Theme.syncFromSettings();
         float railWidth = categoryRailPanel.getAnimatedWidth();
         PanelLayout.Layout layout = PanelLayout.compute(width, height, railWidth);
@@ -113,15 +153,21 @@ public class PanelScreen extends Screen {
             return true;
         }
         moduleListPanel.handleGlobalClick(mouseX, mouseY);
-        return inputRouter.routeMouseClicked(event, isDoubleClick, popupHost, moduleDetailPanel, moduleListPanel, categoryRailPanel) || super.mouseClicked(event, isDoubleClick);
+        boolean handled = inputRouter.routeMouseClicked(event, isDoubleClick, popupHost, moduleDetailPanel, moduleListPanel, categoryRailPanel);
+        if (handled) {
+            dirtyState.markAllDirty();
+        }
+        return handled || super.mouseClicked(event, isDoubleClick);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (moduleListPanel.mouseScrolled(mouseX, mouseY, scrollX, scrollY)) {
+            dirtyState.markModuleListDirty();
             return true;
         }
         if (moduleDetailPanel.mouseScrolled(mouseX, mouseY, scrollX, scrollY)) {
+            dirtyState.markDetailDirty();
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
@@ -130,6 +176,7 @@ public class PanelScreen extends Screen {
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
         if (inputRouter.routeMouseReleased(event, popupHost, moduleDetailPanel)) {
+            dirtyState.markDetailDirty();
             return true;
         }
         return super.mouseReleased(event);
@@ -138,6 +185,7 @@ public class PanelScreen extends Screen {
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double mouseX, double mouseY) {
         if (inputRouter.routeMouseDragged(event, mouseX, mouseY, popupHost, moduleDetailPanel)) {
+            dirtyState.markDetailDirty();
             return true;
         }
         return super.mouseDragged(event, mouseX, mouseY);
@@ -150,6 +198,7 @@ public class PanelScreen extends Screen {
             return true;
         }
         if (inputRouter.routeKeyPressed(event, popupHost, moduleDetailPanel, moduleListPanel)) {
+            dirtyState.markAllDirty();
             return true;
         }
         return super.keyPressed(event);
@@ -158,6 +207,7 @@ public class PanelScreen extends Screen {
     @Override
     public boolean charTyped(CharacterEvent event) {
         if (inputRouter.routeCharTyped(event, popupHost, moduleDetailPanel, moduleListPanel)) {
+            dirtyState.markAllDirty();
             return true;
         }
         return super.charTyped(event);

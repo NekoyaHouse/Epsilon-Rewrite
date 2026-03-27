@@ -56,4 +56,8 @@ public abstract class SettingRow<T extends Setting<?>> {
         return false;
     }
 
+    public boolean hasActiveAnimation() {
+        return false;
+    }
+
 }

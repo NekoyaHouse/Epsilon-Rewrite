@@ -216,6 +216,11 @@ public class IntSettingRow extends SettingRow<IntSetting> {
         return focused;
     }
 
+    @Override
+    public boolean hasActiveAnimation() {
+        return !hoverAnimation.isFinished() || !pressAnimation.isFinished() || !indicatorAnimation.isFinished();
+    }
+
     public void updateFromMouse(PanelLayout.Rect bounds, double mouseX) {
         PanelLayout.Rect trackBounds = getTrackBounds(bounds);
         double progress = (mouseX - trackBounds.x()) / trackBounds.width();

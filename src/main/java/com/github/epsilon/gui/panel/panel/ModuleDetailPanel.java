@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class ModuleDetailPanel {
 
@@ -54,6 +55,15 @@ public class ModuleDetailPanel {
     private final Map<Setting<?>, SettingRow<?>> rowCache = new HashMap<>();
     private SettingEntry draggingSliderEntry;
     private boolean contentPending;
+    private boolean contentDirty = true;
+    private int lastMouseX = Integer.MIN_VALUE;
+    private int lastMouseY = Integer.MIN_VALUE;
+    private float lastDetailScroll = Float.NaN;
+    private String lastModuleKey = "";
+    private int lastGuiHeight = -1;
+    private PanelLayout.Rect lastBounds;
+    private List<String> lastVisibleSettings = List.of();
+    private boolean hasActiveContentAnimations;
     private final Animation bindModeAnimation = new Animation(Easing.EASE_OUT_CUBIC, 180L);
     private final Animation bindModeHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
     private final Animation keybindHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
@@ -81,7 +91,6 @@ public class ModuleDetailPanel {
     public void render(GuiGraphicsExtractor GuiGraphicsExtractor, PanelLayout.Rect bounds, int mouseX, int mouseY, float partialTick) {
         this.bounds = bounds;
         this.guiHeight = GuiGraphicsExtractor.guiHeight();
-        settingEntries.clear();
         boolean popupConsumesHover = popupHost.getActivePopup() != null && popupHost.getActivePopup().getBounds().contains(mouseX, mouseY);
         int effectiveMouseX = popupConsumesHover ? Integer.MIN_VALUE : mouseX;
         int effectiveMouseY = popupConsumesHover ? Integer.MIN_VALUE : mouseY;
@@ -118,20 +127,34 @@ public class ModuleDetailPanel {
         float contentHeight = settings.size() * (28.0f + MD3Theme.ROW_GAP);
         state.setMaxDetailScroll(contentHeight - viewport.height());
 
-        PanelScissor.apply(viewport, contentRectRenderer, contentRoundRectRenderer, contentShadowRenderer, contentTextRenderer, guiHeight);
-        float y = viewport.y() - state.getDetailScroll();
-        for (Setting<?> setting : settings) {
-            SettingRow<?> row = rowCache.computeIfAbsent(setting, SettingViewFactory::create);
-            if (row == null) {
-                continue;
+        if (shouldRebuildContent(bounds, mouseX, mouseY, module, settings, GuiGraphicsExtractor.guiHeight())) {
+            settingEntries.clear();
+            contentRoundRectRenderer.clear();
+            contentRectRenderer.clear();
+            contentShadowRenderer.clear();
+            contentTextRenderer.clear();
+            hasActiveContentAnimations = false;
+
+            float y = viewport.y() - state.getDetailScroll();
+            for (Setting<?> setting : settings) {
+                SettingRow<?> row = rowCache.computeIfAbsent(setting, SettingViewFactory::create);
+                if (row == null) {
+                    continue;
+                }
+                PanelLayout.Rect rowBounds = new PanelLayout.Rect(viewport.x(), y, viewport.width(), row.getHeight());
+                settingEntries.add(new SettingEntry(row, rowBounds));
+                Animation hoverAnimation = hoverAnimations.computeIfAbsent(setting, ignored -> new Animation(Easing.EASE_OUT_CUBIC, 120L));
+                hoverAnimation.run(rowBounds.contains(effectiveMouseX, effectiveMouseY) ? 1.0f : 0.0f);
+                row.render(GuiGraphicsExtractor, contentRoundRectRenderer, contentRectRenderer, contentTextRenderer, rowBounds, hoverAnimation.getValue(), effectiveMouseX, effectiveMouseY, partialTick);
+                hasActiveContentAnimations = hasActiveContentAnimations || !hoverAnimation.isFinished() || row.hasActiveAnimation();
+                y += row.getHeight() + MD3Theme.ROW_GAP;
             }
-            PanelLayout.Rect rowBounds = new PanelLayout.Rect(viewport.x(), y, viewport.width(), row.getHeight());
-            settingEntries.add(new SettingEntry(row, rowBounds));
-            Animation hoverAnimation = hoverAnimations.computeIfAbsent(setting, ignored -> new Animation(Easing.EASE_OUT_CUBIC, 120L));
-            hoverAnimation.run(rowBounds.contains(effectiveMouseX, effectiveMouseY) ? 1.0f : 0.0f);
-            row.render(GuiGraphicsExtractor, contentRoundRectRenderer, contentRectRenderer, contentTextRenderer, rowBounds, hoverAnimation.getValue(), effectiveMouseX, effectiveMouseY, partialTick);
-            y += row.getHeight() + MD3Theme.ROW_GAP;
+
+            rememberSnapshot(bounds, mouseX, mouseY, module, settings, GuiGraphicsExtractor.guiHeight());
+            contentDirty = false;
         }
+
+        PanelScissor.apply(viewport, contentRectRenderer, contentRoundRectRenderer, contentShadowRenderer, contentTextRenderer, guiHeight);
         contentPending = true;
     }
 
@@ -147,21 +170,25 @@ public class ModuleDetailPanel {
         PanelLayout.Rect moduleToggleBounds = getModuleToggleBounds();
         if (moduleToggleBounds.contains(event.x(), event.y())) {
             module.toggle();
+            markDirty();
             return true;
         }
 
         PanelLayout.Rect keybindBounds = getKeybindBounds();
         if (keybindBounds.contains(event.x(), event.y())) {
             state.setListeningKeyBindModule(module);
+            markDirty();
             return true;
         } else if (state.getListeningKeyBindModule() == module) {
             state.setListeningKeyBindModule(null);
+            markDirty();
         }
 
         PanelLayout.Rect bindModeBounds = getBindModeBounds();
         if (bindModeBounds.contains(event.x(), event.y())) {
             float midpoint = bindModeBounds.centerX();
             module.setBindMode(event.x() < midpoint ? Module.BindMode.Toggle : Module.BindMode.Hold);
+            markDirty();
             return true;
         }
 
@@ -174,6 +201,7 @@ public class ModuleDetailPanel {
                 } else {
                     draggingSliderEntry = null;
                 }
+                markDirty();
                 return true;
             }
             if (entry.row instanceof DoubleSettingRow doubleRow && doubleRow.mouseClicked(entry.bounds, event, isDoubleClick)) {
@@ -183,17 +211,21 @@ public class ModuleDetailPanel {
                 } else {
                     draggingSliderEntry = null;
                 }
+                markDirty();
                 return true;
             }
             if (entry.row instanceof EnumSettingRow enumRow && entry.row.mouseClicked(entry.bounds, event, isDoubleClick)) {
                 popupHost.open(createEnumPopup(enumRow, entry.bounds));
+                markDirty();
                 return true;
             }
             if (entry.row instanceof ColorSettingRow colorRow && entry.row.mouseClicked(entry.bounds, event, isDoubleClick)) {
                 popupHost.open(createColorPopup(colorRow, entry.bounds));
+                markDirty();
                 return true;
             }
             if (entry.row.mouseClicked(entry.bounds, event, isDoubleClick)) {
+                markDirty();
                 return true;
             }
         }
@@ -205,6 +237,7 @@ public class ModuleDetailPanel {
             draggingSliderEntry.row.mouseReleased(draggingSliderEntry.bounds, event);
         }
         draggingSliderEntry = null;
+        markDirty();
         return false;
     }
 
@@ -215,10 +248,12 @@ public class ModuleDetailPanel {
         double currentMouseX = event.x();
         if (draggingSliderEntry.row instanceof IntSettingRow intRow) {
             intRow.updateFromMouse(draggingSliderEntry.bounds, currentMouseX);
+            markDirty();
             return true;
         }
         if (draggingSliderEntry.row instanceof DoubleSettingRow doubleRow) {
             doubleRow.updateFromMouse(draggingSliderEntry.bounds, currentMouseX);
+            markDirty();
             return true;
         }
         return false;
@@ -228,6 +263,7 @@ public class ModuleDetailPanel {
         PanelLayout.Rect viewport = getViewport();
         if (bounds != null && viewport.contains(mouseX, mouseY)) {
             state.scrollDetail(-scrollY * 20.0f);
+            markDirty();
             return true;
         }
         return false;
@@ -238,19 +274,23 @@ public class ModuleDetailPanel {
         if (module != null && state.getListeningKeyBindModule() == module) {
             if (event.key() == 256) {
                 state.setListeningKeyBindModule(null);
+                markDirty();
                 return true;
             }
             if (event.key() == 259 || event.key() == 261) {
                 module.setKeyBind(-1);
                 state.setListeningKeyBindModule(null);
+                markDirty();
                 return true;
             }
             module.setKeyBind(event.key());
             state.setListeningKeyBindModule(null);
+            markDirty();
             return true;
         }
         for (SettingEntry entry : settingEntries) {
             if (entry.row.keyPressed(event)) {
+                markDirty();
                 return true;
             }
         }
@@ -260,6 +300,7 @@ public class ModuleDetailPanel {
     public boolean charTyped(CharacterEvent event) {
         for (SettingEntry entry : settingEntries) {
             if (entry.row.charTyped(event)) {
+                markDirty();
                 return true;
             }
         }
@@ -449,18 +490,76 @@ public class ModuleDetailPanel {
         if (!contentPending) {
             return;
         }
-        contentShadowRenderer.drawAndClear();
-        contentRoundRectRenderer.drawAndClear();
-        contentRectRenderer.drawAndClear();
-        contentTextRenderer.drawAndClear();
+        contentShadowRenderer.draw();
+        contentRoundRectRenderer.draw();
+        contentRectRenderer.draw();
+        contentTextRenderer.draw();
         PanelScissor.clear(contentRectRenderer, contentRoundRectRenderer, contentShadowRenderer, contentTextRenderer);
         contentPending = false;
+    }
+
+    public void markDirty() {
+        contentDirty = true;
+    }
+
+    public boolean hasActiveAnimations() {
+        return hasActiveContentAnimations
+                || !moduleToggleAnimation.isFinished()
+                || !moduleToggleHoverAnimation.isFinished()
+                || !moduleToggleHandleSizeAnimation.isFinished()
+                || !keybindHoverAnimation.isFinished()
+                || !keybindFocusAnimation.isFinished()
+                || !bindModeAnimation.isFinished()
+                || !bindModeHoverAnimation.isFinished();
     }
 
     private void clearRowFocus() {
         for (SettingRow<?> row : rowCache.values()) {
             row.setFocused(false);
         }
+    }
+
+    private boolean shouldRebuildContent(PanelLayout.Rect bounds, int mouseX, int mouseY, Module module, List<Setting<?>> settings, int currentGuiHeight) {
+        if (contentDirty) {
+            return true;
+        }
+        if (hasActiveContentAnimations) {
+            return true;
+        }
+        if (lastBounds == null || !sameRect(lastBounds, bounds)) {
+            return true;
+        }
+        if (lastGuiHeight != currentGuiHeight) {
+            return true;
+        }
+        if (lastMouseX != mouseX || lastMouseY != mouseY) {
+            return true;
+        }
+        if (Float.compare(lastDetailScroll, state.getDetailScroll()) != 0) {
+            return true;
+        }
+        if (!Objects.equals(lastModuleKey, module.getName() + ":" + module.isEnabled() + ":" + module.getBindMode() + ":" + module.getKeyBind())) {
+            return true;
+        }
+        List<String> visibleSettings = settings.stream().map(Setting::getName).toList();
+        return !Objects.equals(lastVisibleSettings, visibleSettings);
+    }
+
+    private void rememberSnapshot(PanelLayout.Rect bounds, int mouseX, int mouseY, Module module, List<Setting<?>> settings, int currentGuiHeight) {
+        lastBounds = bounds;
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+        lastDetailScroll = state.getDetailScroll();
+        lastModuleKey = module.getName() + ":" + module.isEnabled() + ":" + module.getBindMode() + ":" + module.getKeyBind();
+        lastVisibleSettings = settings.stream().map(Setting::getName).toList();
+        lastGuiHeight = currentGuiHeight;
+    }
+
+    private boolean sameRect(PanelLayout.Rect a, PanelLayout.Rect b) {
+        return Float.compare(a.x(), b.x()) == 0
+                && Float.compare(a.y(), b.y()) == 0
+                && Float.compare(a.width(), b.width()) == 0
+                && Float.compare(a.height(), b.height()) == 0;
     }
 
 }

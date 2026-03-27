@@ -20,6 +20,9 @@ import java.awt.*;
 
 public class CategoryRailPanel {
 
+    private static final float CATEGORY_ITEM_HEIGHT = 34.0f;
+    private static final float CATEGORY_ITEM_SPACING = 38.0f;
+
     protected final PanelState state;
     private final RectRenderer rectRenderer;
     private final RoundRectRenderer roundRectRenderer;
@@ -80,6 +83,7 @@ public class CategoryRailPanel {
         float titleProgress = headerTitleAnimation.getValue();
         float subtitleProgress = headerSubtitleAnimation.getValue();
         float dividerProgress = headerDividerAnimation.getValue();
+        float categoryStartY = getCategoryStartY(bounds, progress, titleScale, subtitleScale);
         if (titleProgress > 0.02f) {
             Color brandColor = MD3Theme.withAlpha(MD3Theme.TEXT_PRIMARY, (int) (255 * titleProgress));
             Color subColor = MD3Theme.withAlpha(MD3Theme.TEXT_SECONDARY, (int) (210 * subtitleProgress));
@@ -105,15 +109,15 @@ public class CategoryRailPanel {
             }
         }
 
-        float selectedItemY = bounds.y() + 40.0f;
-        float selectedItemHeight = progress > 0.35f ? 34.0f : 32.0f;
-        float lookupY = bounds.y() + 40.0f;
+        float selectedItemY = categoryStartY;
+        float selectedItemHeight = CATEGORY_ITEM_HEIGHT;
+        float lookupY = categoryStartY;
         for (Category category : Category.values()) {
             if (state.getSelectedCategory() == category) {
                 selectedItemY = lookupY;
                 break;
             }
-            lookupY += progress > 0.35f ? 38.0f : 36.0f;
+            lookupY += CATEGORY_ITEM_SPACING;
         }
 
         selectionYAnimation.run(selectedItemY);
@@ -122,9 +126,9 @@ public class CategoryRailPanel {
         float animatedSelectionHeight = selectionHeightAnimation.getValue();
         roundRectRenderer.addRoundRect(bounds.x() + 5.0f, animatedSelectionY, bounds.width() - 10.0f, animatedSelectionHeight, MD3Theme.CARD_RADIUS, MD3Theme.SECONDARY_CONTAINER);
 
-        float itemY = bounds.y() + 40.0f;
+        float itemY = categoryStartY;
         for (Category category : Category.values()) {
-            float itemHeight = progress > 0.35f ? 34.0f : 32.0f;
+            float itemHeight = CATEGORY_ITEM_HEIGHT;
             PanelLayout.Rect itemRect = new PanelLayout.Rect(bounds.x() + 5.0f, itemY, bounds.width() - 10.0f, itemHeight);
             boolean hovered = itemRect.contains(mouseX, mouseY);
             boolean selected = state.getSelectedCategory() == category;
@@ -155,7 +159,7 @@ public class CategoryRailPanel {
                 clippedTextRenderer.addText(Integer.toString(count), itemRect.right() - 12.0f - countWidth, countY, itemCountScale, animatedCount);
             }
 
-            itemY += progress > 0.35f ? 38.0f : 36.0f;
+            itemY += CATEGORY_ITEM_SPACING;
         }
 
         clippedTextPending = true;
@@ -180,14 +184,14 @@ public class CategoryRailPanel {
         }
 
         float progress = Math.max(0.0f, Math.min(1.0f, (getAnimatedWidth() - MD3Theme.RAIL_COLLAPSED_WIDTH) / (MD3Theme.RAIL_EXPANDED_WIDTH - MD3Theme.RAIL_COLLAPSED_WIDTH)));
-        float itemY = bounds.y() + 40.0f;
+        float itemY = getCategoryStartY(bounds, progress, 0.78f, 0.52f);
         for (Category category : Category.values()) {
-            PanelLayout.Rect itemRect = new PanelLayout.Rect(bounds.x() + 5.0f, itemY, bounds.width() - 10.0f, progress > 0.35f ? 34.0f : 32.0f);
+            PanelLayout.Rect itemRect = new PanelLayout.Rect(bounds.x() + 5.0f, itemY, bounds.width() - 10.0f, CATEGORY_ITEM_HEIGHT);
             if (itemRect.contains(event.x(), event.y())) {
                 state.setSelectedCategory(category);
                 return true;
             }
-            itemY += progress > 0.35f ? 38.0f : 36.0f;
+            itemY += CATEGORY_ITEM_SPACING;
         }
         return false;
     }
@@ -196,8 +200,29 @@ public class CategoryRailPanel {
         return new PanelLayout.Rect(bounds.x() + 4.0f, bounds.y() + 4.0f, 28.0f, 28.0f);
     }
 
+    public boolean hasActiveAnimations() {
+        return !expandAnimation.isFinished()
+                || !contentAnimation.isFinished()
+                || !menuHoverAnimation.isFinished()
+                || !headerTitleAnimation.isFinished()
+                || !headerSubtitleAnimation.isFinished()
+                || !headerDividerAnimation.isFinished()
+                || !selectionYAnimation.isFinished()
+                || !selectionHeightAnimation.isFinished();
+    }
+
     private boolean mouseOver(PanelLayout.Rect rect, int mouseX, int mouseY) {
         return rect.contains(mouseX, mouseY);
+    }
+
+    private float getCategoryStartY(PanelLayout.Rect bounds, float progress, float titleScale, float subtitleScale) {
+        float collapsedStart = bounds.y() + 40.0f;
+        float titleY = bounds.y() + 7.0f;
+        float titleHeight = clippedTextRenderer.getHeight(titleScale, StaticFontLoader.DUCKSANS);
+        float subtitleY = titleY + titleHeight + 3.0f;
+        float dividerY = subtitleY + clippedTextRenderer.getHeight(subtitleScale) + 4.0f;
+        float expandedStart = dividerY + 6.0f;
+        return collapsedStart + (expandedStart - collapsedStart) * progress;
     }
 
     private void drawMenuGlyph(PanelLayout.Rect button) {

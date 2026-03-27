@@ -72,4 +72,9 @@ public class BoolSettingRow extends SettingRow<BoolSetting> {
         setting.setValue(!setting.getValue());
         return true;
     }
+
+    @Override
+    public boolean hasActiveAnimation() {
+        return !hoverAnimation.isFinished() || !toggleAnimation.isFinished() || !handleSizeAnimation.isFinished();
+    }
 }

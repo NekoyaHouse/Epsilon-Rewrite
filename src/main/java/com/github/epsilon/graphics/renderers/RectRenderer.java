@@ -1,5 +1,6 @@
 package com.github.epsilon.graphics.renderers;
 
+import com.github.epsilon.graphics.elements.RectElement;
 import com.github.epsilon.graphics.LuminRenderPipelines;
 import com.github.epsilon.graphics.LuminRenderSystem;
 import com.github.epsilon.graphics.buffer.LuminRingBuffer;
@@ -34,6 +35,25 @@ public class RectRenderer implements IRenderer {
 
     public void addHorizontalGradient(float x, float y, float width, float height, Color left, Color right) {
         addRawRect(x, y, width, height, left, left, right, right);
+    }
+
+    public void addElement(RectElement element) {
+        addRawRect(
+                element.x(),
+                element.y(),
+                element.width(),
+                element.height(),
+                element.topLeft(),
+                element.bottomLeft(),
+                element.bottomRight(),
+                element.topRight()
+        );
+    }
+
+    public void addElements(Iterable<RectElement> elements) {
+        for (RectElement element : elements) {
+            addElement(element);
+        }
     }
 
     public void addRawRect(float x, float y, float w, float h, Color c1, Color c2, Color c3, Color c4) {

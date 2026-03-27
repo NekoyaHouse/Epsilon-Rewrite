@@ -1,6 +1,7 @@
 package com.github.epsilon.graphics.renderers;
 
 import com.github.epsilon.graphics.LuminRenderSystem;
+import com.github.epsilon.graphics.elements.TextElement;
 import com.github.epsilon.graphics.text.ITextRenderer;
 import com.github.epsilon.graphics.text.StaticFontLoader;
 import com.github.epsilon.graphics.text.ttf.TtfFontLoader;
@@ -34,6 +35,23 @@ public class TextRenderer implements IRenderer {
 
     public void addText(String text, float x, float y, Color color) {
         textRenderer.addText(text, x, y, 1.0f, color, StaticFontLoader.DEFAULT);
+    }
+
+    public void addElement(TextElement element) {
+        textRenderer.addText(
+                element.text(),
+                element.x(),
+                element.y(),
+                element.scale(),
+                element.color(),
+                element.fontLoader()
+        );
+    }
+
+    public void addElements(Iterable<TextElement> elements) {
+        for (TextElement element : elements) {
+            addElement(element);
+        }
     }
 
     public float getHeight(float scale) {

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class ModuleListPanel {
 
@@ -44,6 +45,17 @@ public class ModuleListPanel {
     private final Map<Module, Animation> toggleAnimations = new HashMap<>();
     private final Map<Module, Animation> toggleHoverAnimations = new HashMap<>();
     private boolean contentPending;
+    private boolean contentDirty = true;
+    private int lastMouseX = Integer.MIN_VALUE;
+    private int lastMouseY = Integer.MIN_VALUE;
+    private float lastModuleScroll = Float.NaN;
+    private String lastSearchQuery = "";
+    private boolean lastSearchFocused;
+    private CategorySnapshot lastCategorySnapshot;
+    private String lastSelectedModuleName = "";
+    private int lastGuiHeight = -1;
+    private PanelLayout.Rect lastBounds;
+    private boolean hasActiveContentAnimations;
     private final Animation searchHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
     private final Animation searchFocusAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
     private boolean searchFocused;
@@ -62,7 +74,6 @@ public class ModuleListPanel {
     public void render(GuiGraphicsExtractor GuiGraphicsExtractor, PanelLayout.Rect bounds, int mouseX, int mouseY, float partialTick) {
         this.bounds = bounds;
         this.guiHeight = GuiGraphicsExtractor.guiHeight();
-        rows.clear();
 
         textRenderer.addText(state.getSelectedCategory().getName(), bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 10.0f, 0.78f, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
         textRenderer.addText("Modules", bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 21.0f, 0.56f, MD3Theme.TEXT_SECONDARY);
@@ -73,22 +84,40 @@ public class ModuleListPanel {
         float contentHeight = modules.size() * (ModuleRow.HEIGHT + MD3Theme.ROW_GAP);
         state.setMaxModuleScroll(contentHeight - viewport.height());
 
-        PanelScissor.apply(viewport, contentRectRenderer, contentRoundRectRenderer, contentShadowRenderer, contentTextRenderer, guiHeight);
-        float y = viewport.y() - state.getModuleScroll();
-        for (Module module : modules) {
-            ModuleRow row = new ModuleRow(ModuleViewModel.from(module), new PanelLayout.Rect(viewport.x(), y, viewport.width(), ModuleRow.HEIGHT));
-            rows.add(row);
-            Animation hoverAnimation = hoverAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.EASE_OUT_CUBIC, 120L));
-            Animation selectionAnimation = selectionAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.EASE_OUT_CUBIC, 160L));
-            Animation toggleAnimation = toggleAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.DYNAMIC_ISLAND, 220L));
-            Animation toggleHoverAnimation = toggleHoverAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.EASE_OUT_CUBIC, 120L));
-            hoverAnimation.run(row.getBounds().contains(mouseX, mouseY) ? 1.0f : 0.0f);
-            selectionAnimation.run(state.getSelectedModule() == module ? 1.0f : 0.0f);
-            toggleAnimation.run(module.isEnabled() ? 1.0f : 0.0f);
-            toggleHoverAnimation.run(row.getToggleBounds().contains(mouseX, mouseY) ? 1.0f : 0.0f);
-            row.render(contentRoundRectRenderer, contentRectRenderer, contentTextRenderer, hoverAnimation.getValue(), selectionAnimation.getValue(), toggleAnimation.getValue(), toggleHoverAnimation.getValue());
-            y += ModuleRow.HEIGHT + MD3Theme.ROW_GAP;
+        if (shouldRebuildContent(bounds, mouseX, mouseY, modules, GuiGraphicsExtractor.guiHeight())) {
+            rows.clear();
+            contentRoundRectRenderer.clear();
+            contentRectRenderer.clear();
+            contentShadowRenderer.clear();
+            contentTextRenderer.clear();
+            hasActiveContentAnimations = false;
+
+            float y = viewport.y() - state.getModuleScroll();
+            for (Module module : modules) {
+                ModuleRow row = new ModuleRow(ModuleViewModel.from(module), new PanelLayout.Rect(viewport.x(), y, viewport.width(), ModuleRow.HEIGHT));
+                rows.add(row);
+                Animation hoverAnimation = hoverAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.EASE_OUT_CUBIC, 120L));
+                Animation selectionAnimation = selectionAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.EASE_OUT_CUBIC, 160L));
+                Animation toggleAnimation = toggleAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.DYNAMIC_ISLAND, 220L));
+                Animation toggleHoverAnimation = toggleHoverAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.EASE_OUT_CUBIC, 120L));
+                hoverAnimation.run(row.getBounds().contains(mouseX, mouseY) ? 1.0f : 0.0f);
+                selectionAnimation.run(state.getSelectedModule() == module ? 1.0f : 0.0f);
+                toggleAnimation.run(module.isEnabled() ? 1.0f : 0.0f);
+                toggleHoverAnimation.run(row.getToggleBounds().contains(mouseX, mouseY) ? 1.0f : 0.0f);
+                hasActiveContentAnimations = hasActiveContentAnimations
+                        || !hoverAnimation.isFinished()
+                        || !selectionAnimation.isFinished()
+                        || !toggleAnimation.isFinished()
+                        || !toggleHoverAnimation.isFinished();
+                row.render(contentRoundRectRenderer, contentRectRenderer, contentTextRenderer, hoverAnimation.getValue(), selectionAnimation.getValue(), toggleAnimation.getValue(), toggleHoverAnimation.getValue());
+                y += ModuleRow.HEIGHT + MD3Theme.ROW_GAP;
+            }
+
+            rememberSnapshot(bounds, mouseX, mouseY, modules, GuiGraphicsExtractor.guiHeight());
+            contentDirty = false;
         }
+
+        PanelScissor.apply(viewport, contentRectRenderer, contentRoundRectRenderer, contentShadowRenderer, contentTextRenderer, guiHeight);
         contentPending = true;
     }
 
@@ -96,12 +125,20 @@ public class ModuleListPanel {
         if (!contentPending) {
             return;
         }
-        contentShadowRenderer.drawAndClear();
-        contentRoundRectRenderer.drawAndClear();
-        contentRectRenderer.drawAndClear();
-        contentTextRenderer.drawAndClear();
+        contentShadowRenderer.draw();
+        contentRoundRectRenderer.draw();
+        contentRectRenderer.draw();
+        contentTextRenderer.draw();
         PanelScissor.clear(contentRectRenderer, contentRoundRectRenderer, contentShadowRenderer, contentTextRenderer);
         contentPending = false;
+    }
+
+    public void markDirty() {
+        contentDirty = true;
+    }
+
+    public boolean hasActiveAnimations() {
+        return hasActiveContentAnimations;
     }
 
     public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {
@@ -112,6 +149,7 @@ public class ModuleListPanel {
         if (searchBounds.contains(event.x(), event.y())) {
             searchFocused = true;
             searchCursorIndex = state.getSearchQuery().length();
+            markDirty();
             return true;
         }
         for (ModuleRow row : rows) {
@@ -123,6 +161,7 @@ public class ModuleListPanel {
             } else {
                 state.setSelectedModule(row.getModule().module());
             }
+            markDirty();
             return true;
         }
         return false;
@@ -132,6 +171,7 @@ public class ModuleListPanel {
         PanelLayout.Rect viewport = getViewport();
         if (bounds != null && viewport.contains(mouseX, mouseY)) {
             state.scrollModules(-scrollY * 20.0f);
+            markDirty();
             return true;
         }
         return false;
@@ -152,21 +192,25 @@ public class ModuleListPanel {
                 if (searchCursorIndex > 0 && !query.isEmpty()) {
                     state.setSearchQuery(query.substring(0, searchCursorIndex - 1) + query.substring(searchCursorIndex));
                     searchCursorIndex--;
+                    markDirty();
                 }
                 yield true;
             }
             case 261 -> {
                 if (searchCursorIndex < query.length()) {
                     state.setSearchQuery(query.substring(0, searchCursorIndex) + query.substring(searchCursorIndex + 1));
+                    markDirty();
                 }
                 yield true;
             }
             case 263 -> {
                 searchCursorIndex = Math.max(0, searchCursorIndex - 1);
+                markDirty();
                 yield true;
             }
             case 262 -> {
                 searchCursorIndex = Math.min(state.getSearchQuery().length(), searchCursorIndex + 1);
+                markDirty();
                 yield true;
             }
             default -> false;
@@ -181,6 +225,7 @@ public class ModuleListPanel {
         String typed = event.codepointAsString();
         state.setSearchQuery(query.substring(0, searchCursorIndex) + typed + query.substring(searchCursorIndex));
         searchCursorIndex++;
+        markDirty();
         return true;
     }
 
@@ -190,6 +235,62 @@ public class ModuleListPanel {
         }
         if (!getSearchBounds().contains(mouseX, mouseY)) {
             searchFocused = false;
+            markDirty();
+        }
+    }
+
+    private boolean shouldRebuildContent(PanelLayout.Rect bounds, int mouseX, int mouseY, List<Module> modules, int currentGuiHeight) {
+        if (contentDirty) {
+            return true;
+        }
+        if (hasActiveContentAnimations) {
+            return true;
+        }
+        if (lastBounds == null || !sameRect(lastBounds, bounds)) {
+            return true;
+        }
+        if (lastGuiHeight != currentGuiHeight) {
+            return true;
+        }
+        if (lastMouseX != mouseX || lastMouseY != mouseY) {
+            return true;
+        }
+        if (Float.compare(lastModuleScroll, state.getModuleScroll()) != 0) {
+            return true;
+        }
+        if (!Objects.equals(lastSearchQuery, state.getSearchQuery()) || lastSearchFocused != searchFocused) {
+            return true;
+        }
+        String selectedModuleName = state.getSelectedModule() == null ? "" : state.getSelectedModule().getName();
+        if (!Objects.equals(lastSelectedModuleName, selectedModuleName)) {
+            return true;
+        }
+        return !Objects.equals(lastCategorySnapshot, CategorySnapshot.of(state.getSelectedCategory().name(), modules));
+    }
+
+    private void rememberSnapshot(PanelLayout.Rect bounds, int mouseX, int mouseY, List<Module> modules, int currentGuiHeight) {
+        lastBounds = bounds;
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+        lastModuleScroll = state.getModuleScroll();
+        lastSearchQuery = state.getSearchQuery();
+        lastSearchFocused = searchFocused;
+        lastCategorySnapshot = CategorySnapshot.of(state.getSelectedCategory().name(), modules);
+        lastSelectedModuleName = state.getSelectedModule() == null ? "" : state.getSelectedModule().getName();
+        lastGuiHeight = currentGuiHeight;
+    }
+
+    private boolean sameRect(PanelLayout.Rect a, PanelLayout.Rect b) {
+        return Float.compare(a.x(), b.x()) == 0
+                && Float.compare(a.y(), b.y()) == 0
+                && Float.compare(a.width(), b.width()) == 0
+                && Float.compare(a.height(), b.height()) == 0;
+    }
+
+    private record CategorySnapshot(String categoryName, List<String> moduleIds) {
+        private static CategorySnapshot of(String categoryName, List<Module> modules) {
+            List<String> ids = modules.stream().map(Module::getName).toList();
+            return new CategorySnapshot(categoryName, ids);
         }
     }
 
