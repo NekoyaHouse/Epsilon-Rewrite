@@ -12,7 +12,7 @@ import com.github.lumin.gui.dropdown.popup.DropdownPopupHost;
 import com.github.lumin.managers.RenderManager;
 import com.github.lumin.modules.impl.client.ClickGui;
 import com.google.common.base.Suppliers;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -23,6 +23,8 @@ import org.jspecify.annotations.NonNull;
 import java.util.function.Supplier;
 
 public class DropdownScreen extends Screen {
+
+    public static final DropdownScreen INSTANCE = new DropdownScreen();
 
     private final DropdownState state = new DropdownState();
     private final Supplier<TextRenderer> textRendererSupplier = Suppliers.memoize(TextRenderer::new);
@@ -35,7 +37,7 @@ public class DropdownScreen extends Screen {
     private final ModuleListPanel moduleListPanel = new ModuleListPanel(state, roundRectRendererSupplier.get(), rectRendererSupplier.get(), shadowRendererSupplier.get(), textRendererSupplier.get());
     private final ModuleDetailPanel moduleDetailPanel = new ModuleDetailPanel(state, roundRectRendererSupplier.get(), rectRendererSupplier.get(), shadowRendererSupplier.get(), textRendererSupplier.get(), popupHost);
 
-    public DropdownScreen() {
+    private DropdownScreen() {
         super(Component.literal("DropdownGui"));
     }
 
@@ -45,20 +47,20 @@ public class DropdownScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractBackground(@NonNull GuiGraphicsExtractor GuiGraphicsExtractor, int mouseX, int mouseY, float partialTick) {
     }
 
     @Override
-    public void render(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(@NonNull GuiGraphicsExtractor GuiGraphicsExtractor, int mouseX, int mouseY, float partialTick) {
         DropdownTheme.syncFromSettings();
         float railWidth = categoryRailPanel.getAnimatedWidth();
         DropdownLayout.Layout layout = DropdownLayout.compute(width, height, railWidth);
 
         drawBackgroundScrim();
         drawChrome(layout);
-        categoryRailPanel.render(guiGraphics, layout.rail(), mouseX, mouseY, partialTick);
-        moduleListPanel.render(guiGraphics, layout.modules(), mouseX, mouseY, partialTick);
-        moduleDetailPanel.render(guiGraphics, layout.detail(), mouseX, mouseY, partialTick);
+        categoryRailPanel.render(GuiGraphicsExtractor, layout.rail(), mouseX, mouseY, partialTick);
+        moduleListPanel.render(GuiGraphicsExtractor, layout.modules(), mouseX, mouseY, partialTick);
+        moduleDetailPanel.render(GuiGraphicsExtractor, layout.detail(), mouseX, mouseY, partialTick);
 
         RenderManager.INSTANCE.applyRenderAfterFrame((delta) -> {
             shadowRendererSupplier.get().drawAndClear();
@@ -70,7 +72,7 @@ public class DropdownScreen extends Screen {
             categoryRailPanel.flushClippedText();
         });
 
-        popupHost.render(guiGraphics, mouseX, mouseY, partialTick);
+        popupHost.render(GuiGraphicsExtractor, mouseX, mouseY, partialTick);
     }
 
     private void drawBackgroundScrim() {
