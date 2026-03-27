@@ -22,12 +22,12 @@ public class MoveUtils {
             return;
         }
 
-        float deltaYaw = Mth.wrapDegrees(yaw - mc.player.getYRot());
+        float deltaYaw = Mth.wrapDegrees(mc.player.getYRot() - yaw);
         float sin = Mth.sin(deltaYaw * Mth.DEG_TO_RAD);
         float cos = Mth.cos(deltaYaw * Mth.DEG_TO_RAD);
 
-        float fixedForward = left * sin + forward * cos;
         float fixedLeft = left * cos - forward * sin;
+        float fixedForward = forward * cos + left * sin;
 
         event.getInput().moveVector = new Vec2(fixedLeft, fixedForward);
     }
