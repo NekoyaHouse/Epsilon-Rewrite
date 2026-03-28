@@ -30,6 +30,7 @@ public class ModuleManager {
                 AntiBot.INSTANCE,
                 AutoClicker.INSTANCE,
                 KillAura.INSTANCE,
+                CrystalAura.INSTANCE,
 
                 // Player
                 AutoAccount.INSTANCE,
