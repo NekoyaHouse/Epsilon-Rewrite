@@ -19,7 +19,7 @@ public class RenderManager {
     }
 
     public void applyRenderAfterFrame(Runnable func) {
-        renderQueue.add((delta) -> func.run());
+        renderQueue.add(_ -> func.run());
     }
 
     public void callAndClear(DeltaTracker tracker) {

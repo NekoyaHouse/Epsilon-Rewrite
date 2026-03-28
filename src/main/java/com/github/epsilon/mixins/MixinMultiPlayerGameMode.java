@@ -22,31 +22,31 @@ public class MixinMultiPlayerGameMode {
     private int destroyDelay;
 
     @Unique
-    private float arknights$savedYaw;
+    private float savedYaw;
 
     @Unique
-    private float arknights$savedPitch;
+    private float savedPitch;
 
     @Unique
-    private boolean arknights$rotationModified;
+    private boolean rotationModified;
 
     @Inject(method = "useItem", at = @At("HEAD"))
     private void preUseItem(Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
         if (RotationManager.INSTANCE.isActive() && RotationManager.INSTANCE.rotations != null) {
-            arknights$savedYaw = player.getYRot();
-            arknights$savedPitch = player.getXRot();
+            savedYaw = player.getYRot();
+            savedPitch = player.getXRot();
             player.setYRot(RotationManager.INSTANCE.getYaw());
             player.setXRot(RotationManager.INSTANCE.getPitch());
-            arknights$rotationModified = true;
+            rotationModified = true;
         }
     }
 
     @Inject(method = "useItem", at = @At("RETURN"))
     private void postUseItem(Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
-        if (arknights$rotationModified) {
-            player.setYRot(arknights$savedYaw);
-            player.setXRot(arknights$savedPitch);
-            arknights$rotationModified = false;
+        if (rotationModified) {
+            player.setYRot(savedYaw);
+            player.setXRot(savedPitch);
+            rotationModified = false;
         }
     }
 

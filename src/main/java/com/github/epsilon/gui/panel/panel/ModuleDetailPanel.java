@@ -65,9 +65,6 @@ public class ModuleDetailPanel {
     private final Animation bindModeHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
     private final Animation keybindHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
     private final Animation keybindFocusAnimation = new Animation(Easing.EASE_OUT_CUBIC, 150L);
-    private final Animation moduleToggleAnimation = new Animation(Easing.DYNAMIC_ISLAND, 220L);
-    private final Animation moduleToggleHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
-    private final Animation moduleToggleHandleSizeAnimation = new Animation(Easing.EASE_OUT_CUBIC, 140L);
 
     public ModuleDetailPanel(PanelState state, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, ShadowRenderer shadowRenderer, TextRenderer textRenderer, PanelPopupHost popupHost) {
         this.state = state;
@@ -80,9 +77,6 @@ public class ModuleDetailPanel {
         this.bindModeHoverAnimation.setStartValue(0.0f);
         this.keybindHoverAnimation.setStartValue(0.0f);
         this.keybindFocusAnimation.setStartValue(0.0f);
-        this.moduleToggleAnimation.setStartValue(0.0f);
-        this.moduleToggleHoverAnimation.setStartValue(0.0f);
-        this.moduleToggleHandleSizeAnimation.setStartValue(8.0f);
     }
 
     public void render(GuiGraphicsExtractor GuiGraphicsExtractor, PanelLayout.Rect bounds, int mouseX, int mouseY, float partialTick) {
@@ -101,20 +95,14 @@ public class ModuleDetailPanel {
             return;
         }
 
-        headerBounds = new PanelLayout.Rect(bounds.x() + MD3Theme.PANEL_VIEWPORT_INSET, bounds.y() + 34.0f, bounds.width() - MD3Theme.PANEL_VIEWPORT_INSET * 2.0f, 62.0f);
+        headerBounds = new PanelLayout.Rect(bounds.x() + MD3Theme.PANEL_VIEWPORT_INSET, bounds.y() + 34.0f, bounds.width() - MD3Theme.PANEL_VIEWPORT_INSET * 2.0f, 36.0f);
         roundRectRenderer.addRoundRect(headerBounds.x(), headerBounds.y(), headerBounds.width(), headerBounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.SURFACE_CONTAINER);
+
         float titleScale = 0.72f;
-        float metaScale = 0.56f;
-        float titleHeight = textRenderer.getHeight(titleScale, StaticFontLoader.DUCKSANS);
-        float metaHeight = textRenderer.getHeight(metaScale);
         float headerTextX = getHeaderContentInsetX();
-        float titleY = headerBounds.y() + 8.0f;
-        float categoryY = titleY + titleHeight + 3.0f;
-        float descriptionY = categoryY + metaHeight + 2.5f;
+        float titleY = headerBounds.y() + (headerBounds.height() - textRenderer.getHeight(titleScale)) / 2.0f - 1.0f;
         textRenderer.addText(module.getTranslatedName(), headerTextX, titleY, titleScale, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
-        textRenderer.addText(module.category.getName(), headerTextX, categoryY, metaScale, MD3Theme.TEXT_SECONDARY);
-        textRenderer.addText(module.getDescription(), headerTextX, descriptionY, metaScale, MD3Theme.TEXT_MUTED);
-        drawModuleToggleControl(module, mouseX, mouseY);
+
         drawKeybindControl(module, mouseX, mouseY);
         drawBindModeControl(module, mouseX, mouseY);
 
@@ -162,13 +150,6 @@ public class ModuleDetailPanel {
         Module module = state.getSelectedModule();
         if (module == null || headerBounds == null) {
             return false;
-        }
-
-        PanelLayout.Rect moduleToggleBounds = getModuleToggleBounds();
-        if (moduleToggleBounds.contains(event.x(), event.y())) {
-            module.toggle();
-            markDirty();
-            return true;
         }
 
         PanelLayout.Rect keybindBounds = getKeybindBounds();
@@ -318,15 +299,11 @@ public class ModuleDetailPanel {
     }
 
     private PanelLayout.Rect getBindModeBounds() {
-        return new PanelLayout.Rect(getHeaderControlGroupX(), getHeaderSecondRowY(), getHeaderControlGroupWidth(), getHeaderControlHeight());
-    }
-
-    private PanelLayout.Rect getModuleToggleBounds() {
-        return new PanelLayout.Rect(getHeaderControlGroupX(), getHeaderFirstRowY(), 36.0f, getHeaderControlHeight());
+        return new PanelLayout.Rect(getHeaderControlGroupX() + getKeybindControlSize() + getHeaderControlGap(), getHeaderControlsY(), getBindModeControlWidth(), getHeaderControlHeight());
     }
 
     private PanelLayout.Rect getKeybindBounds() {
-        return new PanelLayout.Rect(getHeaderControlGroupX() + 44.0f, getHeaderFirstRowY(), 80.0f, getHeaderControlHeight());
+        return new PanelLayout.Rect(getHeaderControlGroupX(), getHeaderControlsY(), getKeybindControlSize(), getKeybindControlSize());
     }
 
     private float getHeaderControlGroupX() {
@@ -334,7 +311,7 @@ public class ModuleDetailPanel {
     }
 
     private float getHeaderControlGroupWidth() {
-        return 124.0f;
+        return getKeybindControlSize() + getHeaderControlGap() + getBindModeControlWidth();
     }
 
     private float getHeaderContentInset() {
@@ -349,54 +326,28 @@ public class ModuleDetailPanel {
         return 18.0f;
     }
 
+    private float getKeybindControlSize() {
+        return getHeaderControlHeight();
+    }
+
+    private float getBindModeControlWidth() {
+        return 96.0f;
+    }
+
+    private float getHeaderControlGap() {
+        return 6.0f;
+    }
+
     private float getHeaderControlRadius() {
-        return 9.0f;
+        return 7.0f;
     }
 
-    private float getHeaderFirstRowY() {
-        return headerBounds.y() + 10.0f;
+    private float getKeybindControlRadius() {
+        return 8.0f;
     }
 
-    private float getHeaderSecondRowY() {
-        return getHeaderFirstRowY() + getHeaderControlHeight() + 9.0f;
-    }
-
-    private void drawHeaderControlSurface(PanelLayout.Rect bounds, float hoverProgress, float focusProgress) {
-        Color base = MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER : MD3Theme.SURFACE_CONTAINER_HIGH;
-        roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), getHeaderControlRadius(), base);
-        if (hoverProgress > 0.01f) {
-            int hoverAlpha = MD3Theme.isLightTheme() ? 8 : 12;
-            roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), getHeaderControlRadius(), MD3Theme.withAlpha(MD3Theme.TEXT_PRIMARY, (int) (hoverAlpha * hoverProgress)));
-        }
-        if (focusProgress > 0.01f) {
-            int focusAlpha = MD3Theme.isLightTheme() ? 12 : 10;
-            roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), getHeaderControlRadius(), MD3Theme.withAlpha(MD3Theme.PRIMARY, (int) (focusAlpha * focusProgress)));
-        }
-    }
-
-    private void drawModuleToggleControl(Module module, int mouseX, int mouseY) {
-        PanelLayout.Rect toggleBounds = getModuleToggleBounds();
-        moduleToggleAnimation.run(module.isEnabled() ? 1.0f : 0.0f);
-        moduleToggleHoverAnimation.run(toggleBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
-        moduleToggleHandleSizeAnimation.run(module.isEnabled() ? 11.0f : 8.0f);
-
-        float progress = moduleToggleAnimation.getValue();
-        float hoverProgress = moduleToggleHoverAnimation.getValue();
-        float handleSize = moduleToggleHandleSizeAnimation.getValue();
-        Color track = MD3Theme.lerp(MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER_HIGH : MD3Theme.SURFACE_CONTAINER_HIGHEST, MD3Theme.PRIMARY, progress);
-        Color handle = MD3Theme.lerp(MD3Theme.isLightTheme() ? MD3Theme.TEXT_SECONDARY : MD3Theme.OUTLINE, MD3Theme.ON_PRIMARY, progress);
-        float handleTravel = toggleBounds.width() - 10.0f - handleSize;
-        float handleX = toggleBounds.x() + 5.0f + handleTravel * progress;
-        float handleY = toggleBounds.centerY() - handleSize / 2.0f;
-
-        roundRectRenderer.addRoundRect(toggleBounds.x(), toggleBounds.y(), toggleBounds.width(), toggleBounds.height(), getHeaderControlRadius(), track);
-        if (hoverProgress > 0.01f) {
-            float haloSize = 16.0f;
-            float haloX = handleX + handleSize / 2.0f - haloSize / 2.0f;
-            float haloY = toggleBounds.centerY() - haloSize / 2.0f;
-            roundRectRenderer.addRoundRect(haloX, haloY, haloSize, haloSize, haloSize / 2.0f, MD3Theme.withAlpha(MD3Theme.TEXT_PRIMARY, (int) (18 * hoverProgress)));
-        }
-        roundRectRenderer.addRoundRect(handleX, handleY, handleSize, handleSize, handleSize / 2.0f, handle);
+    private float getHeaderControlsY() {
+        return headerBounds.y() + (headerBounds.height() - getHeaderControlHeight()) / 2.0f;
     }
 
     private void drawBindModeControl(Module module, int mouseX, int mouseY) {
@@ -405,22 +356,40 @@ public class ModuleDetailPanel {
         bindModeHoverAnimation.run(bindModeBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
         float progress = bindModeAnimation.getValue();
         float hoverProgress = bindModeHoverAnimation.getValue();
-        float segmentWidth = bindModeBounds.width() / 2.0f;
-        float indicatorWidth = segmentWidth - 4.0f;
-        float indicatorX = bindModeBounds.x() + 2.0f + (segmentWidth * progress);
+        float outerRadius = getHeaderControlRadius();
+        float shellInset = 1.0f;
+        float innerX = bindModeBounds.x() + shellInset;
+        float innerY = bindModeBounds.y() + shellInset;
+        float innerWidth = bindModeBounds.width() - shellInset * 2.0f;
+        float innerHeight = bindModeBounds.height() - shellInset * 2.0f;
+        float segmentWidth = innerWidth / 2.0f;
+        float indicatorInset = 1.5f;
+        float indicatorWidth = segmentWidth - indicatorInset * 2.0f;
+        float indicatorX = innerX + indicatorInset + segmentWidth * progress;
+        float indicatorY = innerY + indicatorInset;
+        float indicatorHeight = innerHeight - indicatorInset * 2.0f;
+        float indicatorRadius = Math.max(4.0f, outerRadius - 2.0f);
 
-        drawHeaderControlSurface(bindModeBounds, hoverProgress, 0.0f);
-        roundRectRenderer.addRoundRect(indicatorX, bindModeBounds.y() + 2.0f, indicatorWidth, bindModeBounds.height() - 4.0f, 7.0f, MD3Theme.SECONDARY_CONTAINER);
+        roundRectRenderer.addRoundRect(bindModeBounds.x(), bindModeBounds.y(), bindModeBounds.width(), bindModeBounds.height(), outerRadius, MD3Theme.OUTLINE_SOFT);
+        roundRectRenderer.addRoundRect(innerX, innerY, innerWidth, innerHeight, Math.max(outerRadius - shellInset, 1.0f), MD3Theme.isLightTheme() ? MD3Theme.SURFACE : MD3Theme.SURFACE_CONTAINER_HIGH);
+        if (hoverProgress > 0.01f) {
+            int hoverAlpha = MD3Theme.isLightTheme() ? 10 : 14;
+            roundRectRenderer.addRoundRect(innerX, innerY, innerWidth, innerHeight, Math.max(outerRadius - shellInset, 1.0f), MD3Theme.withAlpha(MD3Theme.TEXT_PRIMARY, (int) (hoverAlpha * hoverProgress)));
+        }
+
+        float dividerX = innerX + segmentWidth - 0.5f;
+        rectRenderer.addRect(dividerX, innerY + 3.0f, 1.0f, innerHeight - 6.0f, MD3Theme.OUTLINE_SOFT);
+        roundRectRenderer.addRoundRect(indicatorX, indicatorY, indicatorWidth, indicatorHeight, indicatorRadius, MD3Theme.SECONDARY_CONTAINER);
 
         float toggleScale = 0.52f;
         float holdScale = 0.52f;
         float toggleWidth = textRenderer.getWidth("Toggle", toggleScale);
         float holdWidth = textRenderer.getWidth("Hold", holdScale);
         float textHeight = textRenderer.getHeight(toggleScale);
-        float centerY = bindModeBounds.y() + (bindModeBounds.height() - textHeight) / 2.0f - 1.0f;
-        Color inactiveText = MD3Theme.isLightTheme() ? MD3Theme.TEXT_MUTED : MD3Theme.TEXT_SECONDARY;
-        textRenderer.addText("Toggle", bindModeBounds.x() + (segmentWidth - toggleWidth) / 2.0f, centerY, toggleScale, MD3Theme.lerp(MD3Theme.ON_SECONDARY_CONTAINER, inactiveText, progress));
-        textRenderer.addText("Hold", bindModeBounds.x() + segmentWidth + (segmentWidth - holdWidth) / 2.0f, centerY, holdScale, MD3Theme.lerp(inactiveText, MD3Theme.ON_SECONDARY_CONTAINER, progress));
+        float centerY = innerY + (innerHeight - textHeight) / 2.0f - 1.0f;
+        Color inactiveText = MD3Theme.isLightTheme() ? MD3Theme.TEXT_SECONDARY : MD3Theme.TEXT_MUTED;
+        textRenderer.addText("Toggle", innerX + (segmentWidth - toggleWidth) / 2.0f, centerY, toggleScale, MD3Theme.lerp(MD3Theme.ON_SECONDARY_CONTAINER, inactiveText, progress));
+        textRenderer.addText("Hold", innerX + segmentWidth + (segmentWidth - holdWidth) / 2.0f, centerY, holdScale, MD3Theme.lerp(inactiveText, MD3Theme.ON_SECONDARY_CONTAINER, progress));
     }
 
     private void drawKeybindControl(Module module, int mouseX, int mouseY) {
@@ -430,22 +399,57 @@ public class ModuleDetailPanel {
         keybindFocusAnimation.run(listening ? 1.0f : 0.0f);
         float hoverProgress = keybindHoverAnimation.getValue();
         float focusProgress = keybindFocusAnimation.getValue();
-        drawHeaderControlSurface(keybindBounds, hoverProgress, focusProgress);
+        float radius = getKeybindControlRadius();
+        float haloInset = 1.5f * focusProgress;
+        if (haloInset > 0.01f) {
+            roundRectRenderer.addRoundRect(keybindBounds.x() - haloInset, keybindBounds.y() - haloInset, keybindBounds.width() + haloInset * 2.0f, keybindBounds.height() + haloInset * 2.0f, radius + haloInset, MD3Theme.withAlpha(MD3Theme.PRIMARY, (int) (28 * focusProgress)));
+        }
 
-        String label = listening ? "Press key" : formatKeybind(module.getKeyBind());
-        float scale = 0.52f;
+        Color background = MD3Theme.lerp(MD3Theme.SECONDARY_CONTAINER, MD3Theme.PRIMARY_CONTAINER, focusProgress);
+        Color foreground = MD3Theme.lerp(MD3Theme.ON_SECONDARY_CONTAINER, MD3Theme.ON_PRIMARY_CONTAINER, focusProgress);
+        roundRectRenderer.addRoundRect(keybindBounds.x(), keybindBounds.y(), keybindBounds.width(), keybindBounds.height(), radius, background);
+        if (hoverProgress > 0.01f) {
+            int hoverAlpha = listening ? 18 : 12;
+            roundRectRenderer.addRoundRect(keybindBounds.x(), keybindBounds.y(), keybindBounds.width(), keybindBounds.height(), radius, MD3Theme.withAlpha(foreground, (int) (hoverAlpha * hoverProgress)));
+        }
+
+        String label = listening ? "..." : formatCompactKeybind(module.getKeyBind());
+        float scale = label.length() >= 3 ? 0.42f : 0.5f;
         float textWidth = textRenderer.getWidth(label, scale);
         float textHeight = textRenderer.getHeight(scale);
         float textX = keybindBounds.x() + (keybindBounds.width() - textWidth) / 2.0f;
         float textY = keybindBounds.y() + (keybindBounds.height() - textHeight) / 2.0f - 1.0f;
-        textRenderer.addText(label, textX, textY, scale, MD3Theme.TEXT_PRIMARY);
+        textRenderer.addText(label, textX, textY, scale, foreground);
+    }
 
-        if (listening) {
-            float underlineWidth = Math.max(24.0f, keybindBounds.width() - 16.0f);
-            float underlineX = keybindBounds.x() + (keybindBounds.width() - underlineWidth) / 2.0f;
-            float underlineY = keybindBounds.bottom() - 3.0f;
-            rectRenderer.addRect(underlineX, underlineY, underlineWidth, 1.5f, MD3Theme.PRIMARY);
+    private String formatCompactKeybind(int keyCode) {
+        if (keyCode < 0) {
+            return "-";
         }
+        String label = formatKeybind(keyCode).trim();
+        if (label.isEmpty()) {
+            return "?";
+        }
+
+        String[] parts = label.split("[^A-Za-z0-9]+");
+        StringBuilder initials = new StringBuilder();
+        for (String part : parts) {
+            if (!part.isEmpty() && Character.isLetterOrDigit(part.charAt(0))) {
+                initials.append(Character.toUpperCase(part.charAt(0)));
+            }
+            if (initials.length() == 3) {
+                break;
+            }
+        }
+        if (initials.length() >= 2) {
+            return initials.toString();
+        }
+
+        String compact = label.replaceAll("[^A-Za-z0-9]", "").toUpperCase(Locale.ROOT);
+        if (compact.isEmpty()) {
+            return "?";
+        }
+        return compact.length() > 3 ? compact.substring(0, 3) : compact;
     }
 
     private String formatKeybind(int keyCode) {
@@ -501,9 +505,6 @@ public class ModuleDetailPanel {
 
     public boolean hasActiveAnimations() {
         return hasActiveContentAnimations
-                || !moduleToggleAnimation.isFinished()
-                || !moduleToggleHoverAnimation.isFinished()
-                || !moduleToggleHandleSizeAnimation.isFinished()
                 || !keybindHoverAnimation.isFinished()
                 || !keybindFocusAnimation.isFinished()
                 || !bindModeAnimation.isFinished()
@@ -535,7 +536,7 @@ public class ModuleDetailPanel {
         if (Float.compare(lastDetailScroll, state.getDetailScroll()) != 0) {
             return true;
         }
-        if (!Objects.equals(lastModuleKey, module.getName() + ":" + module.isEnabled() + ":" + module.getBindMode() + ":" + module.getKeyBind())) {
+        if (!Objects.equals(lastModuleKey, module.getName() + ":" + module.getBindMode() + ":" + module.getKeyBind())) {
             return true;
         }
         List<String> visibleSettings = settings.stream().map(Setting::getName).toList();
@@ -547,7 +548,7 @@ public class ModuleDetailPanel {
         lastMouseX = mouseX;
         lastMouseY = mouseY;
         lastDetailScroll = state.getDetailScroll();
-        lastModuleKey = module.getName() + ":" + module.isEnabled() + ":" + module.getBindMode() + ":" + module.getKeyBind();
+        lastModuleKey = module.getName() + ":" + module.getBindMode() + ":" + module.getKeyBind();
         lastVisibleSettings = settings.stream().map(Setting::getName).toList();
         lastGuiHeight = currentGuiHeight;
     }

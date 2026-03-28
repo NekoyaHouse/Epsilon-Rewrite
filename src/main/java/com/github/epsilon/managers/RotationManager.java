@@ -1,12 +1,12 @@
 package com.github.epsilon.managers;
 
 import com.github.epsilon.events.*;
-import com.github.epsilon.utils.player.MoveUtils;
 import com.github.epsilon.utils.rotation.MovementFix;
 import com.github.epsilon.utils.rotation.Priority;
 import com.github.epsilon.utils.rotation.RotationUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -206,7 +206,22 @@ public class RotationManager {
     @SubscribeEvent
     private void onMoveInput(MovementInputUpdateEvent event) {
         if (active && correctMovement == MovementFix.ON && rotations != null) {
-            MoveUtils.fixMovement(event, rotations.x);
+            Vec2 moveVector = event.getInput().getMoveVector();
+            float forward = moveVector.y;
+            float left = moveVector.x;
+
+            if (forward == 0 && left == 0) {
+                return;
+            }
+
+            float deltaYaw = Mth.wrapDegrees(mc.player.getYRot() - rotations.x);
+            float sin = Mth.sin(deltaYaw * Mth.DEG_TO_RAD);
+            float cos = Mth.cos(deltaYaw * Mth.DEG_TO_RAD);
+
+            float fixedLeft = left * cos - forward * sin;
+            float fixedForward = forward * cos + left * sin;
+
+            event.getInput().moveVector = (new Vec2(fixedLeft, fixedForward)).normalized();
         }
     }
 

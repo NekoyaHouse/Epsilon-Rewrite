@@ -3,13 +3,13 @@ package com.github.epsilon;
 import com.github.epsilon.assets.i18n.I18NFileGenerator;
 import com.github.epsilon.managers.ConfigManager;
 import com.github.epsilon.managers.ModuleManager;
-import com.mojang.logging.LogUtils;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import org.slf4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Mod(value = Epsilon.MODID, dist = Dist.CLIENT)
 @EventBusSubscriber(modid = Epsilon.MODID, value = Dist.CLIENT)
@@ -18,7 +18,7 @@ public class Epsilon {
     public static final String MODID = "epsilon_rewrite";
     public static String VERSION = "Loading ...";
 
-    public static final Logger LOGGER = LogUtils.getLogger();
+    public static final Logger LOGGER = LogManager.getLogger("Epsilon");
 
     public static int skipTicks;
 

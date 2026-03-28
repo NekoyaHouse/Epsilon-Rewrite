@@ -40,7 +40,7 @@ public abstract class MixinEntity {
 
     @ModifyArgs(method = "push(Lnet/minecraft/world/entity/Entity;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;push(DDD)V"))
     private void pushAwayFromHook(Args args) {
-        if (Entity.class.cast(this) == Minecraft.getInstance().player) {
+        if ((Entity) (Object) this == Minecraft.getInstance().player) {
             if (Velocity.INSTANCE.isEnabled() && Velocity.INSTANCE.entityPush.getValue()) {
                 args.set(0, 0d);
                 args.set(1, 0d);
