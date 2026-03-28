@@ -1,4 +1,4 @@
-package com.github.epsilon.mixins;
+package com.github.epsilon.mixins.level;
 
 import com.github.epsilon.events.RayTraceEvent;
 import com.github.epsilon.events.StrafeEvent;

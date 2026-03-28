@@ -1,4 +1,4 @@
-package com.github.epsilon.mixins;
+package com.github.epsilon.mixins.level;
 
 import com.github.epsilon.modules.impl.render.NoRender;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;

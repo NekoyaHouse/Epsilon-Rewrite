@@ -1,4 +1,4 @@
-package com.github.epsilon.mixins;
+package com.github.epsilon.mixins.render;
 
 import com.github.epsilon.Epsilon;
 import com.mojang.blaze3d.platform.IconSet;
