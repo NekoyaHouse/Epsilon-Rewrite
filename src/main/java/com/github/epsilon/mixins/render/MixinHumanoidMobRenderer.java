@@ -1,4 +1,4 @@
-package com.github.epsilon.mixins;
+package com.github.epsilon.mixins.render;
 
 import com.github.epsilon.modules.impl.player.ElytraFly;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;

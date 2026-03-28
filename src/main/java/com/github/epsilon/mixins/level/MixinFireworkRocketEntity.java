@@ -1,4 +1,4 @@
-package com.github.epsilon.mixins;
+package com.github.epsilon.mixins.level;
 
 import com.github.epsilon.modules.impl.player.ElytraFly;
 import net.minecraft.world.entity.projectile.FireworkRocketEntity;

@@ -1,4 +1,4 @@
-package com.github.epsilon.mixins;
+package com.github.epsilon.mixins.packet;
 
 import com.github.epsilon.modules.impl.player.ElytraFly;
 import com.github.epsilon.modules.impl.player.NoRotate;

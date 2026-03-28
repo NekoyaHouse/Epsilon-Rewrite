@@ -1,4 +1,4 @@
-package com.github.epsilon.mixins;
+package com.github.epsilon.mixins.packet;
 
 import com.github.epsilon.events.PacketEvent;
 import com.github.epsilon.utils.network.PacketUtils;

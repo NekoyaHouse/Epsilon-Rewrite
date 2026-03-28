@@ -1,4 +1,4 @@
-package com.github.epsilon.mixins;
+package com.github.epsilon.mixins.render;
 
 import com.github.epsilon.modules.impl.render.NoRender;
 import net.minecraft.client.DeltaTracker;

@@ -1,4 +1,4 @@
-package com.github.epsilon.mixins;
+package com.github.epsilon.mixins.level;
 
 import com.github.epsilon.modules.impl.player.Velocity;
 import net.minecraft.core.Direction;
