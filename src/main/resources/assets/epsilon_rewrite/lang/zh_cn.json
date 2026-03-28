@@ -365,6 +365,5 @@
   "epsilon.modules.vclip.mode": "模式",
   "epsilon.modules.vclip.mode.glitch": "Glitch",
   "epsilon.modules.vclip.mode.teleport": "传送",
-  "epsilon.modules.vclip.mode.jump": "跳跃",
-  "epsilon.modules.crystalaura.rotation speed": "转头速度"
+  "epsilon.modules.vclip.mode.jump": "跳跃"
 }
