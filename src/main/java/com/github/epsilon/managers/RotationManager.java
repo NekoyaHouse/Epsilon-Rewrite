@@ -15,6 +15,9 @@ import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import org.joml.Vector2f;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class RotationManager {
@@ -37,45 +40,105 @@ public class RotationManager {
     private Function<Vector2f, Boolean> raycast;
     private float randomAngle;
 
-    private int priority;
+    private final List<RotationRequest> tickRequests = new ArrayList<>();
+
+    public record RotationApplyRecord(
+            Vector2f targetRotation,
+            Vector2f currentRotation,
+            Vector2f previousTickRotation,
+            Vector2f playerRotation,
+            MovementFix movementFix,
+            Priority selectedPriority,
+            int selectedPriorityValue,
+            boolean active
+    ) {
+    }
+
+    private record RotationRequest(
+            Vector2f targetRotation,
+            double rotationSpeed,
+            MovementFix movementFix,
+            Function<Vector2f, Boolean> raycast,
+            Priority priority,
+            int priorityValue,
+            Consumer<RotationApplyRecord> callback
+    ) {
+    }
 
     private RotationManager() {
         NeoForge.EVENT_BUS.register(this);
     }
 
-    public void setRotations(final Vector2f rotations, final double rotationSpeed, final MovementFix correctMovement) {
-        setRotations(rotations, rotationSpeed, correctMovement, null, Priority.Lowest);
+    public void applyRotation(final Vector2f rotations, final double rotationSpeed, final MovementFix correctMovement) {
+        applyRotation(rotations, rotationSpeed, correctMovement, null, Priority.Lowest, null);
     }
 
-    public void setRotations(final Vector2f rotations, final double rotationSpeed, final MovementFix correctMovement, Priority priority) {
-        setRotations(rotations, rotationSpeed, correctMovement, null, priority);
+    public void applyRotation(final Vector2f rotations, final double rotationSpeed, final MovementFix correctMovement, final Priority priority) {
+        applyRotation(rotations, rotationSpeed, correctMovement, null, priority, null);
     }
 
-    public void setRotations(final Vector2f rotations, final double rotationSpeed, final MovementFix correctMovement, final Function<Vector2f, Boolean> raycast, Priority priority) {
+    public void applyRotation(final Vector2f rotations, final double rotationSpeed, final MovementFix correctMovement, final int priority) {
+        applyRotation(rotations, rotationSpeed, correctMovement, null, priority, null);
+    }
+
+    public void applyRotation(final Vector2f rotations, final double rotationSpeed, final MovementFix correctMovement, final Priority priority, final Consumer<RotationApplyRecord> callback) {
+        applyRotation(rotations, rotationSpeed, correctMovement, null, priority, callback);
+    }
+
+    public void applyRotation(final Vector2f rotations, final double rotationSpeed, final MovementFix correctMovement, final int priority, final Consumer<RotationApplyRecord> callback) {
+        applyRotation(rotations, rotationSpeed, correctMovement, null, priority, callback);
+    }
+
+    public void applyRotation(final Vector2f rotations, final double rotationSpeed, final MovementFix correctMovement, final Function<Vector2f, Boolean> raycast, final Priority priority, final Consumer<RotationApplyRecord> callback) {
         if (rotations == null || Double.isNaN(rotations.x) || Double.isNaN(rotations.y) || Double.isInfinite(rotations.x) || Double.isInfinite(rotations.y)) {
             return;
         }
 
-        if (active && priority.priority < this.priority) {
+        final Priority safePriority = priority == null ? Priority.Lowest : priority;
+        tickRequests.add(new RotationRequest(
+                new Vector2f(rotations.x, rotations.y),
+                rotationSpeed * 18,
+                correctMovement,
+                raycast,
+                safePriority,
+                safePriority.priority,
+                callback
+        ));
+    }
+
+    public void applyRotation(final Vector2f rotations, final double rotationSpeed, final MovementFix correctMovement, final Function<Vector2f, Boolean> raycast, final int priority, final Consumer<RotationApplyRecord> callback) {
+        if (rotations == null || Double.isNaN(rotations.x) || Double.isNaN(rotations.y) || Double.isInfinite(rotations.x) || Double.isInfinite(rotations.y)) {
             return;
         }
 
-        this.targetRotations = rotations;
-        this.rotationSpeed = rotationSpeed * 18;
-        this.correctMovement = correctMovement;
-        this.raycast = raycast;
-        this.priority = priority.priority;
-        active = true;
+        final int safePriority = Math.max(Priority.Lowest.priority, priority);
+        tickRequests.add(new RotationRequest(
+                new Vector2f(rotations.x, rotations.y),
+                rotationSpeed * 18,
+                correctMovement,
+                raycast,
+                resolvePriority(safePriority),
+                safePriority,
+                callback
+        ));
+    }
 
-        smooth();
+    private Priority resolvePriority(int priority) {
+        if (priority >= Priority.Highest.priority) return Priority.Highest;
+        if (priority >= Priority.High.priority) return Priority.High;
+        if (priority >= Priority.Medium.priority) return Priority.Medium;
+        if (priority >= Priority.Low.priority) return Priority.Low;
+        return Priority.Lowest;
     }
 
     private void smooth() {
         if (!smoothed) {
             float targetYaw = targetRotations.x;
             float targetPitch = targetRotations.y;
+            float currentYaw = rotations != null ? rotations.x : mc.player.getYRot();
+            float currentPitch = rotations != null ? rotations.y : mc.player.getXRot();
 
-            if (raycast != null && (Math.abs(targetYaw - rotations.x) > 5 || Math.abs(targetPitch - rotations.y) > 5)) {
+            if (raycast != null && (Math.abs(targetYaw - currentYaw) > 5 || Math.abs(targetPitch - currentPitch) > 5)) {
                 final Vector2f trueTargetRotations = new Vector2f(targetRotations.x, targetRotations.y);
 
                 double speed = (Math.random() * Math.random() * Math.random()) * 20;
@@ -189,13 +252,67 @@ public class RotationManager {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     private void onClientTick(ClientTickEvent.Pre event) {
-        if (mc.player == null || mc.level == null) return;
+        if (mc.player == null || mc.level == null) {
+            tickRequests.clear();
+            return;
+        }
 
         if (!active || rotations == null || lastRotations == null || targetRotations == null) {
-            final var defaultRotation = new Vector2f(mc.player.getYRot(), mc.player.getXRot());
-            targetRotations = defaultRotation;
-            lastRotations = defaultRotation;
-            rotations = defaultRotation;
+            targetRotations = new Vector2f(mc.player.getYRot(), mc.player.getXRot());
+            lastRotations = new Vector2f(mc.player.getYRot(), mc.player.getXRot());
+            rotations = new Vector2f(mc.player.getYRot(), mc.player.getXRot());
+        }
+
+        if (!tickRequests.isEmpty()) {
+            RotationRequest selectedRequest = tickRequests.getFirst();
+            for (int i = 1; i < tickRequests.size(); i++) {
+                RotationRequest request = tickRequests.get(i);
+                if (request.priorityValue() > selectedRequest.priorityValue()) {
+                    selectedRequest = request;
+                }
+            }
+
+            Vector2f previousTickRotation = lastRotations != null
+                    ? new Vector2f(lastRotations.x, lastRotations.y)
+                    : new Vector2f(mc.player.getYRot(), mc.player.getXRot());
+
+            this.targetRotations = new Vector2f(selectedRequest.targetRotation().x, selectedRequest.targetRotation().y);
+            this.rotationSpeed = selectedRequest.rotationSpeed();
+            this.correctMovement = selectedRequest.movementFix();
+            this.raycast = selectedRequest.raycast();
+            this.active = true;
+            this.smoothed = false;
+
+            smooth();
+
+            Vector2f safeSmoothedRotation = rotations != null
+                    ? new Vector2f(rotations.x, rotations.y)
+                    : new Vector2f(mc.player.getYRot(), mc.player.getXRot());
+            Vector2f safeTargetRotation = targetRotations != null
+                    ? new Vector2f(targetRotations.x, targetRotations.y)
+                    : new Vector2f(mc.player.getYRot(), mc.player.getXRot());
+
+            RotationApplyRecord record = new RotationApplyRecord(
+                    safeTargetRotation,
+                    safeSmoothedRotation,
+                    previousTickRotation,
+                    new Vector2f(mc.player.getYRot(), mc.player.getXRot()),
+                    correctMovement,
+                    selectedRequest.priority(),
+                    selectedRequest.priorityValue(),
+                    active
+            );
+
+            for (RotationRequest request : tickRequests) {
+                if (request.callback() != null) {
+                    try {
+                        request.callback().accept(record);
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+
+            tickRequests.clear();
         }
 
         if (active) {
@@ -269,7 +386,6 @@ public class RotationManager {
 
             if (Math.abs((rotations.x - mc.player.getYRot()) % 360) < 1 && Math.abs((rotations.y - mc.player.getXRot())) < 1) {
                 active = false;
-                priority = 0;
                 correctDisabledRotations();
             }
 

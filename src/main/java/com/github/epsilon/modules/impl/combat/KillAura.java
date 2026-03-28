@@ -78,6 +78,7 @@ public class KillAura extends Module {
 
     private LivingEntity target;
     private final List<LivingEntity> targets = new ArrayList<>();
+    private boolean rotationReady;
 
     private int switchIndex = 0;
     private float attacks = 0;
@@ -87,6 +88,7 @@ public class KillAura extends Module {
         target = null;
         targets.clear();
         switchIndex = 0;
+        rotationReady = false;
     }
 
     @SubscribeEvent
@@ -98,6 +100,7 @@ public class KillAura extends Module {
 
         if (targets.isEmpty()) {
             target = null;
+            rotationReady = false;
             return;
         }
 
@@ -113,7 +116,21 @@ public class KillAura extends Module {
         attacks += MathUtils.getRandom(cps.getValue().floatValue(), maxCps.getValue().floatValue()) / 20f;
 
         if (target != null) {
-            RotationManager.INSTANCE.setRotations(RotationUtils.getRotationsToEntity(target), rotationSpeed.getValue().floatValue(), MovementFix.ON, Priority.Medium);
+            rotationReady = false;
+            final LivingEntity requestedTarget = target;
+            final int requestPriority = Priority.Medium.priority;
+            RotationManager.INSTANCE.applyRotation(
+                    RotationUtils.getRotationsToEntity(requestedTarget),
+                    rotationSpeed.getValue().floatValue(),
+                    MovementFix.ON,
+                    requestPriority,
+                    record -> {
+                        if (!isEnabled() || nullCheck()) return;
+                        if (target != requestedTarget) return;
+                        if (record.selectedPriorityValue() != requestPriority) return;
+                        rotationReady = true;
+                    }
+            );
         }
     }
 
@@ -121,6 +138,7 @@ public class KillAura extends Module {
     public void onClick(ClientTickEvent.Pre event) {
         if (nullCheck()) return;
         if (target == null) return;
+        if (!rotationReady) return;
         if (mc.player.isUsingItem() || mc.player.isBlocking()) return;
         if (mc.player.getAttackStrengthScale(0.5f) < 1.0f && mode.is(Mode.OnePointNinePlus)) return;
 
