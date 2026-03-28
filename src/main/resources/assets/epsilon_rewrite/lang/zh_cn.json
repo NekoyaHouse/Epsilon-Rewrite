@@ -223,7 +223,10 @@
   "epsilon.modules.killaura.wavespeed": "波动速度",
   "epsilon.modules.crystalaura": "水晶光环",
   "epsilon.modules.crystalaura.target range": "目标范围",
-  "epsilon.modules.crystalaura.rotation speed": "转头速度",
+  "epsilon.modules.crystalaura.aim optimize mode": "瞄准优化模式",
+  "epsilon.modules.crystalaura.aim optimize mode.maxdamage": "最大伤害",
+  "epsilon.modules.crystalaura.aim optimize mode.lowrotation": "少转头",
+  "epsilon.modules.crystalaura.aim damage sacrifice": "瞄准最大伤害牺牲",
   "epsilon.modules.crystalaura.eating pause": "进食时暂停",
   "epsilon.modules.crystalaura.no suicide": "防止自杀",
   "epsilon.modules.crystalaura.lethal max self dmg": "致命最大自伤",
@@ -237,6 +240,7 @@
   "epsilon.modules.crystalaura.place swing.none": "无",
   "epsilon.modules.crystalaura.place swing.client": "客户端",
   "epsilon.modules.crystalaura.place swing.packet": "数据包",
+  "epsilon.modules.crystalaura.place rotation speed": "放置转头速度",
   "epsilon.modules.crystalaura.place swap mode": "放置换手模式",
   "epsilon.modules.crystalaura.place swap mode.none": "不切换",
   "epsilon.modules.crystalaura.place swap mode.swap": "普通切换",
@@ -250,6 +254,7 @@
   "epsilon.modules.crystalaura.break swing.none": "无",
   "epsilon.modules.crystalaura.break swing.client": "客户端",
   "epsilon.modules.crystalaura.break swing.packet": "数据包",
+  "epsilon.modules.crystalaura.break rotation speed": "敲击转头速度",
   "epsilon.modules.crystalaura.anti weak": "抗虚弱",
   "epsilon.modules.crystalaura.anti weak swap mode": "抗虚弱换手模式",
   "epsilon.modules.crystalaura.anti weak swap mode.none": "不切换",
@@ -360,5 +365,6 @@
   "epsilon.modules.vclip.mode": "模式",
   "epsilon.modules.vclip.mode.glitch": "Glitch",
   "epsilon.modules.vclip.mode.teleport": "传送",
-  "epsilon.modules.vclip.mode.jump": "跳跃"
+  "epsilon.modules.vclip.mode.jump": "跳跃",
+  "epsilon.modules.crystalaura.rotation speed": "转头速度"
 }

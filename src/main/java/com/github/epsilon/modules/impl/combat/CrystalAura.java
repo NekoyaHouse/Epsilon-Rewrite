@@ -10,11 +10,13 @@ import com.github.epsilon.utils.player.FindItemResult;
 import com.github.epsilon.utils.player.InvUtils;
 import com.github.epsilon.utils.render.Render3DUtils;
 import com.github.epsilon.utils.rotation.Priority;
+import com.github.epsilon.utils.rotation.RaytraceUtils;
 import com.github.epsilon.utils.rotation.RotationUtils;
 import com.github.epsilon.utils.timer.TimerUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ServerboundSwingPacket;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -44,21 +46,28 @@ public class CrystalAura extends Module {
         super("CrystalAura", Category.COMBAT);
     }
 
+    // General
     private final DoubleSetting targetRange = doubleSetting("Target Range", 6.0, 0.0, 12.0, 0.5);
-    private final DoubleSetting rotationSpeed = doubleSetting("Rotation Speed", 10.0, 1.0, 10.0, 0.5);
+    private final EnumSetting<AimOptimizeMode> aimOptimizeMode = enumSetting("Aim Optimize Mode", AimOptimizeMode.MaxDamage);
+    private final DoubleSetting aimDamageSacrifice = doubleSetting("Aim Damage Sacrifice", 1.0, 0.0, 10.0, 0.25,
+            () -> aimOptimizeMode.is(AimOptimizeMode.LowRotation));
     private final BoolSetting eatingPause = boolSetting("Eating Pause", false);
 
+    // Calculation
     private final BoolSetting noSuicide = boolSetting("No Suicide", true);
     private final DoubleSetting lethalMaxSelfDamage = doubleSetting("Lethal Max Self Dmg", 8.0, 0.0, 36.0, 0.25);
     private final BoolSetting motionPrediction = boolSetting("Motion Prediction", false);
     private final IntSetting predictTick = intSetting("Predict Tick", 6, 0, 10, 1, motionPrediction::getValue);
 
+    // Force Place
     private final DoubleSetting forcePlaceHealth = doubleSetting("Force Place Health", 8.0, 0.0, 36.0, 0.5);
     private final IntSetting forcePlaceArmorRate = intSetting("Force Place Armor Rate", 3, 0, 25, 1);
     private final DoubleSetting forcePlaceMinDamage = doubleSetting("Force Place Min Dmg", 2.0, 0.0, 20.0, 0.25);
     private final DoubleSetting forcePlaceBalance = doubleSetting("Force Place Balance", -3.0, -10.0, 10.0, 0.25);
 
+    // Place
     private final EnumSetting<SwingMode> placeSwing = enumSetting("Place Swing", SwingMode.None);
+    private final DoubleSetting placeRotationSpeed = doubleSetting("Place Rotation Speed", 10.0, 1.0, 10.0, 0.5);
     private final EnumSetting<SwapMode> placeSwapMode = enumSetting("Place Swap Mode", SwapMode.None);
     private final DoubleSetting placeMinDmg = doubleSetting("Place Min Dmg", 6.0, 0.0, 20.0, 0.25);
     private final DoubleSetting placeMaxSelfDmg = doubleSetting("Place Max Self Dmg", 10.0, 0.0, 36.0, 0.25);
@@ -66,7 +75,9 @@ public class CrystalAura extends Module {
     private final IntSetting placeDelay = intSetting("Place Delay", 50, 0, 1000, 10);
     private final DoubleSetting placeRange = doubleSetting("Place Range", 4.0, 1.0, 6.0, 0.1);
 
+    // Break
     private final EnumSetting<SwingMode> breakSwing = enumSetting("Break Swing", SwingMode.None);
+    private final DoubleSetting breakRotationSpeed = doubleSetting("Break Rotation Speed", 10.0, 1.0, 10.0, 0.5);
     private final BoolSetting antiWeak = boolSetting("Anti Weak", false);
     private final EnumSetting<SwapMode> antiWeakSwapMode = enumSetting("Anti Weak Swap Mode", SwapMode.Silent, antiWeak::getValue);
     private final DoubleSetting breakMinDmg = doubleSetting("Break Min Dmg", 6.0, 0.0, 20.0, 0.25);
@@ -75,6 +86,7 @@ public class CrystalAura extends Module {
     private final IntSetting breakDelay = intSetting("Break Delay", 50, 0, 1000, 10);
     private final DoubleSetting breakRange = doubleSetting("Break Range", 4.0, 1.0, 6.0, 0.1);
 
+    // Render
     private final ColorSetting filledColor = colorSetting("Filled Color", new Color(255, 150, 120, 100));
     private final ColorSetting outlineColor = colorSetting("Outline Color", new Color(255, 150, 120, 170));
     private final IntSetting movingLength = intSetting("Moving Length", 400, 0, 1000, 50);
@@ -136,8 +148,7 @@ public class CrystalAura extends Module {
     private void tryBreakCrystal() {
         if (!breakTimer.passedMillise(breakDelay.getValue())) return;
 
-        EndCrystal bestCrystal = null;
-        float bestScore = Float.MIN_VALUE;
+        List<BreakCandidate> candidates = new ArrayList<>();
 
         for (Entity entity : mc.level.entitiesForRendering()) {
             if (!(entity instanceof EndCrystal crystal)) continue;
@@ -154,12 +165,13 @@ public class CrystalAura extends Module {
             if (targetDmg < breakMinDmg.getValue()) continue;
             float balance = targetDmg - selfDmg;
             if (balance < breakBalance.getValue()) continue;
-            if (targetDmg > bestScore) {
-                bestScore = targetDmg;
-                bestCrystal = crystal;
-            }
+
+            Vector2f targetRotation = RotationUtils.calculate(crystal);
+            float rotationDelta = getRotationDelta(getPrevTickRotation(), targetRotation);
+            candidates.add(new BreakCandidate(crystal, targetDmg, targetRotation, rotationDelta));
         }
 
+        EndCrystal bestCrystal = selectBestBreakCandidate(candidates);
         if (bestCrystal != null) {
             doBreakCrystal(bestCrystal);
         }
@@ -178,15 +190,36 @@ public class CrystalAura extends Module {
             }
         }
 
-        Vector2f rotation = RotationUtils.calculate(crystal);
-        RotationManager.INSTANCE.applyRotation(rotation, rotationSpeed.getValue(), Priority.High);
-        mc.gameMode.attack(mc.player, crystal);
-        doSwing(breakSwing.getValue());
-        if (swapped) {
-            InvUtils.swapBack();
-        }
-        breakTimer.reset();
-        addRenderRecord(crystal.blockPosition().below());
+        final boolean silentSwapped = swapped;
+        final int requestPriority = Priority.High.priority;
+        final int crystalId = crystal.getId();
+        final Vector2f rotation = RotationUtils.calculate(crystal);
+
+        RotationManager.INSTANCE.applyRotation(rotation, breakRotationSpeed.getValue(), requestPriority, record -> {
+            if (!isEnabled() || nullCheck()) {
+                if (silentSwapped) InvUtils.swapBack();
+                return;
+            }
+            if (record.selectedPriorityValue() != requestPriority) return;
+
+            Entity current = mc.level.getEntity(crystalId);
+            if (!(current instanceof EndCrystal currentCrystal) || !currentCrystal.isAlive()) {
+                if (silentSwapped) InvUtils.swapBack();
+                return;
+            }
+
+            if (!RaytraceUtils.facingEnemy(currentCrystal, breakRange.getValue(), record.currentRotation())) {
+                if (silentSwapped) InvUtils.swapBack();
+                return;
+            }
+
+            mc.gameMode.attack(mc.player, currentCrystal);
+            doSwing(breakSwing.getValue());
+            breakTimer.reset();
+            addRenderRecord(currentCrystal.blockPosition().below());
+
+            if (silentSwapped) InvUtils.swapBack();
+        });
     }
 
     private void tryPlaceCrystal(Vec3 predictedTargetPos) {
@@ -271,22 +304,52 @@ public class CrystalAura extends Module {
 
     private PlaceCandidate findBestCandidate(List<PlaceCandidate> candidates,
                                               float minDmg, float maxSelfDmg, float minBalance) {
-        PlaceCandidate best = null;
-        float bestScore = Float.MIN_VALUE;
+        List<PlaceCandidate> valid = new ArrayList<>();
 
         for (PlaceCandidate c : candidates) {
             if (exceedsSelfDamageLimit(c.selfDmg, maxSelfDmg)) continue;
             if (c.targetDmg < minDmg) continue;
             float balance = c.targetDmg - c.selfDmg;
             if (balance < minBalance) continue;
+            valid.add(c);
+        }
 
-            if (c.targetDmg > bestScore) {
-                bestScore = c.targetDmg;
-                best = c;
+        if (valid.isEmpty()) return null;
+
+        float bestDamage = Float.MIN_VALUE;
+        for (PlaceCandidate c : valid) {
+            if (c.targetDmg > bestDamage) {
+                bestDamage = c.targetDmg;
             }
         }
 
-        return best;
+        if (aimOptimizeMode.is(AimOptimizeMode.MaxDamage)) {
+            PlaceCandidate best = null;
+            float bestScore = Float.MIN_VALUE;
+            for (PlaceCandidate c : valid) {
+                if (c.targetDmg > bestScore) {
+                    bestScore = c.targetDmg;
+                    best = c;
+                }
+            }
+            return best;
+        }
+
+        float threshold = bestDamage - aimDamageSacrifice.getValue().floatValue();
+        PlaceCandidate selected = null;
+        float bestDelta = Float.MAX_VALUE;
+        Vector2f prev = getPrevTickRotation();
+        for (PlaceCandidate c : valid) {
+            if (c.targetDmg < threshold) continue;
+            Vector2f targetRot = RotationUtils.calculate(c.supportPos, Direction.UP);
+            float delta = getRotationDelta(prev, targetRot);
+            if (delta < bestDelta) {
+                bestDelta = delta;
+                selected = c;
+            }
+        }
+
+        return selected != null ? selected : valid.get(0);
     }
 
     private void doPlaceCrystal(PlaceCandidate candidate, FindItemResult crystalItem) {
@@ -300,24 +363,35 @@ public class CrystalAura extends Module {
             }
             hand = InteractionHand.MAIN_HAND;
         }
-        Vector2f rotation = RotationUtils.calculate(candidate.supportPos, Direction.UP);
-        RotationManager.INSTANCE.applyRotation(rotation, rotationSpeed.getValue(), Priority.High);
-        Vec3 hitVec = new Vec3(
+        final boolean silentSwapped = swapped;
+        final InteractionHand placeHand = hand;
+        final int requestPriority = Priority.High.priority;
+        final Vector2f rotation = RotationUtils.calculate(candidate.supportPos, Direction.UP);
+        final Vec3 hitVec = new Vec3(
                 candidate.supportPos.getX() + 0.5,
                 candidate.supportPos.getY() + 1.0,
                 candidate.supportPos.getZ() + 0.5
         );
-        BlockHitResult hitResult = new BlockHitResult(hitVec, Direction.UP, candidate.supportPos, false);
-        InteractionResult result = mc.gameMode.useItemOn(mc.player, hand, hitResult);
+        RotationManager.INSTANCE.applyRotation(rotation, placeRotationSpeed.getValue(), requestPriority, record -> {
+            if (!isEnabled() || nullCheck()) {
+                if (silentSwapped) InvUtils.swapBack();
+                return;
+            }
+            if (record.selectedPriorityValue() != requestPriority) return;
+            if (!RaytraceUtils.overBlock(record.currentRotation(), Direction.UP, candidate.supportPos, false)) {
+                if (silentSwapped) InvUtils.swapBack();
+                return;
+            }
 
-        if (result.consumesAction()) {
-            doSwing(placeSwing.getValue());
-            addRenderRecord(candidate.supportPos);
-        }
-        if (swapped) {
-            InvUtils.swapBack();
-        }
-        placeTimer.reset();
+            BlockHitResult hitResult = new BlockHitResult(hitVec, Direction.UP, candidate.supportPos, false);
+            InteractionResult result = mc.gameMode.useItemOn(mc.player, placeHand, hitResult);
+            if (result.consumesAction()) {
+                doSwing(placeSwing.getValue());
+                addRenderRecord(candidate.supportPos);
+                placeTimer.reset();
+            }
+            if (silentSwapped) InvUtils.swapBack();
+        });
     }
 
     /**
@@ -409,8 +483,58 @@ public class CrystalAura extends Module {
         }
     }
 
-
     private record PlaceCandidate(BlockPos supportPos, Vec3 crystalPos, float targetDmg, float selfDmg) { }
+
+    private EndCrystal selectBestBreakCandidate(List<BreakCandidate> candidates) {
+        if (candidates.isEmpty()) return null;
+
+        float bestDamage = Float.MIN_VALUE;
+        BreakCandidate maxDamage = null;
+        for (BreakCandidate c : candidates) {
+            if (c.targetDmg > bestDamage) {
+                bestDamage = c.targetDmg;
+                maxDamage = c;
+            }
+        }
+
+        if (maxDamage == null || aimOptimizeMode.is(AimOptimizeMode.MaxDamage)) {
+            return maxDamage != null ? maxDamage.crystal : null;
+        }
+
+        float threshold = bestDamage - aimDamageSacrifice.getValue().floatValue();
+        BreakCandidate selected = null;
+        float bestDelta = Float.MAX_VALUE;
+        for (BreakCandidate c : candidates) {
+            if (c.targetDmg < threshold) continue;
+            if (c.rotationDelta < bestDelta) {
+                bestDelta = c.rotationDelta;
+                selected = c;
+            }
+        }
+
+        return selected != null ? selected.crystal : maxDamage.crystal;
+    }
+
+    private Vector2f getPrevTickRotation() {
+        Vector2f prev = RotationManager.INSTANCE.lastRotations;
+        if (prev == null) {
+            return new Vector2f(mc.player.getYRot(), mc.player.getXRot());
+        }
+        return new Vector2f(prev.x, prev.y);
+    }
+
+    private float getRotationDelta(Vector2f from, Vector2f to) {
+        float yawDiff = Math.abs(Mth.wrapDegrees(to.x - from.x));
+        float pitchDiff = Math.abs(to.y - from.y);
+        return (float) Math.hypot(yawDiff, pitchDiff);
+    }
+
+    private record BreakCandidate(
+            EndCrystal crystal,
+            float targetDmg,
+            Vector2f targetRotation,
+            float rotationDelta
+    ) { }
 
     private record RenderRecord(BlockPos pos, long time) { }
 
@@ -424,6 +548,11 @@ public class CrystalAura extends Module {
         None,
         Client,
         Packet,
+    }
+
+    private enum AimOptimizeMode {
+        MaxDamage,
+        LowRotation
     }
 
 }
