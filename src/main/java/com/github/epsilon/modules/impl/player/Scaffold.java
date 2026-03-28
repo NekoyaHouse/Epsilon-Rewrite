@@ -16,6 +16,7 @@ import com.github.epsilon.utils.player.MoveUtils;
 import com.github.epsilon.utils.render.Render3DUtils;
 import com.github.epsilon.utils.render.animation.Easing;
 import com.github.epsilon.utils.rotation.MovementFix;
+import com.github.epsilon.utils.rotation.Priority;
 import com.github.epsilon.utils.rotation.RaytraceUtils;
 import com.github.epsilon.utils.rotation.RotationUtils;
 import com.github.epsilon.utils.world.BlockUtils;
@@ -151,13 +152,12 @@ public class Scaffold extends Module {
                 airTicks = 0;
                 blockInfo = null;
                 Vector2f rotation = new Vector2f(mc.player.getYRot(), mc.player.getXRot());
-                RotationManager.INSTANCE.setRotations(rotation, rotationBackSpeed.getValue(), movementFix);
+                RotationManager.INSTANCE.applyRotation(rotation, rotationBackSpeed.getValue(), movementFix, Priority.Low.priority);
             } else {
                 if (airTicks >= tellyTick.getValue() && blockInfo != null) {
                     FindItemResult item = findItem();
                     if (item.found()) {
-                        RotationManager.INSTANCE.setRotations(getRotation(blockInfo), rotationSpeed.getValue(), movementFix);
-                        place(item);
+                        queuePlaceWithRotation(blockInfo, item, movementFix);
                     }
                 }
                 airTicks++;
@@ -165,8 +165,7 @@ public class Scaffold extends Module {
         } else if (blockInfo != null) {
             FindItemResult item = findItem();
             if (item.found()) {
-                RotationManager.INSTANCE.setRotations(getRotation(blockInfo), rotationSpeed.getValue(), movementFix);
-                place(item);
+                queuePlaceWithRotation(blockInfo, item, movementFix);
             }
         }
 
@@ -270,9 +269,26 @@ public class Scaffold extends Module {
         }
     }
 
+    private void queuePlaceWithRotation(BlockInfo targetBlockInfo, FindItemResult item, MovementFix movementFix) {
+        final int requestPriority = Priority.High.priority;
+        final Vector2f requestedRotation = getRotation(targetBlockInfo);
+
+        RotationManager.INSTANCE.applyRotation(requestedRotation, rotationSpeed.getValue(), movementFix, requestPriority, record -> {
+            if (!isEnabled() || nullCheck()) return;
+            if (record.selectedPriorityValue() != requestPriority) return;
+            if (blockInfo == null || !blockInfo.equals(targetBlockInfo)) return;
+            place(targetBlockInfo, item);
+        });
+    }
+
     private void place(FindItemResult item) {
+        place(blockInfo, item);
+    }
+
+    private void place(BlockInfo currentBlockInfo, FindItemResult item) {
+        if (currentBlockInfo == null) return;
         if (!onAir()) return;
-        if (!BlockUtils.canPlaceAt(blockInfo.blockPos)) return;
+        if (!BlockUtils.canPlaceAt(currentBlockInfo.blockPos)) return;
 
         switch (swapMode.getValue()) {
             case Normal -> {
@@ -286,9 +302,9 @@ public class Scaffold extends Module {
             }
         }
 
-        boolean hasRotated = RaytraceUtils.overBlock(RotationManager.INSTANCE.getRotation(), blockInfo.dir, blockInfo.position, sideCheck.getValue());
+        boolean hasRotated = RaytraceUtils.overBlock(RotationManager.INSTANCE.getRotation(), currentBlockInfo.dir, currentBlockInfo.position, sideCheck.getValue());
         if (hasRotated) {
-            InteractionResult result = mc.gameMode.useItemOn(mc.player, item.getHand(), new BlockHitResult(getVec3(blockInfo.position, blockInfo.dir), blockInfo.dir, blockInfo.position, false));
+            InteractionResult result = mc.gameMode.useItemOn(mc.player, item.getHand(), new BlockHitResult(getVec3(currentBlockInfo.position, currentBlockInfo.dir), currentBlockInfo.dir, currentBlockInfo.position, false));
             if (result.consumesAction()) {
                 if (swingHand.getValue()) {
                     mc.player.swing(item.getHand());
@@ -297,7 +313,7 @@ public class Scaffold extends Module {
                 }
 
                 if (render.getValue()) {
-                    renderBoxes.add(new RenderBox(new AABB(blockInfo.blockPos), lineColor.getValue(), sideColor.getValue(), System.currentTimeMillis(), fade.getValue(), shrink.getValue()));
+                    renderBoxes.add(new RenderBox(new AABB(currentBlockInfo.blockPos), lineColor.getValue(), sideColor.getValue(), System.currentTimeMillis(), fade.getValue(), shrink.getValue()));
                 }
             }
         }
