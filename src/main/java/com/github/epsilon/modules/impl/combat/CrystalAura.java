@@ -370,7 +370,7 @@ public class CrystalAura extends Module {
 
     private void addRenderRecord(BlockPos pos) {
         renderRecords.removeIf(r -> r.pos.equals(pos));
-        renderRecords.add(new RenderRecord(pos, renderTimer.getCurrentMS()));
+        renderRecords.add(new RenderRecord(pos, renderTimer.getMs()));
     }
 
     @SubscribeEvent
@@ -378,7 +378,7 @@ public class CrystalAura extends Module {
         if (nullCheck()) return;
         if (renderRecords.isEmpty()) return;
 
-        long now = renderTimer.getCurrentMS();
+        long now = renderTimer.getMs();
         long totalLife = movingLength.getValue() + fadeLength.getValue();
         renderRecords.removeIf(r -> now - r.time > totalLife);
 
