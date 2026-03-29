@@ -1,10 +1,10 @@
 package com.github.epsilon.modules.impl.client;
 
 import com.github.epsilon.gui.panel.PanelScreen;
-import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.settings.impl.BoolSetting;
 import com.github.epsilon.settings.impl.EnumSetting;
+import com.github.epsilon.settings.impl.KeybindSetting;
 
 public class ClickGui extends Module {
 
@@ -26,14 +26,41 @@ public class ClickGui extends Module {
     }
 
     private ClickGui() {
-        super("ClickGui", Category.CLIENT);
+        super("ClickGui", null);
     }
 
     public static final ClickGui INSTANCE = new ClickGui();
 
+    public final KeybindSetting guiKeybind = addKeybindSetting(new KeybindSetting("Keybind", this, -1) {
+        @Override
+        public void setValue(Integer value) {
+            super.setValue(value);
+            syncKeyBind(value != null ? value : -1);
+        }
+    });
+
     private final BoolSetting backgroundBlur = boolSetting("BackgroundBlur", true);
     public final EnumSetting<ThemeMode> themeMode = enumSetting("ThemeMode", ThemeMode.Dark);
     public final EnumSetting<ThemePreset> themePreset = enumSetting("ThemePreset", ThemePreset.TonalSpot);
+
+    @Override
+    public void setKeyBind(int keyBind) {
+        super.setKeyBind(keyBind);
+        if (guiKeybind != null && guiKeybind.getValue() != keyBind) {
+            guiKeybind.setValueDirect(keyBind);
+        }
+    }
+
+    private void syncKeyBind(int keyBind) {
+        if (getKeyBind() != keyBind) {
+            super.setKeyBind(keyBind);
+        }
+    }
+
+    private KeybindSetting addKeybindSetting(KeybindSetting setting) {
+        settings.add(setting);
+        return setting;
+    }
 
     @Override
     protected void onEnable() {

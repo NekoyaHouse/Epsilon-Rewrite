@@ -1,9 +1,9 @@
 {
-  "epsilon.categories.client": "Client",
   "epsilon.categories.combat": "Combat",
   "epsilon.categories.player": "Player",
   "epsilon.categories.render": "Render",
   "epsilon.categories.world": "World",
+  "epsilon.gui.clientsettings": "Client Settings",
   "epsilon.gui.gameaccount": "Account",
   "epsilon.gui.search": "Search ...",
   "epsilon.keybind.hold": "Hold",
@@ -54,6 +54,7 @@
   "epsilon.modules.breakcooldown.cooldown": "Cooldown",
   "epsilon.modules.cameraclip": "Camera Clip",
   "epsilon.modules.clickgui": "Click GUI",
+  "epsilon.modules.clickgui.keybind": "Keybind",
   "epsilon.modules.clickgui.backgroundblur": "Background Blur",
   "epsilon.modules.clickgui.thememode": "Theme Mode",
   "epsilon.modules.clickgui.thememode.dark": "Dark",

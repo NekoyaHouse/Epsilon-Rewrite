@@ -7,8 +7,7 @@ public enum Category {
     COMBAT("b", "combat", "ComBat"),
     PLAYER("5", "player", "Player"),
     RENDER("a", "render", "Render"),
-    WORLD("3", "world", "World"),
-    CLIENT("7", "client", "Client");
+    WORLD("3", "world", "World");
 
     public final String icon;
     private final String name;

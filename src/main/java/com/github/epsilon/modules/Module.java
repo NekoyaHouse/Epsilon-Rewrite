@@ -180,4 +180,12 @@ public class Module {
         return addSetting(new ColorSetting(name, this, defaultValue));
     }
 
+    protected KeybindSetting keybindSetting(String name, int defaultValue, Setting.Dependency dependency) {
+        return addSetting(new KeybindSetting(name, this, defaultValue, dependency));
+    }
+
+    protected KeybindSetting keybindSetting(String name, int defaultValue) {
+        return addSetting(new KeybindSetting(name, this, defaultValue));
+    }
+
 }

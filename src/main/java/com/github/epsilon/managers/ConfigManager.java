@@ -222,6 +222,9 @@ public class ConfigManager {
     }
 
     private static JsonElement serializeSetting(Setting<?> setting) {
+        if (setting instanceof KeybindSetting s) {
+            return new JsonPrimitive(s.getValue());
+        }
         if (setting instanceof BoolSetting s) {
             return new JsonPrimitive(s.getValue());
         }
@@ -255,6 +258,8 @@ public class ConfigManager {
         try {
             if (setting instanceof BoolSetting s) {
                 s.setValue(value.getAsBoolean());
+            } else if (setting instanceof KeybindSetting s) {
+                s.setValue(value.getAsInt());
             } else if (setting instanceof IntSetting s) {
                 s.setValue(value.getAsInt());
             } else if (setting instanceof DoubleSetting s) {

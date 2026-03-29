@@ -59,14 +59,14 @@ public class ModuleList extends Module {
         for (Module module : enabledModules) {
 //            String text = "中文".equals(language.getValue()) ? module.getCnName() : module.getDescription();
             String text = module.getName();
-            if (showCategory.getValue()) {
+            if (showCategory.getValue() && module.category != null) {
                 text += " [" + module.category.getName() + "]";
             }
             float textWidth = textRenderer.getWidth(text, moduleScale);
             float boxWidth = textWidth + 4.0f * moduleScale * 2;
             float boxHeight = 16.0f * moduleScale;
             float totalWidth = boxWidth;
-            if (showIcon.getValue()) {
+            if (showIcon.getValue() && module.category != null) {
                 totalWidth += boxHeight + 2.0f * moduleScale;
             }
             items.add(new ItemInfo(module, text, boxWidth, boxHeight, totalWidth));
@@ -91,7 +91,7 @@ public class ModuleList extends Module {
 //                textRenderer.addGlowingText(item.text(), textX + 0.7f, textY - 0.5f, moduleScale, new Color(255, 255, 255, 126), glowRadius.getValue().floatValue(), glowIntensity.getValue().intValue());
 //            }
 
-            if (showIcon.getValue()) {
+            if (showIcon.getValue() && item.module().category != null) {
                 shadowRenderer.addShadow(iconBoxX, boxY, item.boxHeight(), item.boxHeight(), 6.0f * moduleScale, 10.0f * moduleScale, shadowColor.getValue());
 
                 String iconChar = item.module().category.icon;
@@ -115,7 +115,7 @@ public class ModuleList extends Module {
     private int getTextWidth(Module module) {
         TextRenderer textRenderer = textRendererSupplier.get();
         String text = module.getName();
-        if (showCategory.getValue()) {
+        if (showCategory.getValue() && module.category != null) {
             text += " [" + module.category.getName() + "]";
         }
         return (int) textRenderer.getWidth(text, scale.getValue().floatValue());

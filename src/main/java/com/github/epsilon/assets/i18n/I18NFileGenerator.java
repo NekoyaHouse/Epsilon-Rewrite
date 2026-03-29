@@ -32,6 +32,7 @@ public class I18NFileGenerator {
 
         root.addProperty(PREFIX + "gui.search", "");
         root.addProperty(PREFIX + "gui.gameaccount", "");
+        root.addProperty(PREFIX + "gui.clientsettings", "");
 
         for (Module module : ModuleManager.INSTANCE.getModules()) {
             String modulePrefix = "modules." + module.getName().toLowerCase();

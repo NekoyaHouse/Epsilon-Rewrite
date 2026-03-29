@@ -3,6 +3,7 @@ package com.github.epsilon.gui.panel;
 import com.github.epsilon.managers.ModuleManager;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
+import com.github.epsilon.settings.impl.KeybindSetting;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -33,6 +34,11 @@ public class PanelState {
     private float detailScroll;
     private float maxModuleScroll;
     private float maxDetailScroll;
+
+    private boolean clientSettingMode;
+    private KeybindSetting listeningKeybindSetting;
+    private float clientSettingScroll;
+    private float maxClientSettingScroll;
 
     public PanelState() {
         ensureValidSelection();
@@ -167,7 +173,44 @@ public class PanelState {
     private boolean matchesSearch(Module module, String loweredSearch) {
         return module.getName().toLowerCase().contains(loweredSearch)
                 || module.getTranslatedName().toLowerCase().contains(loweredSearch)
-                || module.category.getName().toLowerCase().contains(loweredSearch);
+                || (module.category != null && module.category.getName().toLowerCase().contains(loweredSearch));
+    }
+
+    public boolean isClientSettingMode() {
+        return clientSettingMode;
+    }
+
+    public void setClientSettingMode(boolean clientSettingMode) {
+        if (this.clientSettingMode != clientSettingMode) {
+            this.clientSettingMode = clientSettingMode;
+            if (clientSettingMode) {
+                listeningKeyBindModule = null;
+            } else {
+                listeningKeybindSetting = null;
+                clientSettingScroll = 0.0f;
+            }
+        }
+    }
+
+    public KeybindSetting getListeningKeybindSetting() {
+        return listeningKeybindSetting;
+    }
+
+    public void setListeningKeybindSetting(KeybindSetting listeningKeybindSetting) {
+        this.listeningKeybindSetting = listeningKeybindSetting;
+    }
+
+    public float getClientSettingScroll() {
+        return clientSettingScroll;
+    }
+
+    public void scrollClientSetting(double amount) {
+        clientSettingScroll = clampScroll(clientSettingScroll + (float) amount, maxClientSettingScroll);
+    }
+
+    public void setMaxClientSettingScroll(float maxClientSettingScroll) {
+        this.maxClientSettingScroll = Math.max(0.0f, maxClientSettingScroll);
+        clientSettingScroll = clampScroll(clientSettingScroll, this.maxClientSettingScroll);
     }
 
     private float clampScroll(float scroll, float maxScroll) {

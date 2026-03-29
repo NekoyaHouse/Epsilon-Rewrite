@@ -11,6 +11,9 @@ public final class SettingViewFactory {
     }
 
     public static SettingRow<?> create(Setting<?> setting) {
+        if (setting instanceof KeybindSetting keybindSetting) {
+            return new KeybindSettingRow(keybindSetting);
+        }
         if (setting instanceof BoolSetting boolSetting) {
             return new BoolSettingRow(boolSetting);
         }

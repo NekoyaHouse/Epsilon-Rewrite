@@ -6,12 +6,14 @@ public class PanelDirtyState {
     private boolean railDirty = true;
     private boolean moduleListDirty = true;
     private boolean detailDirty = true;
+    private boolean clientSettingDirty = true;
 
     public void markAllDirty() {
         chromeDirty = true;
         railDirty = true;
         moduleListDirty = true;
         detailDirty = true;
+        clientSettingDirty = true;
     }
 
     public void markLayoutDirty() {
@@ -19,6 +21,7 @@ public class PanelDirtyState {
         railDirty = true;
         moduleListDirty = true;
         detailDirty = true;
+        clientSettingDirty = true;
     }
 
     public void markRailDirty() {
@@ -31,6 +34,10 @@ public class PanelDirtyState {
 
     public void markDetailDirty() {
         detailDirty = true;
+    }
+
+    public void markClientSettingDirty() {
+        clientSettingDirty = true;
     }
 
     public boolean consumeChromeDirty() {
@@ -47,6 +54,10 @@ public class PanelDirtyState {
 
     public boolean consumeDetailDirty() {
         return consume(() -> detailDirty, () -> detailDirty = false);
+    }
+
+    public boolean consumeClientSettingDirty() {
+        return consume(() -> clientSettingDirty, () -> clientSettingDirty = false);
     }
 
     private boolean consume(BooleanSupplier getter, Runnable clearAction) {

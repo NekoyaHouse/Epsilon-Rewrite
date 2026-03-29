@@ -61,7 +61,8 @@ public class ModuleRow {
         roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, background);
 
         textRenderer.addText(module.displayName(), bounds.x() + MD3Theme.ROW_CONTENT_INSET + 4.0f, titleY, titleScale, titleColor, StaticFontLoader.DUCKSANS);
-        textRenderer.addText(module.category().getName(), bounds.x() + MD3Theme.ROW_CONTENT_INSET + 4.0f, subY, subScale, subColor);
+        String categoryText = module.category() != null ? module.category().getName() : "";
+        textRenderer.addText(categoryText, bounds.x() + MD3Theme.ROW_CONTENT_INSET + 4.0f, subY, subScale, subColor);
         drawSwitch(roundRectRenderer, getToggleBounds(), toggleProgress, toggleHoverProgress);
         textRenderer.addText(keybindText, keyX, keyY, keyScale, keyColor);
     }

@@ -1,6 +1,7 @@
 package com.github.epsilon.gui.panel.panel;
 
 import com.github.epsilon.Epsilon;
+import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
@@ -22,6 +23,7 @@ public class CategoryRailPanel {
 
     private static final float CATEGORY_ITEM_HEIGHT = 34.0f;
     private static final float CATEGORY_ITEM_SPACING = 38.0f;
+    private static final String SETTINGS_ICON = "7";
 
     protected final PanelState state;
     private final RectRenderer rectRenderer;
@@ -36,8 +38,11 @@ public class CategoryRailPanel {
     private final Animation headerDividerAnimation = new Animation(Easing.EASE_OUT_CUBIC, 220L);
     private final Animation selectionYAnimation = new Animation(Easing.EASE_OUT_CUBIC, 180L);
     private final Animation selectionHeightAnimation = new Animation(Easing.EASE_OUT_CUBIC, 180L);
+    private final Animation settingsHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
     private PanelLayout.Rect bounds;
     private boolean clippedTextPending;
+
+    private static final TranslateComponent settingsLabelComponent = TranslateComponent.create("gui", "clientsettings");
 
     public CategoryRailPanel(PanelState state, RectRenderer rectRenderer, RoundRectRenderer roundRectRenderer, TextRenderer textRenderer) {
         this.state = state;
@@ -52,6 +57,7 @@ public class CategoryRailPanel {
         this.headerDividerAnimation.setStartValue(0.0f);
         this.selectionYAnimation.setStartValue(0.0f);
         this.selectionHeightAnimation.setStartValue(32.0f);
+        this.settingsHoverAnimation.setStartValue(0.0f);
     }
 
     public float getAnimatedWidth() {
@@ -111,13 +117,17 @@ public class CategoryRailPanel {
 
         float selectedItemY = categoryStartY;
         float selectedItemHeight = CATEGORY_ITEM_HEIGHT;
-        float lookupY = categoryStartY;
-        for (Category category : Category.values()) {
-            if (state.getSelectedCategory() == category) {
-                selectedItemY = lookupY;
-                break;
+        if (state.isClientSettingMode()) {
+            selectedItemY = getSettingsButtonY();
+        } else {
+            float lookupY = categoryStartY;
+            for (Category category : Category.values()) {
+                if (state.getSelectedCategory() == category) {
+                    selectedItemY = lookupY;
+                    break;
+                }
+                lookupY += CATEGORY_ITEM_SPACING;
             }
-            lookupY += CATEGORY_ITEM_SPACING;
         }
 
         selectionYAnimation.run(selectedItemY);
@@ -131,7 +141,7 @@ public class CategoryRailPanel {
             float itemHeight = CATEGORY_ITEM_HEIGHT;
             PanelLayout.Rect itemRect = new PanelLayout.Rect(bounds.x() + 5.0f, itemY, bounds.width() - 10.0f, itemHeight);
             boolean hovered = itemRect.contains(mouseX, mouseY);
-            boolean selected = state.getSelectedCategory() == category;
+            boolean selected = !state.isClientSettingMode() && state.getSelectedCategory() == category;
 
             Color background = selected ? MD3Theme.withAlpha(MD3Theme.SECONDARY_CONTAINER, 0) : hovered ? MD3Theme.SURFACE_CONTAINER : MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER, 0);
             Color iconColor = selected ? MD3Theme.ON_SECONDARY_CONTAINER : hovered ? MD3Theme.TEXT_PRIMARY : MD3Theme.TEXT_SECONDARY;
@@ -162,6 +172,31 @@ public class CategoryRailPanel {
             itemY += CATEGORY_ITEM_SPACING;
         }
 
+        // Settings button at the bottom
+        float settingsBtnY = getSettingsButtonY();
+        PanelLayout.Rect settingsRect = new PanelLayout.Rect(bounds.x() + 5.0f, settingsBtnY, bounds.width() - 10.0f, CATEGORY_ITEM_HEIGHT);
+        boolean settingsHovered = settingsRect.contains(mouseX, mouseY);
+        boolean settingsSelected = state.isClientSettingMode();
+        settingsHoverAnimation.run(settingsHovered ? 1.0f : 0.0f);
+
+        Color settingsBg = settingsSelected ? MD3Theme.withAlpha(MD3Theme.SECONDARY_CONTAINER, 0) : settingsHovered ? MD3Theme.SURFACE_CONTAINER : MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER, 0);
+        Color settingsIconColor = settingsSelected ? MD3Theme.ON_SECONDARY_CONTAINER : settingsHovered ? MD3Theme.TEXT_PRIMARY : MD3Theme.TEXT_SECONDARY;
+        Color settingsLabelColor = settingsSelected ? MD3Theme.ON_SECONDARY_CONTAINER : MD3Theme.TEXT_PRIMARY;
+        roundRectRenderer.addRoundRect(settingsRect.x(), settingsRect.y(), settingsRect.width(), settingsRect.height(), MD3Theme.CARD_RADIUS, settingsBg);
+        float settingsIconWidth = clippedTextRenderer.getWidth(SETTINGS_ICON, itemIconScale, StaticFontLoader.ICONS);
+        float settingsIconX = menuButton.x() + (menuButton.width() - settingsIconWidth) / 2.0f;
+        float settingsIconHeight = clippedTextRenderer.getHeight(itemIconScale, StaticFontLoader.ICONS);
+        float settingsIconY = settingsRect.y() + (settingsRect.height() - settingsIconHeight) / 2.0f - 1.0f;
+        clippedTextRenderer.addText(SETTINGS_ICON, settingsIconX, settingsIconY, itemIconScale, settingsIconColor, StaticFontLoader.ICONS);
+
+        if (contentProgress > 0.02f) {
+            float textOffset = (1.0f - contentProgress) * 5.0f;
+            Color animatedLabel = MD3Theme.withAlpha(settingsLabelColor, (int) (255 * contentProgress));
+            float settingsLabelHeight = clippedTextRenderer.getHeight(itemLabelScale, StaticFontLoader.DUCKSANS);
+            float settingsLabelY = settingsRect.y() + (settingsRect.height() - settingsLabelHeight) / 2.0f - 1.0f;
+            clippedTextRenderer.addText(settingsLabelComponent.getTranslatedName(), settingsRect.x() + 30.0f + textOffset, settingsLabelY, itemLabelScale, animatedLabel, StaticFontLoader.DUCKSANS);
+        }
+
         clippedTextPending = true;
     }
 
@@ -188,11 +223,19 @@ public class CategoryRailPanel {
         for (Category category : Category.values()) {
             PanelLayout.Rect itemRect = new PanelLayout.Rect(bounds.x() + 5.0f, itemY, bounds.width() - 10.0f, CATEGORY_ITEM_HEIGHT);
             if (itemRect.contains(event.x(), event.y())) {
+                state.setClientSettingMode(false);
                 state.setSelectedCategory(category);
                 return true;
             }
             itemY += CATEGORY_ITEM_SPACING;
         }
+
+        PanelLayout.Rect settingsRect = new PanelLayout.Rect(bounds.x() + 5.0f, getSettingsButtonY(), bounds.width() - 10.0f, CATEGORY_ITEM_HEIGHT);
+        if (settingsRect.contains(event.x(), event.y())) {
+            state.setClientSettingMode(true);
+            return true;
+        }
+
         return false;
     }
 
@@ -208,7 +251,8 @@ public class CategoryRailPanel {
                 || !headerSubtitleAnimation.isFinished()
                 || !headerDividerAnimation.isFinished()
                 || !selectionYAnimation.isFinished()
-                || !selectionHeightAnimation.isFinished();
+                || !selectionHeightAnimation.isFinished()
+                || !settingsHoverAnimation.isFinished();
     }
 
     private boolean mouseOver(PanelLayout.Rect rect, int mouseX, int mouseY) {
@@ -223,6 +267,10 @@ public class CategoryRailPanel {
         float dividerY = subtitleY + clippedTextRenderer.getHeight(subtitleScale) + 4.0f;
         float expandedStart = dividerY + 6.0f;
         return collapsedStart + (expandedStart - collapsedStart) * progress;
+    }
+
+    private float getSettingsButtonY() {
+        return bounds.bottom() - CATEGORY_ITEM_HEIGHT - 5.0f;
     }
 
     private void drawMenuGlyph(PanelLayout.Rect button) {
