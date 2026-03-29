@@ -70,7 +70,7 @@ public class KeybindSettingRow extends SettingRow<KeybindSetting> {
             roundRectRenderer.addRoundRect(chipBounds.x(), chipBounds.y(), chipBounds.width(), chipBounds.height(), radius, MD3Theme.withAlpha(foreground, (int) (hoverAlpha * chipHover)));
         }
 
-        String label = listening ? "..." : formatCompactKeybind(setting.getValue());
+        String label = listening ? "..." : formatKeybind(setting.getValue());
         float chipTextScale = 0.52f;
         float textWidth = textRenderer.getWidth(label, chipTextScale);
         float textHeight = textRenderer.getHeight(chipTextScale);
@@ -101,39 +101,9 @@ public class KeybindSettingRow extends SettingRow<KeybindSetting> {
         return !chipHoverAnimation.isFinished() || !focusAnimation.isFinished();
     }
 
-    private String formatCompactKeybind(int keyCode) {
-        if (keyCode < 0) {
-            return noneComponent.getTranslatedName();
-        }
-        String label = formatKeybind(keyCode).trim();
-        if (label.isEmpty()) {
-            return "?";
-        }
-
-        String[] parts = label.split("[^A-Za-z0-9]+");
-        StringBuilder initials = new StringBuilder();
-        for (String part : parts) {
-            if (!part.isEmpty() && Character.isLetterOrDigit(part.charAt(0))) {
-                initials.append(Character.toUpperCase(part.charAt(0)));
-            }
-            if (initials.length() == 3) {
-                break;
-            }
-        }
-        if (initials.length() >= 2) {
-            return initials.toString();
-        }
-
-        String compact = label.replaceAll("[^A-Za-z0-9]", "").toUpperCase(Locale.ROOT);
-        if (compact.isEmpty()) {
-            return "?";
-        }
-        return compact.length() > 3 ? compact.substring(0, 3) : compact;
-    }
-
     private String formatKeybind(int keyCode) {
         if (keyCode < 0) {
-            return "None";
+            return noneComponent.getTranslatedName();
         }
         return InputConstants.Type.KEYSYM.getOrCreate(keyCode).getDisplayName().getString();
     }
