@@ -5,7 +5,7 @@ import com.github.epsilon.modules.impl.client.ClickGui;
 import com.github.epsilon.modules.impl.combat.*;
 import com.github.epsilon.modules.impl.player.*;
 import com.github.epsilon.modules.impl.render.*;
-import com.github.epsilon.modules.impl.world.AutoFarm;
+import com.github.epsilon.modules.impl.world.*;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import java.util.List;
@@ -31,27 +31,24 @@ public class ModuleManager {
                 AutoClicker.INSTANCE,
                 CrystalAura.INSTANCE,
                 KillAura.INSTANCE,
+                PacketMine.INSTANCE,
+                Velocity.INSTANCE,
 
                 // Player
-                AutoAccount.INSTANCE,
                 BreakCooldown.INSTANCE,
                 Disabler.INSTANCE,
                 ElytraFly.INSTANCE,
-                FakePlayer.INSTANCE,
                 InvManager.INSTANCE,
                 JumpCooldown.INSTANCE,
                 MovementFix.INSTANCE,
                 NoRotate.INSTANCE,
                 NoSlow.INSTANCE,
-                PacketMine.INSTANCE,
                 Phase.INSTANCE,
                 SafeWalk.INSTANCE,
                 Scaffold.INSTANCE,
                 Sprint.INSTANCE,
-                Stealer.INSTANCE,
                 Stuck.INSTANCE,
                 VClip.INSTANCE,
-                Velocity.INSTANCE,
 
                 // Render
                 ESP.INSTANCE,
@@ -61,7 +58,10 @@ public class ModuleManager {
                 NoRender.INSTANCE,
 
                 // World
-                AutoFarm.INSTANCE
+                AutoFarm.INSTANCE,
+                Stealer.INSTANCE,
+                FakePlayer.INSTANCE,
+                AutoAccount.INSTANCE
 
         );
     }

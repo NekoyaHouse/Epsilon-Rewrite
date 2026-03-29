@@ -1,7 +1,8 @@
-package com.github.epsilon.modules.impl.player;
+package com.github.epsilon.modules.impl.world;
 
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
+import com.github.epsilon.modules.impl.player.InvManager;
 import com.github.epsilon.settings.impl.BoolSetting;
 import com.github.epsilon.settings.impl.IntSetting;
 import com.github.epsilon.utils.math.MathUtils;
@@ -28,7 +29,7 @@ public class Stealer extends Module {
     public static final Stealer INSTANCE = new Stealer();
 
     private Stealer() {
-        super("Stealer", Category.PLAYER);
+        super("Stealer", Category.WORLD);
     }
 
     private final BoolSetting pickEnderChest = boolSetting("EnderChest", false);

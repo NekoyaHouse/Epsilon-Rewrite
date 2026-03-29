@@ -1,4 +1,4 @@
-package com.github.epsilon.modules.impl.player;
+package com.github.epsilon.modules.impl.combat;
 
 import com.github.epsilon.events.AttackBlockEvent;
 import com.github.epsilon.events.MotionEvent;
@@ -45,7 +45,7 @@ public class PacketMine extends Module {
     public static final PacketMine INSTANCE = new PacketMine();
 
     private PacketMine() {
-        super("PacketMine", Category.PLAYER);
+        super("PacketMine", Category.COMBAT);
     }
 
     public enum Mode {

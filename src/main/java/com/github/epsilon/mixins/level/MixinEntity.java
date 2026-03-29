@@ -2,7 +2,7 @@ package com.github.epsilon.mixins.level;
 
 import com.github.epsilon.events.RayTraceEvent;
 import com.github.epsilon.events.StrafeEvent;
-import com.github.epsilon.modules.impl.player.Velocity;
+import com.github.epsilon.modules.impl.combat.Velocity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;

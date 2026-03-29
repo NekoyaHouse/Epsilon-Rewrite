@@ -1,9 +1,8 @@
-package com.github.epsilon.modules.impl.player;
+package com.github.epsilon.modules.impl.combat;
 
 import com.github.epsilon.events.PacketEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
-import com.github.epsilon.modules.impl.combat.AntiBot;
 import com.github.epsilon.settings.impl.BoolSetting;
 import com.github.epsilon.settings.impl.DoubleSetting;
 import com.github.epsilon.settings.impl.EnumSetting;
@@ -35,7 +34,7 @@ public class Velocity extends Module {
     public static final Velocity INSTANCE = new Velocity();
 
     private Velocity() {
-        super("Velocity", Category.PLAYER);
+        super("Velocity", Category.COMBAT);
     }
 
     private enum Mode {

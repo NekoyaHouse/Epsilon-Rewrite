@@ -3,7 +3,7 @@ package com.github.epsilon.mixins.level;
 import com.github.epsilon.events.MotionEvent;
 import com.github.epsilon.events.MoveEvent;
 import com.github.epsilon.events.SlowdownEvent;
-import com.github.epsilon.modules.impl.player.Velocity;
+import com.github.epsilon.modules.impl.combat.Velocity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;

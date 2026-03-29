@@ -1,6 +1,6 @@
 package com.github.epsilon.mixins.level;
 
-import com.github.epsilon.modules.impl.player.Velocity;
+import com.github.epsilon.modules.impl.combat.Velocity;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.material.FlowingFluid;
 import org.spongepowered.asm.mixin.Mixin;

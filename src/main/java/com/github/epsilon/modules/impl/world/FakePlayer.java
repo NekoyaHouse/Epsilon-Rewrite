@@ -1,4 +1,4 @@
-package com.github.epsilon.modules.impl.player;
+package com.github.epsilon.modules.impl.world;
 
 import com.github.epsilon.events.PacketEvent;
 import com.github.epsilon.modules.Category;
@@ -38,7 +38,7 @@ public class FakePlayer extends Module {
     public static final FakePlayer INSTANCE = new FakePlayer();
 
     private FakePlayer() {
-        super("FakePlayer", Category.PLAYER);
+        super("FakePlayer", Category.WORLD);
     }
 
     private enum HealingMode {

@@ -1,4 +1,4 @@
-package com.github.epsilon.modules.impl.player;
+package com.github.epsilon.modules.impl.world;
 
 import com.github.epsilon.events.PacketEvent;
 import com.github.epsilon.modules.Category;
@@ -30,7 +30,7 @@ public class AutoAccount extends Module {
     public static final AutoAccount INSTANCE = new AutoAccount();
 
     private AutoAccount() {
-        super("AutoAccount", Category.PLAYER);
+        super("AutoAccount", Category.WORLD);
     }
 
     private final TimerUtils timer = new TimerUtils();
