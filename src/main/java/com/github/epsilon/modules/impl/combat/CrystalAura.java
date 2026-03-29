@@ -619,7 +619,9 @@ public class CrystalAura extends Module {
         float textY = screenPos.y - textHeight / 2.0f;
         float screenWidth = mc.getWindow().getGuiScaledWidth();
         float screenHeight = mc.getWindow().getGuiScaledHeight();
-        if (textX + textWidth < 0.0f || textY + textHeight < 0.0f || textX > screenWidth || textY > screenHeight) return;
+        if (textX + textWidth < 0.0f || textY + textHeight < 0.0f || textX > screenWidth || textY > screenHeight) {
+            return;
+        }
         Color textColor = new Color(255, 255, 255, Math.max(0, Math.min(255, (int) (220 * renderScale))));
 
         RenderManager.INSTANCE.applyRenderWorldHud(() -> {

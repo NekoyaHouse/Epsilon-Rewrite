@@ -32,6 +32,7 @@ public class ModuleManager {
                 AimAssist.INSTANCE,
                 AntiBot.INSTANCE,
                 AutoClicker.INSTANCE,
+                AutoMend.INSTANCE,
                 AutoTotem.INSTANCE,
                 CrystalAura.INSTANCE,
                 KillAura.INSTANCE,

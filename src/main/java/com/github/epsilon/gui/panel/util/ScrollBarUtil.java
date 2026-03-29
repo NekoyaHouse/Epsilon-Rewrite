@@ -10,7 +10,9 @@ public final class ScrollBarUtil {
     private static final float PADDING = 2.0f;
     private static final float MIN_THUMB_HEIGHT = 12.0f;
 
-    /** Total horizontal space the scrollbar occupies (width + padding on each side). */
+    /**
+     * Total horizontal space the scrollbar occupies (width + padding on each side).
+     */
     public static final float TOTAL_WIDTH = WIDTH + PADDING * 2;
 
     private ScrollBarUtil() {

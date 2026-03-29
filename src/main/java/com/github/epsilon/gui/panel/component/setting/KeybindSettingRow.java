@@ -15,7 +15,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
 
 import java.awt.*;
-import java.util.Locale;
 
 public class KeybindSettingRow extends SettingRow<KeybindSetting> {
 
