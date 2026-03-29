@@ -100,7 +100,8 @@ public class CrystalAura extends Module {
     private final DoubleSetting breakRange = doubleSetting("Break Range", 4.0, 1.0, 6.0, 0.1);
 
     // Render
-    private final BoolSetting showDamage = boolSetting("Show Damage", false);
+    private final BoolSetting targetDamage = boolSetting("Target Damage", true);
+    private final BoolSetting selfDamage = boolSetting("Self Damage", false);
     private final ColorSetting filledColor = colorSetting("Filled Color", new Color(255, 150, 120, 100));
     private final ColorSetting outlineColor = colorSetting("Outline Color", new Color(255, 150, 120, 170));
     private final DoubleSetting outlineWidth = doubleSetting("Outline Width", 3.0, 1.0, 10.0, 0.5);
@@ -110,8 +111,17 @@ public class CrystalAura extends Module {
     private LivingEntity target;
     private final TimerUtils placeTimer = new TimerUtils();
     private final TimerUtils breakTimer = new TimerUtils();
-    private final TimerUtils renderTimer = new TimerUtils();
-    private final List<RenderRecord> renderRecords = new ArrayList<>();
+
+    private BlockPos renderBlockPos;
+    private Vec3 renderPrevPos;
+    private Vec3 renderCurrentPos;
+    private Vec3 renderLastRenderedPos;
+    private long renderMoveStartTime;
+    private long renderFadeStartTime;
+    private float renderScale;
+    private float renderDamage;
+    private float renderSelfDamage;
+    private boolean renderHasTarget;
 
     private final Supplier<TextRenderer> rectRenderer = Suppliers.memoize(() -> new TextRenderer(128 * 1024));
 
@@ -119,14 +129,13 @@ public class CrystalAura extends Module {
     protected void onEnable() {
         placeTimer.reset();
         breakTimer.reset();
-        renderTimer.reset();
-        renderRecords.clear();
+        resetRenderState();
     }
 
     @Override
     protected void onDisable() {
         target = null;
-        renderRecords.clear();
+        resetRenderState();
     }
 
     @SubscribeEvent
@@ -148,6 +157,7 @@ public class CrystalAura extends Module {
         );
 
         if (target == null || !target.isAlive()) {
+            deactivateRenderTarget();
             return;
         }
 
@@ -229,8 +239,10 @@ public class CrystalAura extends Module {
             mc.gameMode.attack(mc.player, currentCrystal);
             doSwing(breakSwing.getValue());
             breakTimer.reset();
-            float renderDamage = DamageUtils.crystalDamage(target, currentCrystal.position(), armorMode.getValue());
-            addRenderRecord(currentCrystal.blockPosition().below(), renderDamage);
+            Vec3 crystalPosition = currentCrystal.position();
+            float tgtDmg = DamageUtils.crystalDamage(target, crystalPosition, armorMode.getValue());
+            float selfDmg = DamageUtils.selfCrystalDamage(crystalPosition, armorForSelf.getValue() ? armorMode.getValue() : DamageUtils.ArmorEnchantmentMode.None);
+            updateRenderTarget(currentCrystal.blockPosition().below(), tgtDmg, selfDmg);
 
             if (silentSwapped) InvUtils.swapBack();
         });
@@ -265,11 +277,6 @@ public class CrystalAura extends Module {
         }
     }
 
-    /**
-     * Checks whether Force Place conditions are met:
-     * - target health ≤ forcePlaceHealth  OR
-     * - target armor durability rate ≤ forcePlaceArmorRate (total armor value)
-     */
     private boolean shouldForcePlace() {
         if (target.getHealth() <= forcePlaceHealth.getValue()) return true;
 
@@ -427,23 +434,13 @@ public class CrystalAura extends Module {
             InteractionResult result = mc.gameMode.useItemOn(mc.player, placeHand, hitResult);
             if (result.consumesAction()) {
                 doSwing(placeSwing.getValue());
-                addRenderRecord(candidate.supportPos, candidate.targetDmg);
+                updateRenderTarget(candidate.supportPos, candidate.targetDmg, candidate.selfDmg);
                 placeTimer.reset();
             }
             if (silentSwapped) InvUtils.swapBack();
         });
     }
 
-    /**
-     * Combined self-damage check — returns {@code true} when the crystal should be
-     * <b>rejected</b> (self-damage is too high).
-     * <ol>
-     *   <li>selfDmg must not exceed the per-action max (placeMaxSelfDmg / breakMaxSelfDmg)</li>
-     *   <li>noSuicide: selfDmg must not kill the player (hp + absorption - selfDmg &gt; 0.5)</li>
-     *   <li>lethalMaxSelfDamage: when the remaining HP would be critically low, selfDmg
-     *       must also be below lethalMaxSelfDamage.</li>
-     * </ol>
-     */
     private boolean exceedsSelfDamageLimit(float selfDmg, double maxSelfDmg) {
         if (selfDmg > maxSelfDmg) return true;
 
@@ -507,78 +504,136 @@ public class CrystalAura extends Module {
         }
     }
 
-    private void addRenderRecord(BlockPos pos, float targetDamage) {
-        renderRecords.removeIf(r -> r.pos.equals(pos));
-        renderRecords.add(new RenderRecord(pos, targetDamage, renderTimer.getMs()));
+    private void updateRenderTarget(BlockPos pos, float damage, float selfDmg) {
+        long now = System.currentTimeMillis();
+        if (!pos.equals(renderBlockPos)) {
+            renderCurrentPos = Vec3.atCenterOf(pos);
+            renderPrevPos = renderLastRenderedPos != null ? renderLastRenderedPos : renderCurrentPos;
+            renderMoveStartTime = now;
+            if (renderBlockPos == null) {
+                renderFadeStartTime = now;
+            }
+            renderBlockPos = pos;
+        }
+        renderHasTarget = true;
+        renderDamage = damage;
+        renderSelfDamage = selfDmg;
+    }
+
+    private void deactivateRenderTarget() {
+        if (renderHasTarget) {
+            renderHasTarget = false;
+            renderFadeStartTime = System.currentTimeMillis();
+        }
+    }
+
+    private void resetRenderState() {
+        renderBlockPos = null;
+        renderPrevPos = null;
+        renderCurrentPos = null;
+        renderLastRenderedPos = null;
+        renderMoveStartTime = 0L;
+        renderFadeStartTime = 0L;
+        renderScale = 0.0f;
+        renderDamage = 0.0f;
+        renderSelfDamage = 0.0f;
+        renderHasTarget = false;
+    }
+
+    private static float easeOutQuart(float t) {
+        float u = 1.0f - t;
+        return 1.0f - u * u * u * u;
+    }
+
+    private static float easeOutCubic(float t) {
+        float u = 1.0f - t;
+        return 1.0f - u * u * u;
+    }
+
+    private static float easeInCubic(float t) {
+        return t * t * t;
+    }
+
+    private static float toDelta(long startTime, int lengthMs) {
+        long elapsed = System.currentTimeMillis() - startTime;
+        return Math.min(1.0f, Math.max(0.0f, (float) elapsed / Math.max(1, lengthMs)));
     }
 
     @SubscribeEvent
     private void onRender3D(RenderLevelStageEvent.AfterLevel event) {
         if (nullCheck()) return;
-        if (renderRecords.isEmpty()) return;
+        if (renderPrevPos == null || renderCurrentPos == null) return;
 
-        long now = renderTimer.getMs();
-        long totalLife = movingLength.getValue() + fadeLength.getValue();
-        renderRecords.removeIf(r -> now - r.time > totalLife);
+        float moveDelta = toDelta(renderMoveStartTime, movingLength.getValue());
+        float moveMultiplier = easeOutQuart(moveDelta);
+        Vec3 renderPos = renderPrevPos.add(
+                renderCurrentPos.subtract(renderPrevPos).scale(moveMultiplier)
+        );
 
-        List<TextDrawData> textDraws = new ArrayList<>();
-
-        for (RenderRecord record : renderRecords) {
-            long age = now - record.time;
-            float alpha;
-
-            if (age <= movingLength.getValue()) {
-                alpha = 1.0f;
-            } else {
-                float fadeProgress = (float) (age - movingLength.getValue()) / Math.max(1, fadeLength.getValue());
-                alpha = 1.0f - Math.min(1.0f, fadeProgress);
-            }
-
-            if (alpha <= 0.01f) continue;
-
-            Color fc = filledColor.getValue();
-            Color oc = outlineColor.getValue();
-
-            Color filled = new Color(fc.getRed(), fc.getGreen(), fc.getBlue(),
-                    Math.max(0, Math.min(255, (int) (fc.getAlpha() * alpha))));
-            Color outline = new Color(oc.getRed(), oc.getGreen(), oc.getBlue(),
-                    Math.max(0, Math.min(255, (int) (oc.getAlpha() * alpha))));
-
-            AABB box = new AABB(record.pos);
-            Render3DUtils.drawFilledBox(box, filled);
-            Render3DUtils.drawOutlineBox(event.getPoseStack(), box, outline.getRGB(), outlineWidth.getValue().floatValue());
-
-            if (!showDamage.getValue()) continue;
-
-            Vector2f screenPos = projectRecordToScreen(record.pos.below());
-            if (screenPos == null) continue;
-
-            TextRenderer textRenderer = rectRenderer.get();
-            float textScale = 1.0f;
-            String text = String.format(Locale.ROOT, "%.1f", record.targetDamage);
-            float textWidth = textRenderer.getWidth(text, textScale);
-            float textHeight = textRenderer.getHeight(textScale);
-            Color textColor = new Color(255, 255, 255, Math.max(0, Math.min(255, (int) (220 * alpha))));
-            textDraws.add(new TextDrawData(text, screenPos.x - textWidth / 2.0f, screenPos.y - textHeight, textScale, textColor));
+        float fadeDelta = toDelta(renderFadeStartTime, fadeLength.getValue());
+        if (renderHasTarget) {
+            renderScale = easeOutCubic(fadeDelta);
+        } else {
+            renderScale = 1.0f - easeInCubic(fadeDelta);
         }
 
-        if (!textDraws.isEmpty()) {
-            RenderManager.INSTANCE.applyRenderWorldHud(() -> {
-                TextRenderer textRenderer = rectRenderer.get();
-                for (TextDrawData text : textDraws) {
-                    textRenderer.addText(text.text, text.x, text.y, text.scale, text.color);
-                }
-                textRenderer.drawAndClear();
-            });
+        if (renderScale <= 0.01f) return;
+
+        double halfSize = 0.5 * renderScale;
+        AABB box = new AABB(
+                renderPos.x - halfSize, renderPos.y - halfSize, renderPos.z - halfSize,
+                renderPos.x + halfSize, renderPos.y + halfSize, renderPos.z + halfSize
+        );
+
+        Color fc = filledColor.getValue();
+        Color oc = outlineColor.getValue();
+
+        Color filled = new Color(fc.getRed(), fc.getGreen(), fc.getBlue(),
+                Math.max(0, Math.min(255, (int) (fc.getAlpha() * renderScale))));
+        Color outline = new Color(oc.getRed(), oc.getGreen(), oc.getBlue(),
+                Math.max(0, Math.min(255, (int) (oc.getAlpha() * renderScale))));
+
+        Render3DUtils.drawFilledBox(box, filled);
+        Render3DUtils.drawOutlineBox(event.getPoseStack(), box, outline.getRGB(), outlineWidth.getValue().floatValue());
+
+        renderLastRenderedPos = renderPos;
+
+        if (!targetDamage.getValue() && !selfDamage.getValue()) return;
+
+        Vector2f screenPos = projectToScreen(renderPos);
+        if (screenPos == null) return;
+
+        StringBuilder sb = new StringBuilder();
+        if (targetDamage.getValue()) sb.append(String.format(Locale.ROOT, "%.1f", renderDamage));
+        if (selfDamage.getValue()) {
+            if (!sb.isEmpty()) sb.append('/');
+            sb.append(String.format(Locale.ROOT, "%.1f", renderSelfDamage));
         }
+        String text = sb.toString();
+
+        TextRenderer textRenderer = rectRenderer.get();
+        float textScale = 1.0f;
+        float textWidth = textRenderer.getWidth(text, textScale);
+        float textHeight = textRenderer.getHeight(textScale);
+        Color textColor = new Color(255, 255, 255, Math.max(0, Math.min(255, (int) (220 * renderScale))));
+
+        RenderManager.INSTANCE.applyRenderWorldHud(() -> {
+            TextRenderer tr = rectRenderer.get();
+            tr.addText(text, screenPos.x - textWidth / 2.0f, screenPos.y - textHeight / 2.0f, textScale, textColor);
+            tr.drawAndClear();
+        });
     }
 
-    private Vector2f projectRecordToScreen(BlockPos pos) {
+    private Vector2f projectToScreen(Vec3 pos) {
         int[] viewport = new int[]{0, 0, mc.getWindow().getWidth(), mc.getWindow().getHeight()};
         CameraRenderState cameraState = mc.gameRenderer.getGameRenderState().levelRenderState.cameraRenderState;
         Matrix4f viewProjectionMatrix = new Matrix4f(cameraState.projectionMatrix).mul(cameraState.viewRotationMatrix);
 
-        Vector4d projected = WorldToScreen.projectEntity(viewport, viewProjectionMatrix, new AABB(pos));
+        AABB box = new AABB(
+                pos.x - 0.5, pos.y - 0.5, pos.z - 0.5,
+                pos.x + 0.5, pos.y + 0.5, pos.z + 0.5
+        );
+        Vector4d projected = WorldToScreen.projectEntity(viewport, viewProjectionMatrix, box);
         if (projected == null) return null;
 
         double guiScale = mc.getWindow().getGuiScale();
@@ -591,7 +646,7 @@ public class CrystalAura extends Module {
         float screenHeight = mc.getWindow().getGuiScaledHeight();
 
         if (maxX < 0 || maxY < 0 || minX > screenWidth || minY > screenHeight) return null;
-        return new Vector2f((float) ((minX + maxX) * 0.5), (float) minY);
+        return new Vector2f((float) ((minX + maxX) * 0.5), (float) ((minY + maxY) * 0.5));
     }
 
     private record PlaceCandidate(
@@ -657,11 +712,6 @@ public class CrystalAura extends Module {
     ) {
     }
 
-    private record RenderRecord(BlockPos pos, float targetDamage, long time) {
-    }
-
-    private record TextDrawData(String text, float x, float y, float scale, Color color) {
-    }
 
     private enum SwapMode {
         None,
