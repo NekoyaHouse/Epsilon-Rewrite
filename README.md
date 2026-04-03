@@ -1,20 +1,18 @@
-# Lumin Client (Epsilon Rewrite)
+# Epsilon Rewrite
 
 A modern Minecraft utility client built on NeoForge 26.1 with advanced rendering system and modular architecture.
 
 ## 🚀 Features
 
-- **Modular Design** - 37+ functional modules across Combat, Player, Render, and World categories
 - **Custom Rendering Engine** - Lumin rendering system with custom pipelines, shaders, and MD3-themed UI
 - **Event-Driven Architecture** - Dynamic event registration with NeoForge event bus
-- **Mixin Integration** - 21+ mixin injections for deep game modifications
 - **Configuration System** - Flexible settings with multiple data types and dependency support
 
 ## 📦 Tech Stack
 
 - **Java 25**
-- **NeoForge 26.1.0.7-beta**
-- **Minecraft 26.1**
+- **NeoForge 26.1.1.1-beta**
+- **Minecraft 26.1.1**
 - **Gradle** build system
 - **Mixin** for bytecode manipulation
 
