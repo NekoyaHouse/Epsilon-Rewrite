@@ -1,5 +1,6 @@
 package com.github.epsilon.managers;
 
+import com.github.epsilon.hud.impl.ModuleList;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.modules.impl.ClientSetting;
 import com.github.epsilon.modules.impl.combat.*;
@@ -61,7 +62,6 @@ public class ModuleManager {
                 // Render
                 ESP.INSTANCE,
                 Fullbright.INSTANCE,
-                HUD.INSTANCE,
                 ModuleList.INSTANCE,
                 NameTags.INSTANCE,
                 NoRender.INSTANCE,

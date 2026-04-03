@@ -1,4 +1,4 @@
-package com.github.epsilon.modules.impl.render;
+package com.github.epsilon.hud.impl;
 
 import com.github.epsilon.graphics.renderers.ShadowRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+/**
+ * 操你妈逼重写
+ */
 public class ModuleList extends Module {
 
     public static final ModuleList INSTANCE = new ModuleList();
