@@ -1,14 +1,8 @@
 package com.github.epsilon.modules.impl.combat;
 
-import com.github.epsilon.managers.TargetManager;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
-import com.github.epsilon.modules.impl.combat.AntiBot;
-import com.github.epsilon.settings.impl.BoolSetting;
-import com.github.epsilon.settings.impl.ColorSetting;
-import com.github.epsilon.settings.impl.DoubleSetting;
-import com.github.epsilon.settings.impl.EnumSetting;
-import com.github.epsilon.settings.impl.IntSetting;
+import com.github.epsilon.settings.impl.*;
 import com.github.epsilon.utils.math.MathUtils;
 import com.github.epsilon.utils.render.Render3DUtils;
 import com.github.epsilon.utils.rotation.RotationUtils;
@@ -22,17 +16,16 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-import org.joml.Vector2f;
 
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/* 
-* Author Moli
-* 平滑测试 8, 73, 180, 10, 500, 0.1, 0.25, 0.56, 3, 30, 1.2, 2
-* todo 更牛逼的反作弊绕过。
-*/
+/*
+ * Author Moli
+ * 平滑测试 8, 73, 180, 10, 500, 0.1, 0.25, 0.56, 3, 30, 1.2, 2
+ * todo 更牛逼的反作弊绕过。
+ */
 
 public class AimAssist extends Module {
 
@@ -73,34 +66,34 @@ public class AimAssist extends Module {
     private long visibleTime = System.currentTimeMillis();
     private LivingEntity currentTarget;
     private LivingEntity lockedTarget;
-    
+
     private float targetYaw, targetPitch;
     private float lastYaw, lastPitch;
-    
+
     private float jitterYaw, jitterPitch;
     private float overshootYaw, overshootPitch;
     private int jitterTick = 0;
-    
+
     private Mode previousMode = Mode.Smooth;
     private float transitionYaw, transitionPitch;
     private int transitionTicks = 0;
     private static final int TRANSITION_DURATION = 10;
-    
+
     private float rawAcceleration = 0;
     private float smoothedAcceleration = 0;
-    
+
     private double playerPrevX, playerPrevY, playerPrevZ;
     private double playerVelocityX, playerVelocityY, playerVelocityZ;
     private double playerAccelerationX, playerAccelerationY, playerAccelerationZ;
-    
+
     private double targetPrevX, targetPrevY, targetPrevZ;
     private double targetVelocityX, targetVelocityY, targetVelocityZ;
     private double targetAccelerationX, targetAccelerationY, targetAccelerationZ;
-    
+
     private float prevAngularVelYaw, prevAngularVelPitch;
     private int framesWithoutTarget = 0;
     private float espAlpha = 0f;
-    
+
     private double smoothedPredictedX, smoothedPredictedY, smoothedPredictedZ;
 
     private static final float JITTER_UPDATE_INTERVAL = 2;
@@ -172,7 +165,7 @@ public class AimAssist extends Module {
 
         updatePlayerMotion();
         updateTargetMotion();
-        
+
         if (currentTarget != null) {
             processTargetAim();
             framesWithoutTarget = 0;
@@ -214,7 +207,7 @@ public class AimAssist extends Module {
 
     private boolean isScreenPaused() {
         return (ignoreScreen.getValue() && mc.screen != null) ||
-               (ignoreInventory.getValue() && (mc.screen instanceof AbstractContainerScreen));
+                (ignoreInventory.getValue() && (mc.screen instanceof AbstractContainerScreen));
     }
 
     private boolean shouldSkipRender() {
@@ -313,48 +306,48 @@ public class AimAssist extends Module {
         rawAcceleration = 0;
         smoothedAcceleration = 0;
     }
-    
+
     private void updatePlayerMotion() {
         double newVelX = mc.player.getX() - playerPrevX;
         double newVelY = mc.player.getY() - playerPrevY;
         double newVelZ = mc.player.getZ() - playerPrevZ;
-        
+
         playerAccelerationX = newVelX - playerVelocityX;
         playerAccelerationY = newVelY - playerVelocityY;
         playerAccelerationZ = newVelZ - playerVelocityZ;
-        
+
         playerVelocityX = newVelX;
         playerVelocityY = newVelY;
         playerVelocityZ = newVelZ;
-        
+
         playerPrevX = mc.player.getX();
         playerPrevY = mc.player.getY();
         playerPrevZ = mc.player.getZ();
     }
-    
+
     private void updateTargetMotion() {
         if (currentTarget == null) {
             resetTargetMotion();
             return;
         }
-        
+
         double newVelX = currentTarget.getX() - targetPrevX;
         double newVelY = currentTarget.getY() - targetPrevY;
         double newVelZ = currentTarget.getZ() - targetPrevZ;
-        
+
         targetAccelerationX = newVelX - targetVelocityX;
         targetAccelerationY = newVelY - targetVelocityY;
         targetAccelerationZ = newVelZ - targetVelocityZ;
-        
+
         targetVelocityX = newVelX;
         targetVelocityY = newVelY;
         targetVelocityZ = newVelZ;
-        
+
         targetPrevX = currentTarget.getX();
         targetPrevY = currentTarget.getY();
         targetPrevZ = currentTarget.getZ();
     }
-    
+
     private void resetTargetMotion() {
         targetVelocityX = 0;
         targetVelocityY = 0;
@@ -363,11 +356,11 @@ public class AimAssist extends Module {
         targetAccelerationY = 0;
         targetAccelerationZ = 0;
     }
-    
+
     private void applyAngularVelocityDamping() {
         angularVelocityYaw *= ANGULAR_VELOCITY_DAMPING;
         angularVelocityPitch *= ANGULAR_VELOCITY_DAMPING;
-        
+
         if (rotationYaw != Float.NaN && rotationPitch != Float.NaN) {
             rotationYaw = lastYaw + angularVelocityYaw;
             rotationPitch = lastPitch + angularVelocityPitch;
@@ -389,7 +382,7 @@ public class AimAssist extends Module {
         if (currentTarget != null) {
             rawAcceleration += aimStrength.getValue() / 10000f;
             rawAcceleration = Mth.clamp(rawAcceleration, 0f, 1.0f);
-            
+
             float eased = 1 - (float) Math.pow(1 - rawAcceleration, EASE_OUT_POWER);
             smoothedAcceleration = Mth.lerp(ACCELERATION_SMOOTH_LERP, smoothedAcceleration, eased);
         } else {
@@ -405,7 +398,7 @@ public class AimAssist extends Module {
             transitionPitch = mc.player.getXRot();
             previousMode = mode.getValue();
         }
-        
+
         if (transitionTicks > 0) {
             transitionTicks--;
         }
@@ -429,9 +422,9 @@ public class AimAssist extends Module {
         calculateIdealRotation();
         updateHumanJitter();
         calculateDynamicSmoothing();
-        
+
         applyGCDFix();
-        
+
         lastYaw = rotationYaw;
         lastPitch = rotationPitch;
     }
@@ -498,10 +491,10 @@ public class AimAssist extends Module {
             double dy = currentTarget.getY() + getAimPartHeight() - (mc.player.getY() + mc.player.getEyeHeight());
             double dz = currentTarget.getZ() - mc.player.getZ();
             double distance = Math.sqrt(dx * dx + dz * dz);
-            
+
             targetYaw = (float) Mth.wrapDegrees(Math.toDegrees(Math.atan2(dz, dx)) - 90f);
             targetPitch = (float) -Math.toDegrees(Math.atan2(dy, distance));
-            
+
             smoothedPredictedX = 0;
             smoothedPredictedY = 0;
             smoothedPredictedZ = 0;
@@ -521,19 +514,19 @@ public class AimAssist extends Module {
     private void calculateDynamicSmoothing() {
         float jitteredTargetYaw = targetYaw + jitterYaw;
         float jitteredTargetPitch = targetPitch + jitterPitch;
-        
+
         float smoothFactor = aimSmooth.getValue() / 180.0f;
         smoothFactor = Mth.clamp(smoothFactor, MIN_SMOOTH_FACTOR, MAX_SMOOTH_FACTOR);
-        
+
         float yawDiff = Mth.wrapDegrees(jitteredTargetYaw - rotationYaw);
         float pitchDiff = jitteredTargetPitch - rotationPitch;
         float distanceToTarget = (float) Math.sqrt(yawDiff * yawDiff + pitchDiff * pitchDiff);
-        
+
         float dynamicSmoothFactor = smoothFactor;
         if (distanceToTarget < DYNAMIC_SMOOTH_THRESHOLD) {
             dynamicSmoothFactor = smoothFactor * (0.3f + (distanceToTarget / DYNAMIC_SMOOTH_THRESHOLD) * 0.7f);
         }
-        
+
         float overshootAmount = humanOvershoot.getValue().floatValue();
         if (distanceToTarget > OVERSHOOT_THRESHOLD) {
             overshootYaw = yawDiff * overshootAmount * YAW_OVERSHOOT_MULTIPLIER;
@@ -542,13 +535,13 @@ public class AimAssist extends Module {
             overshootYaw *= OVERSHOOT_DECAY;
             overshootPitch *= OVERSHOOT_DECAY;
         }
-        
+
         float adjustedYawDiff = yawDiff + overshootYaw;
         float adjustedPitchDiff = pitchDiff + overshootPitch;
-        
+
         float desiredAngularVelYaw = adjustedYawDiff * dynamicSmoothFactor;
         float desiredAngularVelPitch = adjustedPitchDiff * dynamicSmoothFactor;
-        
+
         if (closeTargetBoost.getValue()) {
             float angleDistance = Mth.sqrt(yawDiff * yawDiff + pitchDiff * pitchDiff);
             float threshold = closeTargetThreshold.getValue().floatValue();
@@ -561,83 +554,83 @@ public class AimAssist extends Module {
                 desiredAngularVelPitch *= boost;
             }
         }
-        
+
         float centripetalYaw = calculateCentripetalCompensationYaw();
         float centripetalPitch = calculateCentripetalCompensationPitch();
-        
+
         desiredAngularVelYaw += centripetalYaw;
         desiredAngularVelPitch += centripetalPitch;
-        
+
         float lagCompYaw = prevAngularVelYaw * LAG_COMPENSATION_FACTOR;
         float lagCompPitch = prevAngularVelPitch * LAG_COMPENSATION_FACTOR;
         desiredAngularVelYaw += lagCompYaw;
         desiredAngularVelPitch += lagCompPitch;
-        
+
         float responsiveFactor = responsiveness.getValue().floatValue();
         desiredAngularVelYaw *= responsiveFactor;
         desiredAngularVelPitch *= responsiveFactor;
-        
+
         float inertiaFactor = inertia.getValue().floatValue();
         angularVelocityYaw = angularVelocityYaw * inertiaFactor + desiredAngularVelYaw * (1 - inertiaFactor);
         angularVelocityPitch = angularVelocityPitch * inertiaFactor + desiredAngularVelPitch * (1 - inertiaFactor);
-        
+
         float angularAccelYaw = angularVelocityYaw - prevAngularVelYaw;
         float angularAccelPitch = angularVelocityPitch - prevAngularVelPitch;
         angularAccelYaw *= ANGULAR_ACCELERATION_DAMPING;
         angularAccelPitch *= ANGULAR_ACCELERATION_DAMPING;
         angularVelocityYaw = prevAngularVelYaw + angularAccelYaw;
         angularVelocityPitch = prevAngularVelPitch + angularAccelPitch;
-        
+
         angularVelocityYaw = Mth.clamp(angularVelocityYaw, -MAX_ANGULAR_VELOCITY, MAX_ANGULAR_VELOCITY);
         angularVelocityPitch = Mth.clamp(angularVelocityPitch, -MAX_ANGULAR_VELOCITY, MAX_ANGULAR_VELOCITY);
-        
+
         prevAngularVelYaw = angularVelocityYaw;
         prevAngularVelPitch = angularVelocityPitch;
-        
+
         rotationYaw = lastYaw + angularVelocityYaw;
         rotationPitch = lastPitch + angularVelocityPitch;
     }
-    
+
     private float calculateCentripetalCompensationYaw() {
         if (currentTarget == null) return 0;
-        
+
         double playerX = mc.player.getX();
         double playerZ = mc.player.getZ();
         double targetX = currentTarget.getX();
         double targetZ = currentTarget.getZ();
-        
+
         double dx = targetX - playerX;
         double dz = targetZ - playerZ;
         double distance = Math.sqrt(dx * dx + dz * dz);
         if (distance < 1) return 0;
-        
+
         double relVelX = targetVelocityX - playerVelocityX;
         double relVelZ = targetVelocityZ - playerVelocityZ;
         double tangentialSpeed = (relVelX * dz - relVelZ * dx) / distance;
-        
+
         double centripetalAccel = tangentialSpeed * tangentialSpeed / distance;
-        
+
         double compensation = centripetalAccel * CENTRIPETAL_COMPENSATION_STRENGTH;
-        
+
         return (float) (compensation * 0.5);
     }
-    
+
     private float calculateCentripetalCompensationPitch() {
         if (currentTarget == null) return 0;
-        
+
         double playerY = mc.player.getY() + mc.player.getEyeHeight(mc.player.getPose());
         double targetY = currentTarget.getY() + currentTarget.getEyeHeight(currentTarget.getPose());
-        
+
         double dy = targetY - playerY;
         double horizontalDist = mc.player.distanceTo(currentTarget);
         if (horizontalDist < 1) return 0;
-        
+
         double relVelY = targetVelocityY - playerVelocityY;
         double verticalSpeed = relVelY;
-        
+
         double centripetalAccel = verticalSpeed * verticalSpeed / horizontalDist;
         double compensation = centripetalAccel * CENTRIPETAL_COMPENSATION_STRENGTH * 0.3;
-        
+
         return (float) compensation;
     }
 
@@ -654,10 +647,10 @@ public class AimAssist extends Module {
         float t = 1 - (transitionTicks - partialTicks) / (float) TRANSITION_DURATION;
         t = Mth.clamp(t, 0f, 1f);
         t = t < 0.5f ? 2 * t * t : 1 - (float) Math.pow(-2 * t + 2, 2) / 2;
-        
+
         float yaw = Mth.lerp(t, transitionYaw, rotationYaw);
         float pitch = Mth.lerp(t, transitionPitch, rotationPitch);
-        
+
         mc.player.setYRot(yaw);
         mc.player.setXRot(pitch);
     }
@@ -667,9 +660,9 @@ public class AimAssist extends Module {
         float pitchDiff = rotationPitch - mc.player.getXRot();
 
         float smoothAmount = smoothedAcceleration;
-        
+
         float lerpFactor = Mth.clamp(smoothAmount * (PARTIAL_TICK_OFFSET + partialTicks * PARTIAL_TICK_OFFSET), 0.0f, 1.0f);
-        
+
         float interpolatedYaw = mc.player.getYRot() + yawDiff * lerpFactor;
         float interpolatedPitch = mc.player.getXRot() + pitchDiff * lerpFactor;
 
@@ -680,24 +673,24 @@ public class AimAssist extends Module {
     private void applyInstantRotation() {
         float yawDiff = Mth.wrapDegrees(rotationYaw - mc.player.getYRot());
         float pitchDiff = rotationPitch - mc.player.getXRot();
-        
+
         float interpolatedYaw = mc.player.getYRot() + yawDiff * INSTANT_MODE_SMOOTH;
         float interpolatedPitch = mc.player.getXRot() + pitchDiff * INSTANT_MODE_SMOOTH;
-        
+
         mc.player.setYRot(interpolatedYaw);
         mc.player.setXRot(interpolatedPitch);
     }
 
     private float applySmartGCDFix(float target, float current, double gcd) {
         if (gcd <= 0) return target;
-        
+
         double diff = target - current;
         double absDiff = Math.abs(diff);
-        
+
         if (absDiff < gcd * GCD_TOLERANCE) {
             return target;
         }
-        
+
         double roundedDiff = Math.round(diff / gcd) * gcd;
         return (float) (current + roundedDiff);
     }
@@ -727,22 +720,20 @@ public class AimAssist extends Module {
             return null;
         }
 
-        candidates.sort((a, b) -> {
-            return switch (targetPriority.getValue()) {
-                case Distance -> Double.compare(
+        candidates.sort((a, b) -> switch (targetPriority.getValue()) {
+            case Distance -> Double.compare(
                     mc.player.distanceTo(a),
                     mc.player.distanceTo(b)
-                );
-                case Health -> Float.compare(
+            );
+            case Health -> Float.compare(
                     a.getHealth(),
                     b.getHealth()
-                );
-                case Angle -> {
-                    float yawA = Mth.wrapDegrees(RotationUtils.getRotationsToEntity(a).x - mc.player.getYRot());
-                    float yawB = Mth.wrapDegrees(RotationUtils.getRotationsToEntity(b).x - mc.player.getYRot());
-                    yield Float.compare(Math.abs(yawA), Math.abs(yawB));
-                }
-            };
+            );
+            case Angle -> {
+                float yawA = Mth.wrapDegrees(RotationUtils.getRotationsToEntity(a).x - mc.player.getYRot());
+                float yawB = Mth.wrapDegrees(RotationUtils.getRotationsToEntity(b).x - mc.player.getYRot());
+                yield Float.compare(Math.abs(yawA), Math.abs(yawB));
+            }
         });
 
         LivingEntity target = candidates.getFirst();
@@ -786,18 +777,18 @@ public class AimAssist extends Module {
         if (espAlpha <= 0.01f) return;
 
         float partialTicks = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
-        
+
         double x = lockedTarget.xo + (lockedTarget.getX() - lockedTarget.xo) * partialTicks;
         double y = lockedTarget.yo + (lockedTarget.getY() - lockedTarget.yo) * partialTicks;
         double z = lockedTarget.zo + (lockedTarget.getZ() - lockedTarget.zo) * partialTicks;
-        
+
         AABB interpolatedBox = lockedTarget.getBoundingBox()
-            .move(x - lockedTarget.getX(), y - lockedTarget.getY(), z - lockedTarget.getZ());
-        
+                .move(x - lockedTarget.getX(), y - lockedTarget.getY(), z - lockedTarget.getZ());
+
         Color originalColor = lockedEspColor.getValue();
         int alpha = (int) (originalColor.getAlpha() * espAlpha);
         Color fadedColor = new Color(originalColor.getRed(), originalColor.getGreen(), originalColor.getBlue(), alpha);
-        
+
         Render3DUtils.drawFilledBox(interpolatedBox, fadedColor);
     }
 
@@ -825,4 +816,5 @@ public class AimAssist extends Module {
         if (mode.getValue() != Mode.Smooth) return false;
         return !Float.isNaN(rotationYaw) && !Float.isNaN(rotationPitch);
     }
+
 }

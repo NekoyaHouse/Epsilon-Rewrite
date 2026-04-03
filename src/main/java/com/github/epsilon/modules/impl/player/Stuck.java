@@ -26,7 +26,7 @@ public class Stuck extends Module {
     @Override
     public void onDisable() {
         if (mc.player != null && !mc.player.onGround()) {
-            PacketUtils.sendPacketNoEvent(new ServerboundMovePlayerPacket.PosRot(mc.player.getX() + 1337, mc.player.getY(), mc.player.getZ() + 1337, mc.player.getYRot() + 0.01f, mc.player.getXRot(), mc.player.onGround(), mc.player.horizontalCollision));
+            PacketUtils.sendSilently(new ServerboundMovePlayerPacket.PosRot(mc.player.getX() + 1337, mc.player.getY(), mc.player.getZ() + 1337, mc.player.getYRot() + 0.01f, mc.player.getXRot(), mc.player.onGround(), mc.player.horizontalCollision));
         }
     }
 
@@ -48,7 +48,7 @@ public class Stuck extends Module {
     @SubscribeEvent
     public void onInteract(PlayerInteractEvent.RightClickItem event) {
         if (mc.player.getYRot() != lastYaw || mc.player.getXRot() != lastPitch) {
-            PacketUtils.sendPacketNoEvent(new ServerboundMovePlayerPacket.Rot(mc.player.getYRot(), mc.player.getXRot(), mc.player.onGround(), mc.player.horizontalCollision));
+            PacketUtils.sendSilently(new ServerboundMovePlayerPacket.Rot(mc.player.getYRot(), mc.player.getXRot(), mc.player.onGround(), mc.player.horizontalCollision));
         }
         lastPitch = mc.player.getXRot();
         lastYaw = mc.player.getYRot();

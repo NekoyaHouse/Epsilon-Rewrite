@@ -12,14 +12,14 @@ public class MoveUtils {
         return moveVector.x != 0 || moveVector.y != 0;
     }
 
-    public static double[] forwardWithoutStrafe(final double d) {
+    public static double[] forwardWithoutStrafe(double d) {
         float f3 = mc.player.getYRot();
         final double d4 = d * Math.cos(Math.toRadians(f3 + 90.0f));
         final double d5 = d * Math.sin(Math.toRadians(f3 + 90.0f));
         return new double[]{d4, d5};
     }
 
-    public static double[] forward(final double d) {
+    public static double[] forward(double d) {
         Vec2 moveVector = mc.player.input.getMoveVector();
         float f = moveVector.y;
         float f2 = moveVector.x;

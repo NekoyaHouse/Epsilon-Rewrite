@@ -8,6 +8,7 @@ import com.github.epsilon.settings.impl.BoolSetting;
 import com.github.epsilon.settings.impl.DoubleSetting;
 import com.github.epsilon.settings.impl.EnumSetting;
 import com.github.epsilon.settings.impl.IntSetting;
+import com.github.epsilon.utils.player.FindItemResult;
 import com.github.epsilon.utils.player.InvUtils;
 import com.github.epsilon.utils.player.MoveUtils;
 import com.github.epsilon.utils.rotation.RotationUtils;
@@ -43,7 +44,13 @@ public class Phase extends Module {
         CCClip
     }
 
+    private enum SwapMode {
+        Silent,
+        InvSwitch
+    }
+
     private final EnumSetting<Mode> mode = enumSetting("Mode", Mode.Vanilla);
+    private final EnumSetting<SwapMode> swapMode = enumSetting("SwapMode", SwapMode.InvSwitch);
     private final BoolSetting pauseOnPhase = boolSetting("PauseOnPhase", false, () -> mode.is(Mode.Pearl));
     private final BoolSetting swingHand = boolSetting("SwingHand", true, () -> mode.is(Mode.Pearl));
     private final BoolSetting silent = boolSetting("Silent", false, () -> mode.is(Mode.Sunrise));
@@ -159,7 +166,7 @@ public class Phase extends Module {
             int bestTool = AutoTool.INSTANCE.getTool(blockToBreak);
             if (bestTool == -1) return;
 
-            InvUtils.swap(bestTool, silent.getValue());
+            InvUtils.swap(bestTool, true);
             mc.gameMode.continueDestroyBlock(blockToBreak, mc.player.getDirection());
             mc.player.swing(InteractionHand.MAIN_HAND);
             if (silent.getValue()) {
@@ -195,15 +202,15 @@ public class Phase extends Module {
                 }
 
                 Vector2f angle = RotationUtils.calculate(block.getCenter());
-                int epSlot = getEnderPearlSlot();
-                if (epSlot != -1) {
+                FindItemResult result = swapMode.is(SwapMode.Silent) ? InvUtils.findInHotbar(Items.ENDER_PEARL) : InvUtils.find(Items.ENDER_PEARL);
+                if (result.found()) {
                     float prevYaw = mc.player.getYRot();
                     float prevPitch = mc.player.getXRot();
 
                     mc.player.setYRot(angle.x);
                     mc.player.setXRot(pitch.getValue().floatValue());
 
-                    doUsePearl(epSlot);
+                    doUsePearl(result.slot());
 
                     mc.player.setYRot(prevYaw);
                     mc.player.setXRot(prevPitch);
@@ -213,35 +220,36 @@ public class Phase extends Module {
     }
 
     private void doUsePearl(int slot) {
-        InvUtils.swap(slot, true);
+        boolean swapped;
+
+        if (swapMode.is(SwapMode.Silent)) {
+            swapped = InvUtils.swap(slot, true);
+        } else {
+            swapped = InvUtils.invSwap(slot);
+        }
+
         mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
+
         if (swingHand.getValue()) {
             mc.player.swing(InteractionHand.MAIN_HAND);
         } else {
             mc.getConnection().send(new ServerboundSwingPacket(InteractionHand.MAIN_HAND));
         }
-        InvUtils.swapBack();
+
+        if (swapped) {
+            if (swapMode.is(SwapMode.Silent)) {
+                InvUtils.swapBack();
+            } else {
+                InvUtils.invSwapBack();
+            }
+        }
+
         if (autoDisable.getValue()) {
             toggle();
         }
+
         clipTimer = 20;
         afterPearlTime = afterPearl.getValue();
-    }
-
-    private int getEnderPearlSlot() {
-        int epSlot = -1;
-        if (mc.player.getMainHandItem().getItem() == Items.ENDER_PEARL) {
-            epSlot = mc.player.getInventory().getSelectedSlot();
-        }
-        if (epSlot == -1) {
-            for (int l = 0; l < 9; ++l) {
-                if (mc.player.getInventory().getItem(l).getItem() == Items.ENDER_PEARL) {
-                    epSlot = l;
-                    break;
-                }
-            }
-        }
-        return epSlot;
     }
 
     private boolean canNoClip() {

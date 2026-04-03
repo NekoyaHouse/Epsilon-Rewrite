@@ -5,10 +5,6 @@ public final class PanelLayout {
     private PanelLayout() {
     }
 
-    public static Layout compute(int screenWidth, int screenHeight) {
-        return compute(screenWidth, screenHeight, 58.0f);
-    }
-
     public static Layout compute(int screenWidth, int screenHeight, float railWidth) {
         float panelWidth = Math.min(screenWidth * 0.56f, 584.0f);
         float panelHeight = Math.min(screenHeight * 0.56f, 324.0f);
