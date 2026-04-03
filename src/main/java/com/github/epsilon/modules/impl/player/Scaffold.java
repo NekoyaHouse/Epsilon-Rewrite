@@ -106,8 +106,6 @@ public class Scaffold extends Module {
     private int yLevel;
     private int airTicks;
 
-    private boolean swapped;
-    private boolean invSwapped;
     private boolean shouldSwapBack;
 
     private BlockInfo blockInfo;
@@ -117,8 +115,6 @@ public class Scaffold extends Module {
     @Override
     protected void onEnable() {
         blockInfo = null;
-        swapped = false;
-        invSwapped = false;
         shouldSwapBack = false;
     }
 
@@ -163,23 +159,6 @@ public class Scaffold extends Module {
             FindItemResult item = findItem();
             if (item.found()) {
                 queuePlaceWithRotation(blockInfo, item);
-            }
-        }
-
-        switch (swapMode.getValue()) {
-            case SwapMode.Silent -> {
-                if (swapped) {
-                    swapped = false;
-                    InvUtils.swapBack();
-                }
-            }
-            case SwapMode.InvSwitch -> {
-                if (invSwapped) {
-                    invSwapped = false;
-                    InvUtils.invSwapBack();
-                }
-            }
-            default -> {
             }
         }
     }
@@ -287,6 +266,9 @@ public class Scaffold extends Module {
         if (!onAir()) return;
         if (!BlockUtils.canPlaceAt(currentBlockInfo.blockPos)) return;
 
+        boolean swapped = false;
+        boolean invSwapped = false;
+
         switch (swapMode.getValue()) {
             case Normal -> {
                 boolean should = swapBack.getValue();
@@ -311,6 +293,21 @@ public class Scaffold extends Module {
 
                 if (render.getValue()) {
                     renderBoxes.add(new RenderBox(new AABB(currentBlockInfo.blockPos), lineColor.getValue(), sideColor.getValue(), System.currentTimeMillis(), fade.getValue(), shrink.getValue()));
+                }
+            }
+
+            switch (swapMode.getValue()) {
+                case SwapMode.Silent -> {
+                    if (swapped) {
+                        InvUtils.swapBack();
+                    }
+                }
+                case SwapMode.InvSwitch -> {
+                    if (invSwapped) {
+                        InvUtils.invSwapBack();
+                    }
+                }
+                default -> {
                 }
             }
         }

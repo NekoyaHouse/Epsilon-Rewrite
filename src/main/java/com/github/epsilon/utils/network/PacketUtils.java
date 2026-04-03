@@ -10,9 +10,9 @@ public class PacketUtils {
 
     private static final Minecraft mc = Minecraft.getInstance();
 
-    public static Set<Packet<?>> bypassPackets = new HashSet<>();
+    public static final Set<Packet<?>> bypassPackets = new HashSet<>();
 
-    public static void sendPacketNoEvent(Packet<?> packet) {
+    public static void sendSilently(Packet<?> packet) {
         bypassPackets.add(packet);
         mc.getConnection().send(packet);
     }
