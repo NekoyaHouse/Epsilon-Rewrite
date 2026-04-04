@@ -74,8 +74,6 @@ public class ModuleManager {
                 CameraClip.INSTANCE,
                 ESP.INSTANCE,
                 Fullbright.INSTANCE,
-                ModuleList.INSTANCE,
-                Notifications.INSTANCE,
                 NameTags.INSTANCE,
                 NoRender.INSTANCE,
                 PopChams.INSTANCE,
@@ -84,7 +82,11 @@ public class ModuleManager {
                 AutoFarm.INSTANCE,
                 Stealer.INSTANCE,
                 FakePlayer.INSTANCE,
-                AutoAccount.INSTANCE
+                AutoAccount.INSTANCE,
+
+                // Hud
+                Notifications.INSTANCE,
+                ModuleList.INSTANCE
 
         ));
 

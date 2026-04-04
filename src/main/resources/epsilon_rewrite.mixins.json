@@ -8,6 +8,7 @@
     "debug.MixinGlDebug",
     "level.MixinBlockCollisions",
     "level.MixinClientLevel",
+    "level.MixinItem",
     "level.MixinEntity",
     "level.MixinFlowingFluid",
     "level.MixinLivingEntity",

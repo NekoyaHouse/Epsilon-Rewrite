@@ -81,13 +81,13 @@ public class InvUtils {
         } else if (!saveSwap) {
             previousSlot = -1;
         }
+
         mc.player.getInventory().setSelectedSlot(slot);
-        mc.gameMode.ensureHasSentCarriedItem();
     }
 
     public static void swapBack() {
         if (previousSlot == -1) return;
-        mc.player.getInventory().setSelectedSlot(previousSlot);
+        swap(previousSlot, false);
         previousSlot = -1;
     }
 

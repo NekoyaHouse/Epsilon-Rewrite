@@ -110,4 +110,5 @@ public class Notifications extends HudModule {
             case Info -> new Color(85, 170, 255, a);
         };
     }
+
 }
