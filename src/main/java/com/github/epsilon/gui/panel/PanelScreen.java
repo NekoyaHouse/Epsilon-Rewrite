@@ -13,6 +13,7 @@ import com.github.epsilon.gui.panel.panel.ModuleListPanel;
 import com.github.epsilon.gui.panel.popup.PanelPopupHost;
 import com.github.epsilon.managers.RenderManager;
 import com.github.epsilon.modules.impl.ClientSetting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
@@ -179,7 +180,7 @@ public class PanelScreen extends Screen {
 
         PanelLayout.Layout layout = PanelLayout.compute(width, height, categoryRailPanel.getAnimatedWidth());
         if (!layout.panel().contains(mouseX, mouseY)) {
-            onClose();
+            if (ClientSetting.INSTANCE.closeOnSpace.getValue()) minecraft.setScreen(null);
             return true;
         }
         if (!state.isClientSettingMode()) {
@@ -258,7 +259,6 @@ public class PanelScreen extends Screen {
 
     @Override
     public void onClose() {
-        ClientSetting.INSTANCE.setEnabled(false);
         super.onClose();
     }
 

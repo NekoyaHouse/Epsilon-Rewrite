@@ -1,5 +1,6 @@
 package com.github.epsilon.managers;
 
+import com.github.epsilon.gui.panel.PanelScreen;
 import com.github.epsilon.hud.impl.ModuleList;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.modules.impl.ClientSetting;
@@ -11,6 +12,7 @@ import com.github.epsilon.modules.impl.world.AutoFarm;
 import com.github.epsilon.modules.impl.world.FakePlayer;
 import com.github.epsilon.modules.impl.world.Stealer;
 import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.Minecraft;
 
 import java.util.List;
 
@@ -81,6 +83,13 @@ public class ModuleManager {
     }
 
     public void onKeyEvent(int keyCode, int action) {
+        if (keyCode == ClientSetting.INSTANCE.guiKeybind.getValue()
+                && action == InputConstants.PRESS
+                && Minecraft.getInstance().screen == null
+        ) {
+            Minecraft.getInstance().setScreen(PanelScreen.INSTANCE);
+        }
+
         for (final var module : modules) {
             if (module.getKeyBind() == keyCode) {
                 if (module.getBindMode() == Module.BindMode.Hold) {
