@@ -12,12 +12,12 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(AvatarRenderer.class)
 public abstract class MixinAvatarRenderer {
 
-    @ModifyExpressionValue(method = "extractFlightData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Avatar;getFallFlyingTicks()I"))
-    private int spoofFallFlyingTicks(int original, Avatar entity, AvatarRenderState reusedState, float partialTick) {
-        if (entity == Minecraft.getInstance().player && ElytraFly.INSTANCE.shouldVisualSpoof()) {
-            return 0;
-        }
-        return original;
-    }
+//    @ModifyExpressionValue(method = "extractFlightData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Avatar;getFallFlyingTicks()I"))
+//    private int spoofFallFlyingTicks(int original, Avatar entity, AvatarRenderState reusedState, float partialTick) {
+//        if (entity == Minecraft.getInstance().player && ElytraFly.INSTANCE.shouldVisualSpoof()) {
+//            return 0;
+//        }
+//        return original;
+//    }
 
 }
