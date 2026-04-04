@@ -116,6 +116,8 @@ public class ModuleManager {
 
         modules.forEach(module -> {
             if (module.isEnabled() && module instanceof HudModule hudModule) {
+                hudModule.updateBounds(event.getPartialTick());
+                hudModule.refreshPosition();
                 RenderManager.INSTANCE.applyRenderHud(hudModule::render);
             }
         });
