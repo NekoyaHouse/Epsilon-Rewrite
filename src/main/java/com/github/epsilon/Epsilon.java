@@ -1,5 +1,7 @@
 package com.github.epsilon;
 
+import com.github.epsilon.addon.EpsilonAddon;
+import com.github.epsilon.addon.EpsilonAddonSetupEvent;
 import com.github.epsilon.assets.i18n.I18NFileGenerator;
 import com.github.epsilon.managers.ConfigManager;
 import com.github.epsilon.managers.ModuleManager;
@@ -9,6 +11,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,6 +34,15 @@ public class Epsilon {
 
         // 初始化 Managers
         ModuleManager.INSTANCE.initModules();
+
+        // 发送 Addon 注册事件，允许第三方 Addon 注册 Module
+        EpsilonAddonSetupEvent addonEvent = new EpsilonAddonSetupEvent();
+        NeoForge.EVENT_BUS.post(addonEvent);
+        for (EpsilonAddon addon : addonEvent.addons) {
+            addon.onSetup();
+            LOGGER.info("Loaded Epsilon addon: {}", addon.addonId);
+        }
+
         TargetManager.INSTANCE.clearSharedTarget();
         ConfigManager.INSTANCE.initConfig();
 

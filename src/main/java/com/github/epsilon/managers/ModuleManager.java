@@ -1,5 +1,7 @@
 package com.github.epsilon.managers;
 
+import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
+import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.gui.panel.PanelScreen;
 import com.github.epsilon.modules.HudModule;
 import com.github.epsilon.modules.Module;
@@ -17,6 +19,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.common.NeoForge;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ModuleManager {
@@ -30,7 +33,7 @@ public class ModuleManager {
     }
 
     public void initModules() {
-        modules = List.of(
+        modules = new ArrayList<>(List.of(
 
                 // Client
                 ClientSetting.INSTANCE,
@@ -79,7 +82,23 @@ public class ModuleManager {
                 FakePlayer.INSTANCE,
                 AutoAccount.INSTANCE
 
-        );
+        ));
+
+        // Initialize i18n for all epsilon modules
+        for (Module module : modules) {
+            module.initI18n(EpsilonTranslateComponent.create("modules", module.getName().toLowerCase()));
+        }
+    }
+
+    /**
+     * Registers a module from an addon and initializes its i18n.
+     *
+     * @param module           the module to register
+     * @param moduleComponent  the TranslateComponent for this module (e.g. "myaddon.modules.fly")
+     */
+    public void registerAddonModule(Module module, TranslateComponent moduleComponent) {
+        module.initI18n(moduleComponent);
+        modules.add(module);
     }
 
     public List<Module> getModules() {

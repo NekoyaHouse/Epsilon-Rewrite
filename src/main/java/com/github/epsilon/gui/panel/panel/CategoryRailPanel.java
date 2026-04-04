@@ -1,6 +1,7 @@
 package com.github.epsilon.gui.panel.panel;
 
 import com.github.epsilon.Epsilon;
+import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
@@ -42,7 +43,7 @@ public class CategoryRailPanel {
     private PanelLayout.Rect bounds;
     private boolean clippedTextPending;
 
-    private static final TranslateComponent settingsLabelComponent = TranslateComponent.create("gui", "clientsettings");
+    private static final TranslateComponent settingsLabelComponent = EpsilonTranslateComponent.create("gui", "clientsettings");
 
     public CategoryRailPanel(PanelState state, RectRenderer rectRenderer, RoundRectRenderer roundRectRenderer, TextRenderer textRenderer) {
         this.state = state;
