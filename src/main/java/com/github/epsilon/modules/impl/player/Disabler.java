@@ -31,6 +31,7 @@ public class Disabler extends Module {
                 if (yaw < 360.0f && yaw > -360.0f) {
                     packet.yRot = yaw + 720f;
                 }
+                return;
             }
         }
 
@@ -43,30 +44,29 @@ public class Disabler extends Module {
                     lastYaw = packet.yRot;
                     lastPitch = packet.xRot;
                 }
+                return;
             }
         }
 
         if (duplicateRotPlace.getValue()) {
-            if (event.getPacket() instanceof ServerboundMovePlayerPacket packet) {
-                if (packet.hasRotation()) {
-                    float originalYaw = packet.yRot;
+            if (event.getPacket() instanceof ServerboundMovePlayerPacket packet && packet.hasRotation()) {
+                float originalYaw = packet.yRot;
 
-                    if (originalYaw < 360.0F && originalYaw > -360.0F) {
-                        packet.yRot = originalYaw + 720f;
-                    }
+                if (originalYaw < 360.0F && originalYaw > -360.0F) {
+                    packet.yRot = originalYaw + 720f;
+                }
 
-                    float lastPlayerYaw = this.playerYaw;
-                    this.playerYaw = packet.yRot;
+                float lastPlayerYaw = this.playerYaw;
+                this.playerYaw = packet.yRot;
 
-                    float deltaYaw = Math.abs(this.playerYaw - lastPlayerYaw);
-                    if (deltaYaw > 2.0F) {
-                        Random random = new Random();
-                        float perturbation = 0.005f + random.nextFloat() * 0.015f;
-                        if (random.nextBoolean()) {
-                            packet.yRot = packet.yRot + perturbation;
-                        } else {
-                            packet.yRot = packet.yRot - perturbation;
-                        }
+                float deltaYaw = Math.abs(this.playerYaw - lastPlayerYaw);
+                if (deltaYaw > 2.0F) {
+                    Random random = new Random();
+                    float perturbation = 0.005f + random.nextFloat() * 0.015f;
+                    if (random.nextBoolean()) {
+                        packet.yRot = packet.yRot + perturbation;
+                    } else {
+                        packet.yRot = packet.yRot - perturbation;
                     }
                 }
             }
