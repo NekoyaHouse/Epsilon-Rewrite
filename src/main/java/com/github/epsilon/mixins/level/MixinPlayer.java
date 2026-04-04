@@ -1,15 +1,33 @@
 package com.github.epsilon.mixins.level;
 
+import com.github.epsilon.managers.RotationManager;
 import com.github.epsilon.modules.impl.player.AutoSprint;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Player.class)
 public class MixinPlayer {
+
+    @Redirect(method = "causeExtraKnockback", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getYRot()F"))
+    private float modifyExtraKnockbackYaw(Player player) {
+        if (player == Minecraft.getInstance().player) {
+            return RotationManager.INSTANCE.getYaw();
+        }
+        return player.getYRot();
+    }
+
+    @Redirect(method = "doSweepAttack(Lnet/minecraft/world/entity/Entity;FLnet/minecraft/world/damagesource/DamageSource;FLnet/minecraft/world/phys/AABB;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getYRot()F"))
+    private float modifySweepAttackYaw(Player player) {
+        if (player == Minecraft.getInstance().player) {
+            return RotationManager.INSTANCE.getYaw();
+        }
+        return player.getYRot();
+    }
 
     @Inject(method = "causeExtraKnockback", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;setSprinting(Z)V", shift = At.Shift.AFTER))
     private void hookCauseExtraKnockback(CallbackInfo callbackInfo) {

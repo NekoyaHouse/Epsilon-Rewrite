@@ -21,11 +21,12 @@ public class AutoMend extends Module {
 
     @SubscribeEvent
     private void onClientTick(ClientTickEvent.Pre event) {
+        if (nullCheck()) return;
+
         FindItemResult result = InvUtils.findInHotbar(Items.EXPERIENCE_BOTTLE);
         if (!result.found()) return;
 
         RotationManager.INSTANCE.applyRotation(new Vector2f(mc.player.getYRot(), 90), 10, Priority.High, rotationApplyRecord -> {
-            if (nullCheck() || !isEnabled()) return;
             InvUtils.swap(result.slot(), true);
             mc.gameMode.useItem(mc.player, result.getHand());
             InvUtils.swapBack();

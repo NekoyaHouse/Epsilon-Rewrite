@@ -15,6 +15,7 @@ public class MovementFix extends Module {
 
     public void fixMovement(KeyboardInputEvent event, float yaw) {
         float delta = (mc.player.getYRot() - yaw) * Mth.DEG_TO_RAD;
+
         float cos = Mth.cos(delta);
         float sin = Mth.sin(delta);
 
