@@ -114,7 +114,7 @@ public class ModuleList extends HudModule {
 
     private int getTextWidth(Module module) {
         TextRenderer textRenderer = textRendererSupplier.get();
-        String text = module.getName();
+        String text = module.getTranslatedName();
         if (showCategory.getValue() && module.category != null) {
             text += " [" + module.category.getName() + "]";
         }
