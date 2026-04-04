@@ -3,7 +3,7 @@
     <p>
         <b>English</b> |
         <a href="https://github.com/KonekokoHouse/Epsilon-Rewrite/blob/main/README_zh.md">中文</a>
-    <p>
+    </p>
 </h4>
 A modern Minecraft utility client built on NeoForge 26.1 with advanced rendering system and modular architecture.
 

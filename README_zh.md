@@ -3,7 +3,7 @@
     <p>
         <a href="https://github.com/KonekokoHouse/Epsilon-Rewrite/blob/main/README.md">English</a> |
         <b>中文</b>
-    <p>
+    </p>
 </h4>
 基于 NeoForge 26.1.1 构建的现代化 Minecraft 辅助客户端，拥有先进的渲染系统和模块化架构。
 
