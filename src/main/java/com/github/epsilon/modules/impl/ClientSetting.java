@@ -1,5 +1,6 @@
 package com.github.epsilon.modules.impl;
 
+import com.github.epsilon.gui.hudeditor.HudEditorScreen;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.settings.impl.BoolSetting;
 import com.github.epsilon.settings.impl.ButtonSetting;
@@ -37,7 +38,7 @@ public class ClientSetting extends Module {
     public final BoolSetting closeOnSpace = boolSetting("Close Gui On Space", false);
 
     private final ButtonSetting openHudEditor = buttonSetting("Open Hud Editor", () -> {
-
+        mc.setScreen(HudEditorScreen.INSTANCE);
     });
 
     private final BoolSetting backgroundBlur = boolSetting("BackgroundBlur", false);

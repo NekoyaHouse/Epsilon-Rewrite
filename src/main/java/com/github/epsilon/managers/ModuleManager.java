@@ -1,7 +1,8 @@
 package com.github.epsilon.managers;
 
 import com.github.epsilon.gui.panel.PanelScreen;
-import com.github.epsilon.hud.impl.ModuleList;
+import com.github.epsilon.modules.HudModule;
+import com.github.epsilon.modules.impl.render.ModuleList;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.modules.impl.ClientSetting;
 import com.github.epsilon.modules.impl.combat.*;
@@ -13,6 +14,9 @@ import com.github.epsilon.modules.impl.world.FakePlayer;
 import com.github.epsilon.modules.impl.world.Stealer;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.client.event.RenderGuiEvent;
+import net.neoforged.neoforge.common.NeoForge;
 
 import java.util.List;
 
@@ -23,6 +27,7 @@ public class ModuleManager {
     private List<Module> modules;
 
     private ModuleManager() {
+        NeoForge.EVENT_BUS.register(this);
     }
 
     public void initModules() {
@@ -105,6 +110,17 @@ public class ModuleManager {
                 }
             }
         }
+    }
+
+    @SubscribeEvent
+    public void onRenderGui(RenderGuiEvent.Post event) {
+
+        modules.forEach(module -> {
+            if (module.isEnabled() && module instanceof HudModule hudModule) {
+                RenderManager.INSTANCE.applyRenderHud(hudModule::render);
+            }
+        });
+
     }
 
 }
