@@ -1,11 +1,9 @@
 package com.github.epsilon.modules.impl.render;
 
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
-import com.github.epsilon.graphics.renderers.ShadowRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.graphics.text.StaticFontLoader;
 import com.github.epsilon.managers.ModuleManager;
-import com.github.epsilon.managers.RenderManager;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.HudModule;
 import com.github.epsilon.modules.Module;
