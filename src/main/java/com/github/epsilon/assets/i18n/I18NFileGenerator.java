@@ -35,11 +35,14 @@ public class I18NFileGenerator {
         root.addProperty(PREFIX + "gui.clientsettings", "");
 
         for (Module module : ModuleManager.INSTANCE.getModules()) {
-            String modulePrefix = "modules." + module.getName().toLowerCase();
-            root.addProperty(PREFIX + modulePrefix, "");
+            if (module.translateComponent == null) continue;
+            String moduleKey = module.translateComponent.getFullKey();
+            root.addProperty(moduleKey, "");
 
             for (Setting<?> setting : module.getSettings()) {
-                String settingKey = PREFIX + modulePrefix + "." + setting.getName().toLowerCase();
+                TranslateComponent settingComp = setting.getTranslateComponent();
+                if (settingComp == null) continue;
+                String settingKey = settingComp.getFullKey();
                 root.addProperty(settingKey, "");
 
                 if (setting instanceof EnumSetting<?> enumSetting) {

@@ -1,5 +1,6 @@
 package com.github.epsilon.gui.panel.component;
 
+import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
@@ -19,7 +20,7 @@ public class ModuleRow {
     private final ModuleViewModel module;
     private final PanelLayout.Rect bounds;
 
-    private static final TranslateComponent noneComponent = TranslateComponent.create("keybind", "none");
+    private static final TranslateComponent noneComponent = EpsilonTranslateComponent.create("keybind", "none");
 
     public ModuleRow(ModuleViewModel module, PanelLayout.Rect bounds) {
         this.module = module;

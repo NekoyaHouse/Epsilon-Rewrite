@@ -1,5 +1,6 @@
 package com.github.epsilon.gui.panel.component.setting;
 
+import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
@@ -18,7 +19,7 @@ import java.awt.*;
 
 public class KeybindSettingRow extends SettingRow<KeybindSetting> {
 
-    private static final TranslateComponent noneComponent = TranslateComponent.create("keybind", "none");
+    private static final TranslateComponent noneComponent = EpsilonTranslateComponent.create("keybind", "none");
 
     private final Animation chipHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
     private final Animation focusAnimation = new Animation(Easing.EASE_OUT_CUBIC, 150L);

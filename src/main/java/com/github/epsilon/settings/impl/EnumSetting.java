@@ -20,11 +20,15 @@ public class EnumSetting<E extends Enum<E>> extends Setting<E> {
 
         Class<E> enumClass = defaultValue.getDeclaringClass();
         constants = enumClass.getEnumConstants();
+        // Mode translations deferred to initTranslateComponent()
+    }
 
-        // lumin.modules.<module>.<setting>.<mode>
-        String prefix = "modules." + module.getName().toLowerCase() + "." + name.toLowerCase();
+    @Override
+    public void initTranslateComponent(TranslateComponent component) {
+        super.initTranslateComponent(component);
+        modeTranslations.clear();
         for (E m : constants) {
-            modeTranslations.put(m, TranslateComponent.create(prefix, m.toString().toLowerCase()));
+            modeTranslations.put(m, component.createChild(m.toString().toLowerCase()));
         }
     }
 

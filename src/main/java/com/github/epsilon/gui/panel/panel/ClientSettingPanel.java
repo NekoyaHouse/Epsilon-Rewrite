@@ -1,5 +1,6 @@
 package com.github.epsilon.gui.panel.panel;
 
+import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
@@ -58,7 +59,7 @@ public class ClientSettingPanel {
     private boolean hasActiveContentAnimations;
     private String lastListeningKey = "";
 
-    private static final TranslateComponent titleComponent = TranslateComponent.create("gui", "clientsettings");
+    private static final TranslateComponent titleComponent = EpsilonTranslateComponent.create("gui", "clientsettings");
 
     public ClientSettingPanel(PanelState state, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, ShadowRenderer shadowRenderer, TextRenderer textRenderer, PanelPopupHost popupHost) {
         this.state = state;

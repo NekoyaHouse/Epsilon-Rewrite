@@ -28,14 +28,26 @@ public class Module {
 
     protected final Minecraft mc;
 
-    public final TranslateComponent translateComponent;
+    public TranslateComponent translateComponent;
 
     public Module(String name, Category category) {
         this.name = name;
         this.category = category;
-
-        translateComponent = TranslateComponent.create("modules", name.toLowerCase());
+        // TranslateComponent creation is deferred to initI18n()
         mc = Minecraft.getInstance();
+    }
+
+    /**
+     * Initializes i18n for this module and all its settings.
+     * Called by ModuleManager after registration.
+     *
+     * @param moduleComponent the TranslateComponent for this module (e.g. "epsilon.modules.killaura")
+     */
+    public void initI18n(TranslateComponent moduleComponent) {
+        this.translateComponent = moduleComponent;
+        for (Setting<?> setting : settings) {
+            setting.initTranslateComponent(moduleComponent.createChild(setting.getName().toLowerCase()));
+        }
     }
 
     protected boolean nullCheck() {
@@ -113,7 +125,7 @@ public class Module {
     }
 
     public String getTranslatedName() {
-        return translateComponent.getTranslatedName();
+        return translateComponent != null ? translateComponent.getTranslatedName() : name;
     }
 
     public String getDescription() {

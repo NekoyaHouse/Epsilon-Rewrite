@@ -9,14 +9,20 @@ public abstract class Setting<V> {
     protected V value;
     protected V defaultValue;
     protected final Dependency dependency;
-    protected final TranslateComponent translateComponent;
+    protected TranslateComponent translateComponent;
 
     public Setting(String name, Module module, Dependency dependency) {
         this.name = name;
         this.dependency = dependency;
-        // Usage: lumin.modules.<module>.<setting>
-        String prefix = "modules." + module.getName().toLowerCase();
-        this.translateComponent = TranslateComponent.create(prefix, name.toLowerCase());
+        // TranslateComponent creation is deferred to initTranslateComponent()
+    }
+
+    public void initTranslateComponent(TranslateComponent component) {
+        this.translateComponent = component;
+    }
+
+    public TranslateComponent getTranslateComponent() {
+        return translateComponent;
     }
 
     public String getName() {
@@ -24,7 +30,7 @@ public abstract class Setting<V> {
     }
 
     public String getDisplayName() {
-        return translateComponent.getTranslatedName();
+        return translateComponent != null ? translateComponent.getTranslatedName() : name;
     }
 
     public V getValue() {

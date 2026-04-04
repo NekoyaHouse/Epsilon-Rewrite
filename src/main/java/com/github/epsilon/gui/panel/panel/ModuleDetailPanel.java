@@ -1,5 +1,6 @@
 package com.github.epsilon.gui.panel.panel;
 
+import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
@@ -68,9 +69,9 @@ public class ModuleDetailPanel {
     private final Animation keybindHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
     private final Animation keybindFocusAnimation = new Animation(Easing.EASE_OUT_CUBIC, 150L);
 
-    private static final TranslateComponent toggleComponent = TranslateComponent.create("keybind", "toggle");
-    private static final TranslateComponent holdComponent = TranslateComponent.create("keybind", "hold");
-    private static final TranslateComponent noneComponent = TranslateComponent.create("keybind", "none");
+    private static final TranslateComponent toggleComponent = EpsilonTranslateComponent.create("keybind", "toggle");
+    private static final TranslateComponent holdComponent = EpsilonTranslateComponent.create("keybind", "hold");
+    private static final TranslateComponent noneComponent = EpsilonTranslateComponent.create("keybind", "none");
 
     public ModuleDetailPanel(PanelState state, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, ShadowRenderer shadowRenderer, TextRenderer textRenderer, PanelPopupHost popupHost) {
         this.state = state;

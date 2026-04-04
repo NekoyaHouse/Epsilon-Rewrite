@@ -1,5 +1,6 @@
 package com.github.epsilon.gui.panel.panel;
 
+import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
@@ -58,7 +59,7 @@ public class ModuleListPanel {
     private boolean searchFocused;
     private int searchCursorIndex;
 
-    private static final TranslateComponent searchComponent = TranslateComponent.create("gui", "search");
+    private static final TranslateComponent searchComponent = EpsilonTranslateComponent.create("gui", "search");
 
     public ModuleListPanel(PanelState state, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, ShadowRenderer shadowRenderer, TextRenderer textRenderer) {
         this.state = state;

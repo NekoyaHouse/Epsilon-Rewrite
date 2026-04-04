@@ -1,5 +1,6 @@
 package com.github.epsilon.modules;
 
+import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
 
 public enum Category {
@@ -20,7 +21,7 @@ public enum Category {
         this.name = name;
         this.description = description;
 
-        translateComponent = TranslateComponent.create("categories", name);
+        translateComponent = EpsilonTranslateComponent.create("categories", name);
     }
 
     public String getName() {
