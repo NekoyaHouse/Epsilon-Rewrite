@@ -18,7 +18,6 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class ModuleList extends HudModule {
 
@@ -38,7 +37,7 @@ public class ModuleList extends HudModule {
     private final DoubleSetting textScaleOffset = doubleSetting("TextScaleOffset", -0.2, -0.5, 0.5, 0.05);
     private final DoubleSetting horizontalPadding = doubleSetting("HorizontalPadding", 4.0, 0.0, 15.0, 1.0);
     private final DoubleSetting animSpeed = doubleSetting("AnimationSpeed", 10.0, 1.0, 20.0, 0.5);
-    
+
     private final ColorSetting shadowColor = colorSetting("ShadowColor", new Color(20, 20, 20, 120));
     private final BoolSetting showCategory = boolSetting("ShowCategory", false);
     private final BoolSetting showIcon = boolSetting("ShowIcon", true);
@@ -63,7 +62,7 @@ public class ModuleList extends HudModule {
         for (ItemInfo item : items) {
             if (item.alpha() > 0.001f) {
                 if (item.totalWidth() > maxTotalWidth) maxTotalWidth = item.totalWidth();
-                
+
                 totalHeight += (item.boxHeight() + ROW_SPACING * moduleScale) * item.alpha();
             }
         }
@@ -85,7 +84,7 @@ public class ModuleList extends HudModule {
         float renderScale = moduleScale + textScaleOffset.getValue().floatValue();
         float hPadding = horizontalPadding.getValue().floatValue();
 
-        HorizontalAnchor hAnchor = getHorizontalAnchor(); 
+        HorizontalAnchor hAnchor = getHorizontalAnchor();
         float currentY = this.y;
 
         for (ItemInfo item : items) {
@@ -120,10 +119,10 @@ public class ModuleList extends HudModule {
                 float iconScale = moduleScale * 0.8f;
                 float iconWidth = textRenderer.getWidth(iconChar, iconScale, StaticFontLoader.ICONS);
                 float iconHeight = textRenderer.getHeight(iconScale, StaticFontLoader.ICONS);
-                
+
                 float iconX = iconBoxX + (boxHeight - iconWidth) / 2.0f;
                 float iconY = currentY + (boxHeight - iconHeight) / 2.0f;
-                
+
                 textRenderer.addText(iconChar, iconX, iconY, iconScale, new Color(255, 255, 255, (int) (180 * alpha)), StaticFontLoader.ICONS);
             }
             currentY += (boxHeight + ROW_SPACING * moduleScale) * alpha;
@@ -140,7 +139,7 @@ public class ModuleList extends HudModule {
         for (Module module : allModules) {
             float target = module.isEnabled() ? 1.0f : 0.0f;
             float current = moduleAlphaMap.getOrDefault(module, 0.0f);
-            
+
             if (Math.abs(current - target) > 0.001f) {
                 current = Mth.lerp(speed * frameTime, current, target);
                 moduleAlphaMap.put(module, current);
@@ -152,12 +151,13 @@ public class ModuleList extends HudModule {
         List<Module> activeModules = allModules.stream()
                 .filter(m -> moduleAlphaMap.getOrDefault(m, 0.0f) > 0.001f)
                 .sorted(Comparator.comparingInt(m -> -getTextWidth(m)))
-                .collect(Collectors.toList());
+                .toList();
+
         TextRenderer textRenderer = textRendererSupplier.get();
         float moduleScale = scale.getValue().floatValue();
         float renderScale = moduleScale + textScaleOffset.getValue().floatValue();
         float hPadding = horizontalPadding.getValue().floatValue();
-        
+
         List<ItemInfo> items = new ArrayList<>();
         for (Module module : activeModules) {
             String text = getFormattedName(module);
@@ -167,7 +167,7 @@ public class ModuleList extends HudModule {
             float boxWidth = textWidth + (hPadding * moduleScale * 2.0f);
             float boxHeight = ROW_HEIGHT * moduleScale;
             float totalWidth = boxWidth;
-            
+
             if (showIcon.getValue() && module.category != null) {
                 totalWidth += boxHeight + ICON_GAP * moduleScale;
             }
@@ -192,6 +192,7 @@ public class ModuleList extends HudModule {
         return text;
     }
 
-    private record ItemInfo(Module module, String text, float boxWidth, float boxHeight, float totalWidth, float alpha) {
+    private record ItemInfo(Module module, String text, float boxWidth, float boxHeight, float totalWidth,
+                            float alpha) {
     }
 }

@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Lightmap.class)
-public abstract class MixinLightmap {
+public class MixinLightmap {
 
     @Shadow
     @Final

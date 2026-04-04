@@ -4,10 +4,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class MathUtils {
 
-    public static double wrappedDifference(double number1, double number2) {
-        return Math.min(Math.abs(number1 - number2), Math.min(Math.abs(number1 - 360) - Math.abs(number2 - 0), Math.abs(number2 - 360) - Math.abs(number1 - 0)));
-    }
-
     private static int ensureMinMax(int min, int max) {
         if (min <= max) return min;
         return max;

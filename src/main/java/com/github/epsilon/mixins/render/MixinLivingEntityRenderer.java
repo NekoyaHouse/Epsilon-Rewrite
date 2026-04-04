@@ -12,9 +12,12 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(LivingEntityRenderer.class)
-public abstract class MixinLivingEntityRenderer<T extends LivingEntity, S extends LivingEntityRenderState> {
+public abstract class MixinLivingEntityRenderer<S extends LivingEntityRenderState> {
 
-    @ModifyExpressionValue(method = "extractRenderState(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;F)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/LivingEntityRenderer;solveBodyRot(Lnet/minecraft/world/entity/LivingEntity;FF)F"))
+    /**
+     * 不好看
+     */
+    /*@ModifyExpressionValue(method = "extractRenderState(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;F)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/LivingEntityRenderer;solveBodyRot(Lnet/minecraft/world/entity/LivingEntity;FF)F"))
     private float hookBodyYaw(float original, LivingEntity entity, S state, float tickDelta) {
         if (entity == Minecraft.getInstance().player) {
             Vector2f rotation = RotationManager.INSTANCE.animationRotation;
@@ -24,8 +27,7 @@ public abstract class MixinLivingEntityRenderer<T extends LivingEntity, S extend
             }
         }
         return original;
-    }
-
+    }*/
     @ModifyExpressionValue(method = "extractRenderState(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;F)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;rotLerp(FFF)F"))
     private float hookHeadYaw(float original, LivingEntity entity, S state, float partialTick) {
         if (entity == Minecraft.getInstance().player) {

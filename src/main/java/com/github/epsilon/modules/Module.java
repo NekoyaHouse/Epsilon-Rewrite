@@ -75,7 +75,7 @@ public class Module {
             this.enabled = enabled;
             if (enabled) {
                 try {
-                    NotificationManager.INSTANCE.post("Module","Toggled " + this.name + " on", NotificationMode.Success,2000);
+                    NotificationManager.INSTANCE.post("Module", "Toggled " + this.name + " on", NotificationMode.Success, 2000);
                     NeoForge.EVENT_BUS.register(this);
 
                 } catch (Exception ignored) {
@@ -83,7 +83,7 @@ public class Module {
                 onEnable();
             } else {
                 try {
-                    NotificationManager.INSTANCE.post("Module","Toggled " + this.name + " off", NotificationMode.Error,2000);
+                    NotificationManager.INSTANCE.post("Module", "Toggled " + this.name + " off", NotificationMode.Error, 2000);
                     NeoForge.EVENT_BUS.unregister(this);
                 } catch (Exception ignored) {
                 }

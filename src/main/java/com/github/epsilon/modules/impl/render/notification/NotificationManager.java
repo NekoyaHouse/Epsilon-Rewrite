@@ -3,7 +3,12 @@ package com.github.epsilon.modules.impl.render.notification;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class NotificationManager {
+
     public static final NotificationManager INSTANCE = new NotificationManager();
+
+    private NotificationManager() {
+    }
+
     private final CopyOnWriteArrayList<Notification> notifications = new CopyOnWriteArrayList<>();
 
     public void post(String title, String subTitle, NotificationMode mode, long time) {
@@ -22,4 +27,5 @@ public class NotificationManager {
     public CopyOnWriteArrayList<Notification> getNotifications() {
         return notifications;
     }
+
 }

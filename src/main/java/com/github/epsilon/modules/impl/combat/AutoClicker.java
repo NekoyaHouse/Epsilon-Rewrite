@@ -14,7 +14,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 /*
  * Author Moli
  * fix: 已基本害死伪随机。
- * todo: 
+ * todo:
  *  完全害死伪随机。
  *  我觉得1.9+模式可以单独写成TriggerBot，而不是塞到连点里，我有点懒。晚上或者明天我改下🤔
  */

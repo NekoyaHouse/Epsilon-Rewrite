@@ -3,11 +3,12 @@ package com.github.epsilon.modules.impl.render.notification;
 import net.minecraft.util.Mth;
 
 public class Notification {
+
     private final NotificationMode mode;
     private final String title, subTitle;
     private final long displayTime;
     private final long startTime;
-    
+
     public boolean isRequestedToRemove;
     private float animationFactor = 0f;
 
@@ -27,8 +28,20 @@ public class Notification {
         animationFactor = Mth.lerp(speed * frameTime, animationFactor, target);
     }
 
-    public float getAlpha() { return animationFactor; }
-    public NotificationMode getMode() { return mode; }
-    public String getSubTitle() { return subTitle; }
-    public String getTitle() { return title; }
+    public float getAlpha() {
+        return animationFactor;
+    }
+
+    public NotificationMode getMode() {
+        return mode;
+    }
+
+    public String getSubTitle() {
+        return subTitle;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
 }

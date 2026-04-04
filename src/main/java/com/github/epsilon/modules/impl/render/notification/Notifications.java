@@ -29,11 +29,12 @@ public class Notifications extends HudModule {
     private Notifications() {
         super("Notifications", Category.RENDER, 10f, 10f, 150f, 35f);
     }
+
     @Override
     protected void updateBounds(DeltaTracker delta) {
         float moduleScale = scale.getValue().floatValue();
         float spacing = 38.0f * moduleScale;
-        
+
         long activeCount = NotificationManager.INSTANCE.getNotifications().stream()
                 .filter(n -> n.getAlpha() > 0.001f).count();
 
@@ -56,7 +57,7 @@ public class Notifications extends HudModule {
         float moduleScale = scale.getValue().floatValue();
         float spacing = 38.0f * moduleScale;
         float currentY = this.y;
-        
+
         HorizontalAnchor hAnchor = getHorizontalAnchor();
         VerticalAnchor vAnchor = getVerticalAnchor();
 
@@ -85,13 +86,13 @@ public class Notifications extends HudModule {
             float dotX = renderX + 8.0f * moduleScale;
             float dotY = currentY + (boxHeight - dotSize) / 2.0f;
             roundRectRenderer.addRoundRect(dotX, dotY, dotSize, dotSize, dotSize / 2.0f, dotColor);
-            
+
             float textX = dotX + dotSize + 8.0f * moduleScale;
             textRenderer.addText(n.getTitle(), textX, currentY + 5.0f * moduleScale, moduleScale * 0.85f, new Color(255, 255, 255, (int) (255 * alpha)));
             textRenderer.addText(n.getSubTitle(), textX, currentY + 18.0f * moduleScale, moduleScale * 0.75f, new Color(200, 200, 200, (int) (200 * alpha)));
-            
+
             if (vAnchor == VerticalAnchor.Bottom) {
-                currentY -= spacing; 
+                currentY -= spacing;
             } else {
                 currentY += spacing;
             }
