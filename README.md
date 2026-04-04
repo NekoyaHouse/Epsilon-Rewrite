@@ -7,33 +7,8 @@
 </h4>
 A modern Minecraft utility client built on NeoForge 26.1 with advanced rendering system and modular architecture.
 
-## 🚀 Features
-
-- **Custom Rendering Engine** - Lumin rendering system with custom pipelines, shaders, and MD3-themed UI
-- **Event-Driven Architecture** - Dynamic event registration with NeoForge event bus
-- **Configuration System** - Flexible settings with multiple data types and dependency support
-
-## 📦 Tech Stack
-
-- **Java 25**
-- **NeoForge 26.1.1.1-beta**
-- **Minecraft 26.1.1**
-- **Gradle** build system
-- **Mixin** for bytecode manipulation
-
-## 🏗️ Architecture
-
-```
-src/main/java/com/github/epsilon/
-├── managers/      # Core system managers
-├── modules/       # Functional modules (Combat/Player/Render/World)
-├── graphics/      # Lumin rendering engine
-├── gui/          # MD3-themed UI system
-├── events/       # Custom event system
-├── mixins/       # Game injections
-├── settings/     # Configuration framework
-└── utils/        # Utility libraries
-```
+## 🚀 Addon System
+[Epsilon Addon Template](https://github.com/KonekokoHouse/Epsilon-Addon-Template)
 
 ## 🎨 Graphics System
 
@@ -44,7 +19,7 @@ The Lumin rendering system provides custom render pipelines for:
 - Texture rendering
 - Custom vertex formats
 
-See [Graphics README](src/main/java/com/github/epsilon/graphics/README.md) for details.
+See [Lumin Graphics README](src/main/java/com/github/epsilon/graphics/README.md) for details.
 
 ## ⚙️ Building
 
