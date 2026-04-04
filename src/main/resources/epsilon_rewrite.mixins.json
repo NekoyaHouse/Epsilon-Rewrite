@@ -17,6 +17,7 @@
     "level.MixinPlayer",
     "packet.MixinClientPacketListener",
     "packet.MixinConnection",
+    "render.MixinCamera",
     "render.MixinEntityRenderer",
     "render.MixinGui",
     "render.MixinLightmap",

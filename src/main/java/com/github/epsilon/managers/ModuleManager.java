@@ -69,6 +69,7 @@ public class ModuleManager {
                 VClip.INSTANCE,
 
                 // Render
+                CameraClip.INSTANCE,
                 ESP.INSTANCE,
                 Fullbright.INSTANCE,
                 ModuleList.INSTANCE,
@@ -93,8 +94,8 @@ public class ModuleManager {
     /**
      * Registers a module from an addon and initializes its i18n.
      *
-     * @param module           the module to register
-     * @param moduleComponent  the TranslateComponent for this module (e.g. "myaddon.modules.fly")
+     * @param module          the module to register
+     * @param moduleComponent the TranslateComponent for this module (e.g. "myaddon.modules.fly")
      */
     public void registerAddonModule(Module module, TranslateComponent moduleComponent) {
         module.initI18n(moduleComponent);
