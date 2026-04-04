@@ -110,7 +110,7 @@
   
   "epsilon.modules.clientsetting": "客户端设置",
   "epsilon.modules.clientsetting.gui keybind": "GUI 按键绑定",
-  "epsilon.modules.clientsetting.close gui on space": "点击空白关闭 GUI",
+  "epsilon.modules.clientsetting.close gui on outside": "点击空白关闭 GUI",
   "epsilon.modules.clientsetting.open hud editor": "打开 HUD 编辑器",
   "epsilon.modules.clientsetting.backgroundblur": "背景模糊",
   "epsilon.modules.clientsetting.thememode": "主题模式",
