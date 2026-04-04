@@ -135,8 +135,7 @@ public class PanelScreen extends Screen {
     }
 
     private void drawChrome(PanelLayout.Layout layout) {
-        ClientSetting clientSetting = ClientSetting.INSTANCE;
-        if (clientSetting.shouldBlur()) {
+        if (ClientSetting.INSTANCE.shouldBlur()) {
             BlurShader.INSTANCE.drawBlur(layout.panel().x(), layout.panel().y(), layout.panel().width(), layout.panel().height(), MD3Theme.PANEL_RADIUS, 10.0f);
         }
 

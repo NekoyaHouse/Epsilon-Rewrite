@@ -116,7 +116,10 @@ public class ModuleManager {
 
         modules.forEach(module -> {
             if (module.isEnabled() && module instanceof HudModule hudModule) {
-                RenderManager.INSTANCE.applyRenderHud(hudModule::render);
+                RenderManager.INSTANCE.applyRenderHud(delta -> {
+                    hudModule.updateLayout(delta);
+                    hudModule.render(delta);
+                });
             }
         });
 

@@ -97,16 +97,18 @@ public class ConfigManager {
             }
 
             if (module instanceof HudModule hud) {
-                if (moduleObj.has("hudX") && moduleObj.get("hudX").isJsonPrimitive()) {
-                    try {
-                        hud.x = moduleObj.get("hudX").getAsFloat();
-                    } catch (Exception ignored) {
-                    }
-                }
-                if (moduleObj.has("hudY") && moduleObj.get("hudY").isJsonPrimitive()) {
-                    try {
-                        hud.y = moduleObj.get("hudY").getAsFloat();
-                    } catch (Exception ignored) {
+                HudModule.HorizontalAnchor horizontalAnchor = readHorizontalAnchor(moduleObj, "hudHorizontalAnchor");
+                HudModule.VerticalAnchor verticalAnchor = readVerticalAnchor(moduleObj, "hudVerticalAnchor");
+                Float anchorX = readFloat(moduleObj, "hudAnchorX");
+                Float anchorY = readFloat(moduleObj, "hudAnchorY");
+
+                if (horizontalAnchor != null && verticalAnchor != null && anchorX != null && anchorY != null) {
+                    hud.setAnchorState(horizontalAnchor, verticalAnchor, anchorX, anchorY);
+                } else {
+                    Float renderX = readFloat(moduleObj, "hudX");
+                    Float renderY = readFloat(moduleObj, "hudY");
+                    if (renderX != null && renderY != null) {
+                        hud.loadLegacyPosition(renderX, renderY);
                     }
                 }
             }
@@ -190,8 +192,13 @@ public class ConfigManager {
             moduleObj.addProperty("bindMode", module.getBindMode().name());
 
             if (module instanceof HudModule hud) {
+                hud.updateLayout(null);
                 moduleObj.addProperty("hudX", hud.x);
                 moduleObj.addProperty("hudY", hud.y);
+                moduleObj.addProperty("hudAnchorX", hud.getAnchorX());
+                moduleObj.addProperty("hudAnchorY", hud.getAnchorY());
+                moduleObj.addProperty("hudHorizontalAnchor", hud.getHorizontalAnchor().name());
+                moduleObj.addProperty("hudVerticalAnchor", hud.getVerticalAnchor().name());
             }
 
             JsonObject settingsObj = new JsonObject();
@@ -269,6 +276,45 @@ public class ConfigManager {
             return new JsonPrimitive(c.getRGB());
         }
         return null;
+    }
+
+    private static Float readFloat(JsonObject object, String key) {
+        JsonElement value = object.get(key);
+        if (value == null || !value.isJsonPrimitive()) {
+            return null;
+        }
+
+        try {
+            return value.getAsFloat();
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static HudModule.HorizontalAnchor readHorizontalAnchor(JsonObject object, String key) {
+        JsonElement value = object.get(key);
+        if (value == null || !value.isJsonPrimitive()) {
+            return null;
+        }
+
+        try {
+            return HudModule.HorizontalAnchor.valueOf(value.getAsString());
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static HudModule.VerticalAnchor readVerticalAnchor(JsonObject object, String key) {
+        JsonElement value = object.get(key);
+        if (value == null || !value.isJsonPrimitive()) {
+            return null;
+        }
+
+        try {
+            return HudModule.VerticalAnchor.valueOf(value.getAsString());
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     private static void applySetting(Setting<?> setting, JsonElement value) {

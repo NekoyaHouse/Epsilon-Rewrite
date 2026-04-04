@@ -76,14 +76,28 @@ For most immediate-mode UI tasks, you need to add shapes and clear the buffer wi
 
 ```java
 // 1. Add shapes to the buffer
-rectRenderer.get().addRect(10f,10f,200f,200f,Color.WHITE);
+rectRenderer.get().
+
+addRect(10f,10f,200f,200f,Color.WHITE);
 
 // 2. Draw to the screen and clear data before the next frame
-rectRenderer.get().draw();
-rectRenderer.get().clear();
+rectRenderer.
+
+get().
+
+draw();
+rectRenderer.
+
+get().
+
+clear();
 
 // Alternatively, you can use the shortcut:
-rectRenderer.get().drawAndClear();
+rectRenderer.
+
+get().
+
+drawAndClear();
 
 ```
 

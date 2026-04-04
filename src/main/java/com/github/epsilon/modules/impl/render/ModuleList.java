@@ -42,7 +42,7 @@ public class ModuleList extends HudModule {
     private final Supplier<RoundRectRenderer> roundRectRendererSupplier = Suppliers.memoize(RoundRectRenderer::new);
 
     @Override
-    public void updateBounds(DeltaTracker delta) {
+    protected void updateBounds(DeltaTracker delta) {
         if (nullCheck()) return;
 
         List<ItemInfo> items = collectItems();
@@ -71,8 +71,6 @@ public class ModuleList extends HudModule {
             setBounds(0.0f, 0.0f);
             return;
         }
-
-        updateBounds(delta);
 
         TextRenderer textRenderer = textRendererSupplier.get();
         RoundRectRenderer roundRectRenderer = roundRectRendererSupplier.get();
