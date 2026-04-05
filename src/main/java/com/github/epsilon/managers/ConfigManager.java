@@ -28,6 +28,7 @@ public class ConfigManager {
             .create();
 
     private static final Path configFile = Paths.get("epsilon-config").resolve("config.json");
+    private static final Path friendFile = Paths.get("epsilon-config").resolve("friends.json");
 
     private boolean dirty;
     private boolean modulesApplied;
@@ -45,6 +46,7 @@ public class ConfigManager {
                 dirty = true;
             }
             applyToModules(ModuleManager.INSTANCE.getModules());
+            loadFriends();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -58,6 +60,7 @@ public class ConfigManager {
         loadFromDisk();
         modulesApplied = false;
         applyToModules(ModuleManager.INSTANCE.getModules());
+        loadFriends();
     }
 
     public synchronized void applyToModules(List<Module> modules) {
@@ -133,6 +136,7 @@ public class ConfigManager {
     public synchronized void saveNow() {
         saveModulesToRoot(ModuleManager.INSTANCE.getModules());
         writeToDiskIfDirty();
+        saveFriends();
     }
 
     private synchronized void loadFromDisk() {
@@ -217,6 +221,47 @@ public class ConfigManager {
         }
 
         return modulesObj;
+    }
+
+    private synchronized void saveFriends() {
+        JsonArray array = new JsonArray();
+        for (String name : FriendManager.INSTANCE.getFriends()) {
+            array.add(name);
+        }
+        try {
+            Files.createDirectories(friendFile.getParent());
+            String json = gson.toJson(array);
+            Files.writeString(
+                    friendFile,
+                    json,
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.WRITE
+            );
+        } catch (IOException e) {
+            Epsilon.LOGGER.error("写入好友文件失败: {}", friendFile, e);
+        }
+    }
+
+    private synchronized void loadFriends() {
+        FriendManager.INSTANCE.clearFriends();
+        if (!Files.exists(friendFile)) {
+            return;
+        }
+        try {
+            String json = Files.readString(friendFile, StandardCharsets.UTF_8);
+            JsonElement parsed = JsonParser.parseString(json);
+            if (parsed != null && parsed.isJsonArray()) {
+                for (JsonElement el : parsed.getAsJsonArray()) {
+                    if (el.isJsonPrimitive()) {
+                        FriendManager.INSTANCE.addFriend(el.getAsString());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Epsilon.LOGGER.error("读取好友文件失败: {}", friendFile, e);
+        }
     }
 
     private static JsonObject getObject(JsonObject parent, String key) {

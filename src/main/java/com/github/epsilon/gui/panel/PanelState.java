@@ -23,6 +23,11 @@ public class PanelState {
         COLOR_PICKER
     }
 
+    public enum ClientSettingTab {
+        GENERAL,
+        FRIEND
+    }
+
     private Category selectedCategory = Category.COMBAT;
     private Module selectedModule;
     private String searchQuery = "";
@@ -36,9 +41,12 @@ public class PanelState {
     private float maxDetailScroll;
 
     private boolean clientSettingMode;
+    private ClientSettingTab clientSettingTab = ClientSettingTab.GENERAL;
     private KeybindSetting listeningKeybindSetting;
     private float clientSettingScroll;
     private float maxClientSettingScroll;
+    private float friendScroll;
+    private float maxFriendScroll;
 
     public PanelState() {
         ensureValidSelection();
@@ -140,9 +148,25 @@ public class PanelState {
         detailScroll = clampScroll(detailScroll + (float) amount, maxDetailScroll);
     }
 
+    public float getMaxModuleScroll() {
+        return maxModuleScroll;
+    }
+
+    public void setModuleScroll(float scroll) {
+        this.moduleScroll = clampScroll(scroll, maxModuleScroll);
+    }
+
     public void setMaxModuleScroll(float maxModuleScroll) {
         this.maxModuleScroll = Math.max(0.0f, maxModuleScroll);
         moduleScroll = clampScroll(moduleScroll, this.maxModuleScroll);
+    }
+
+    public float getMaxDetailScroll() {
+        return maxDetailScroll;
+    }
+
+    public void setDetailScroll(float scroll) {
+        this.detailScroll = clampScroll(scroll, maxDetailScroll);
     }
 
     public void setMaxDetailScroll(float maxDetailScroll) {
@@ -188,6 +212,8 @@ public class PanelState {
             } else {
                 listeningKeybindSetting = null;
                 clientSettingScroll = 0.0f;
+                friendScroll = 0.0f;
+                clientSettingTab = ClientSettingTab.GENERAL;
             }
         }
     }
@@ -208,9 +234,50 @@ public class PanelState {
         clientSettingScroll = clampScroll(clientSettingScroll + (float) amount, maxClientSettingScroll);
     }
 
+    public float getMaxClientSettingScroll() {
+        return maxClientSettingScroll;
+    }
+
+    public void setClientSettingScroll(float scroll) {
+        this.clientSettingScroll = clampScroll(scroll, maxClientSettingScroll);
+    }
+
     public void setMaxClientSettingScroll(float maxClientSettingScroll) {
         this.maxClientSettingScroll = Math.max(0.0f, maxClientSettingScroll);
         clientSettingScroll = clampScroll(clientSettingScroll, this.maxClientSettingScroll);
+    }
+
+    public ClientSettingTab getClientSettingTab() {
+        return clientSettingTab;
+    }
+
+    public void setClientSettingTab(ClientSettingTab tab) {
+        if (this.clientSettingTab != tab) {
+            this.clientSettingTab = tab;
+            friendScroll = 0.0f;
+            clientSettingScroll = 0.0f;
+        }
+    }
+
+    public float getFriendScroll() {
+        return friendScroll;
+    }
+
+    public void scrollFriend(double amount) {
+        friendScroll = clampScroll(friendScroll + (float) amount, maxFriendScroll);
+    }
+
+    public float getMaxFriendScroll() {
+        return maxFriendScroll;
+    }
+
+    public void setFriendScroll(float scroll) {
+        this.friendScroll = clampScroll(scroll, maxFriendScroll);
+    }
+
+    public void setMaxFriendScroll(float maxFriendScroll) {
+        this.maxFriendScroll = Math.max(0.0f, maxFriendScroll);
+        friendScroll = clampScroll(friendScroll, this.maxFriendScroll);
     }
 
     private float clampScroll(float scroll, float maxScroll) {

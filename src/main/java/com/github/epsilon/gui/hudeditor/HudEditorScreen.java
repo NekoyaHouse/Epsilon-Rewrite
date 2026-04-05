@@ -48,11 +48,11 @@ public class HudEditorScreen extends Screen {
         RenderManager.INSTANCE.applyRenderAfterFrame(delta -> {
             int screenWidth = minecraft.getWindow().getGuiScaledWidth();
             int screenHeight = minecraft.getWindow().getGuiScaledHeight();
-            List<HudModule> hudModules = HudEditorModules.collectHudModules(delta);
+            List<HudModule> hudModules = HudEditorModules.collectEnabledHudModules(delta);
             syncSelectionState(hudModules);
 
             HudModule hovered = HudEditorModules.findTopmost(hudModules, mouseX, mouseY);
-            HudModule focus = dragging != null ? dragging : selected != null ? selected : hovered;
+            HudModule focus = dragging != null ? dragging : (selected != null ? selected : hovered);
             boolean draggingFocus = focus != null && focus == dragging;
 
             if (focus != null) {
@@ -100,7 +100,7 @@ public class HudEditorScreen extends Screen {
         if (event.button() == 0) {
             double mx = event.x();
             double my = event.y();
-            List<HudModule> hudModules = HudEditorModules.collectHudModules(null);
+            List<HudModule> hudModules = HudEditorModules.collectEnabledHudModules(null);
             syncSelectionState(hudModules);
             HudModule hovered = HudEditorModules.findTopmost(hudModules, mx, my);
             if (hovered != null) {
@@ -129,7 +129,7 @@ public class HudEditorScreen extends Screen {
         if (dragging != null && event.button() == 0) {
             int screenWidth = minecraft.getWindow().getGuiScaledWidth();
             int screenHeight = minecraft.getWindow().getGuiScaledHeight();
-            List<HudModule> hudModules = HudEditorModules.collectHudModules(null);
+            List<HudModule> hudModules = HudEditorModules.collectEnabledHudModules(null);
             float targetX = (float) (event.x() - dragOffsetX);
             float targetY = (float) (event.y() - dragOffsetY);
             HudEditorSnapper.SnapPosition snap = event.hasAltDown()

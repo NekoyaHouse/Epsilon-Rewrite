@@ -1,5 +1,7 @@
 package com.github.epsilon.gui.hudeditor;
 
+import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
+import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.ShadowRenderer;
@@ -10,6 +12,7 @@ import com.github.epsilon.gui.panel.PanelLayout;
 import com.github.epsilon.gui.panel.adapter.SettingListController;
 import com.github.epsilon.gui.panel.popup.PanelPopupHost;
 import com.github.epsilon.gui.panel.util.PanelContentBuffer;
+import com.github.epsilon.gui.panel.util.ScrollBarDragState;
 import com.github.epsilon.gui.panel.util.ScrollBarUtil;
 import com.github.epsilon.modules.HudModule;
 import com.github.epsilon.settings.Setting;
@@ -26,11 +29,16 @@ final class HudEditorInspector {
     private static final float PANEL_MARGIN = 10.0f;
     private static final float PANEL_WIDTH = 220.0f;
     private static final float PANEL_MIN_HEIGHT = 116.0f;
+    private static final float PANEL_COLLAPSED_HEIGHT = 40.0f;
+    private static final float PANEL_EXPANDED_MAX_HEIGHT = 320.0f;
+    private static final float PANEL_EXPANDED_MAX_SCREEN_RATIO = 0.72f;
     private static final float TITLE_SCALE = 0.78f;
     private static final float SUBTITLE_SCALE = 0.56f;
     private static final float HEADER_TOP = 10.0f;
+    private static final float HEADER_HEIGHT = 32.0f;
     private static final float HEADER_GAP = 28.0f;
     private static final float CONTENT_TOP = 40.0f;
+    private static final float COLLAPSE_BUTTON_SIZE = 12.0f;
 
     private final RoundRectRenderer roundRectRenderer = new RoundRectRenderer();
     private final RectRenderer rectRenderer = new RectRenderer();
@@ -42,26 +50,64 @@ final class HudEditorInspector {
 
     private PanelLayout.Rect bounds;
     private PanelLayout.Rect viewport;
+    private PanelLayout.Rect headerBounds;
+    private PanelLayout.Rect collapseButtonBounds;
     private HudModule selectedModule;
     private float scroll;
     private float maxScroll;
     private String selectedModuleName = "";
+    private boolean collapsed;
+    private boolean windowDragging;
+    private float panelX = Float.NaN;
+    private float panelY = Float.NaN;
+    private float dragOffsetX;
+    private float dragOffsetY;
+    private int lastScreenWidth;
+    private int lastScreenHeight;
+    private final ScrollBarDragState scrollBarDrag = new ScrollBarDragState();
+
+    private static final TranslateComponent titleComponent = EpsilonTranslateComponent.create("gui", "inspector");
+    private static final TranslateComponent selectComponent = EpsilonTranslateComponent.create("gui", "inspector.select");
 
     void queueRender(GuiGraphicsExtractor graphics, HudModule selectedModule, int screenWidth, int screenHeight, int mouseX, int mouseY, float partialTick, int guiHeight) {
         this.selectedModule = selectedModule;
+        this.lastScreenWidth = screenWidth;
+        this.lastScreenHeight = screenHeight;
         this.bounds = computeBounds(screenWidth, screenHeight);
+        this.headerBounds = new PanelLayout.Rect(bounds.x(), bounds.y(), bounds.width(), HEADER_HEIGHT);
+        float buttonX = bounds.x() + bounds.width() - MD3Theme.PANEL_TITLE_INSET - COLLAPSE_BUTTON_SIZE;
+        float buttonY = bounds.y() + (HEADER_HEIGHT - COLLAPSE_BUTTON_SIZE) * 0.5f;
+        this.collapseButtonBounds = new PanelLayout.Rect(buttonX, buttonY, COLLAPSE_BUTTON_SIZE, COLLAPSE_BUTTON_SIZE);
 
         shadowRenderer.addShadow(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.SECTION_RADIUS, 16.0f, MD3Theme.SHADOW);
         roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.SECTION_RADIUS, MD3Theme.SURFACE_DIM);
         roundRectRenderer.addRoundRect(bounds.x() + 1.0f, bounds.y() + 1.0f, bounds.width() - 2.0f, bounds.height() - 2.0f, MD3Theme.SECTION_RADIUS - 1.0f, MD3Theme.SURFACE_CONTAINER_LOW);
 
         float titleX = bounds.x() + MD3Theme.PANEL_TITLE_INSET;
-        textRenderer.addText("HUD Inspector", titleX, bounds.y() + HEADER_TOP, TITLE_SCALE, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
+        textRenderer.addText(titleComponent.getTranslatedName(), titleX, bounds.y() + HEADER_TOP, TITLE_SCALE, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
+
+        boolean collapseHovered = collapseButtonBounds.contains(mouseX, mouseY);
+        roundRectRenderer.addRoundRect(
+                collapseButtonBounds.x(),
+                collapseButtonBounds.y(),
+                collapseButtonBounds.width(),
+                collapseButtonBounds.height(),
+                5.0f,
+                collapseHovered ? MD3Theme.SURFACE_CONTAINER_HIGH : MD3Theme.SURFACE_CONTAINER
+        );
+        String collapseGlyph = collapsed ? "+" : "-";
+        textRenderer.addText(collapseGlyph, collapseButtonBounds.x() + 4.0f, collapseButtonBounds.y() + 2.0f, 0.68f, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
+
+        if (collapsed) {
+            flushChrome();
+            clearContentState(false);
+            return;
+        }
 
         if (selectedModule == null) {
-            textRenderer.addText("Select a HUD element", titleX, bounds.y() + HEADER_GAP, SUBTITLE_SCALE, MD3Theme.TEXT_SECONDARY);
+            textRenderer.addText(selectComponent.getTranslatedName(), titleX, bounds.y() + HEADER_GAP, SUBTITLE_SCALE, MD3Theme.TEXT_SECONDARY);
             flushChrome();
-            clearContentState();
+            clearContentState(true);
             return;
         }
 
@@ -84,7 +130,7 @@ final class HudEditorInspector {
         if (settings.isEmpty()) {
             textRenderer.addText("This HUD has no settings", titleX, viewport.y(), SUBTITLE_SCALE, MD3Theme.TEXT_MUTED);
             flushChrome();
-            clearContentState();
+            clearContentState(true);
             return;
         }
 
@@ -120,8 +166,38 @@ final class HudEditorInspector {
             settingList.clearFocus();
             return false;
         }
-        if (selectedModule == null || event.button() != 0) {
+        if (event.button() != 0) {
             return true;
+        }
+
+        if (collapseButtonBounds != null && collapseButtonBounds.contains(event.x(), event.y())) {
+            collapsed = !collapsed;
+            scrollBarDrag.reset();
+            popupHost.close();
+            settingList.clearFocus();
+            return true;
+        }
+
+        if (isHeaderDragHandle(event.x(), event.y())) {
+            windowDragging = true;
+            dragOffsetX = (float) (event.x() - bounds.x());
+            dragOffsetY = (float) (event.y() - bounds.y());
+            return true;
+        }
+
+        if (collapsed || selectedModule == null) {
+            return true;
+        }
+
+        // Scrollbar drag
+        if (viewport != null && maxScroll > 0) {
+            if (scrollBarDrag.mouseClicked(event.x(), event.y(), viewport, scroll, maxScroll)) {
+                float newScroll = scrollBarDrag.mouseDragged(event.y(), viewport, maxScroll);
+                if (newScroll >= 0) {
+                    scroll = Mth.clamp(newScroll, 0.0f, maxScroll);
+                }
+                return true;
+            }
         }
 
         settingList.mouseClicked(event, isDoubleClick, bounds);
@@ -129,6 +205,13 @@ final class HudEditorInspector {
     }
 
     boolean mouseReleased(MouseButtonEvent event) {
+        if (windowDragging) {
+            windowDragging = false;
+            return true;
+        }
+        if (scrollBarDrag.mouseReleased()) {
+            return true;
+        }
         if (settingList.getPopupHost().mouseReleased(event)) {
             return true;
         }
@@ -136,6 +219,21 @@ final class HudEditorInspector {
     }
 
     boolean mouseDragged(MouseButtonEvent event, double mouseX, double mouseY) {
+        if (windowDragging) {
+            panelX = (float) (event.x() - dragOffsetX);
+            panelY = (float) (event.y() - dragOffsetY);
+            float width = Math.min(PANEL_WIDTH, Math.max(164.0f, lastScreenWidth - PANEL_MARGIN * 2.0f));
+            float height = computePanelHeight(lastScreenHeight);
+            clampPanelPosition(lastScreenWidth, lastScreenHeight, width, height);
+            return true;
+        }
+        if (scrollBarDrag.isDragging() && viewport != null) {
+            float newScroll = scrollBarDrag.mouseDragged(mouseY, viewport, maxScroll);
+            if (newScroll >= 0) {
+                scroll = Mth.clamp(newScroll, 0.0f, maxScroll);
+            }
+            return true;
+        }
         if (settingList.getPopupHost().mouseDragged(event, mouseX, mouseY)) {
             return true;
         }
@@ -173,9 +271,40 @@ final class HudEditorInspector {
 
     private PanelLayout.Rect computeBounds(int screenWidth, int screenHeight) {
         float width = Math.min(PANEL_WIDTH, Math.max(164.0f, screenWidth - PANEL_MARGIN * 2.0f));
-        float height = Math.max(PANEL_MIN_HEIGHT, screenHeight - PANEL_MARGIN * 2.0f);
-        float x = screenWidth - width - PANEL_MARGIN;
-        return new PanelLayout.Rect(x, PANEL_MARGIN, width, height);
+        float height = computePanelHeight(screenHeight);
+
+        if (Float.isNaN(panelX) || Float.isNaN(panelY)) {
+            panelX = screenWidth - width - PANEL_MARGIN;
+            panelY = PANEL_MARGIN;
+        }
+
+        clampPanelPosition(screenWidth, screenHeight, width, height);
+        return new PanelLayout.Rect(panelX, panelY, width, height);
+    }
+
+    private float computePanelHeight(int screenHeight) {
+        if (collapsed) {
+            return PANEL_COLLAPSED_HEIGHT;
+        }
+        float maxExpandedHeight = Math.max(PANEL_MIN_HEIGHT, screenHeight - PANEL_MARGIN * 2.0f);
+        float preferredHeight = Math.min(PANEL_EXPANDED_MAX_HEIGHT, screenHeight * PANEL_EXPANDED_MAX_SCREEN_RATIO);
+        return Mth.clamp(preferredHeight, PANEL_MIN_HEIGHT, maxExpandedHeight);
+    }
+
+    private void clampPanelPosition(int screenWidth, int screenHeight, float width, float height) {
+        float minX = PANEL_MARGIN;
+        float minY = PANEL_MARGIN;
+        float maxX = Math.max(minX, screenWidth - width - PANEL_MARGIN);
+        float maxY = Math.max(minY, screenHeight - height - PANEL_MARGIN);
+        panelX = Mth.clamp(panelX, minX, maxX);
+        panelY = Mth.clamp(panelY, minY, maxY);
+    }
+
+    private boolean isHeaderDragHandle(double mouseX, double mouseY) {
+        if (headerBounds == null || !headerBounds.contains(mouseX, mouseY)) {
+            return false;
+        }
+        return collapseButtonBounds == null || !collapseButtonBounds.contains(mouseX, mouseY);
     }
 
     private void flushChrome() {
@@ -185,13 +314,16 @@ final class HudEditorInspector {
         textRenderer.drawAndClear();
     }
 
-    private void clearContentState() {
+    private void clearContentState(boolean resetSelectionState) {
         viewport = null;
-        scroll = 0.0f;
         maxScroll = 0.0f;
-        selectedModuleName = "";
+        scrollBarDrag.reset();
         popupHost.close();
         settingList.clearAll();
         contentBuffer.clear();
+        if (resetSelectionState) {
+            scroll = 0.0f;
+            selectedModuleName = "";
+        }
     }
 }

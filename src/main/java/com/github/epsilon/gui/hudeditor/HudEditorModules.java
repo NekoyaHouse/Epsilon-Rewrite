@@ -14,6 +14,23 @@ public final class HudEditorModules {
     private HudEditorModules() {
     }
 
+    public static List<HudModule> collectEnabledHudModules(@Nullable DeltaTracker delta) {
+        List<HudModule> hudModules = new ArrayList<>();
+        List<Module> modules = ModuleManager.INSTANCE.getModules();
+        if (modules == null) {
+            return hudModules;
+        }
+
+        for (Module module : modules) {
+            if (module.isEnabled() && module instanceof HudModule hudModule) {
+                hudModule.updateLayout(delta);
+                hudModules.add(hudModule);
+            }
+        }
+
+        return hudModules;
+    }
+
     public static List<HudModule> collectHudModules(@Nullable DeltaTracker delta) {
         List<HudModule> hudModules = new ArrayList<>();
         List<Module> modules = ModuleManager.INSTANCE.getModules();

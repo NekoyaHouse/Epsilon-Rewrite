@@ -18,10 +18,11 @@ public class Disabler extends Module {
         super("Disabler", Category.PLAYER);
     }
 
-    private final BoolSetting badPacketsA = boolSetting("BadPacketsA", true);
-    private final BoolSetting duplicateRotPlace = boolSetting("DuplicateRotPlace", false);
-    private final BoolSetting aimModulo360 = boolSetting("AimModulo360", false);
-    private final BoolSetting aimDuplicateLook = boolSetting("AimDuplicateLook", false);
+
+    private final BoolSetting badPacketsA = boolSetting("Bad Packets A", true);
+    private final BoolSetting duplicateRotPlace = boolSetting("Duplicate Rot Place", false);
+    private final BoolSetting aimModulo360 = boolSetting("Aim Modulo 360", false);
+    private final BoolSetting aimDuplicateLook = boolSetting("Aim Duplicate Look", false);
 
     private int lastSlot = -1;
     private float playerYaw, lastYaw, lastPitch;
