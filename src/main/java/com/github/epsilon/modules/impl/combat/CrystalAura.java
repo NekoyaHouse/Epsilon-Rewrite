@@ -315,7 +315,7 @@ public class CrystalAura extends Module {
                     float targetDmg = DamageUtils.crystalDamage(target, crystalPos, armorMode.getValue());
                     float selfDmg = DamageUtils.selfCrystalDamage(crystalPos, armorForSelf.getValue() ? armorMode.getValue() : DamageUtils.ArmorEnchantmentMode.None);
                     Vector2f targetRotation = RotationUtils.calculate(supportPos, Direction.UP);
-                    boolean visible = RaytraceUtils.overBlock(supportPos, targetRotation, Direction.UP, false);
+                    boolean visible = RaytraceUtils.overBlock(targetRotation, supportPos, Direction.UP, false);
                     boolean wallBypassAllowed = !visible && distanceSq <= wallRangeSq;
                     if (!visible && !wallBypassAllowed) continue;
 
@@ -421,7 +421,7 @@ public class CrystalAura extends Module {
             if (record.selectedPriorityValue() != requestPriority) return;
             boolean canPlace = candidate.throughWall
                     ? candidate.wallBypassAllowed && isAimingAtBlock(record.currentRotation(), candidate.targetRotation)
-                    : RaytraceUtils.overBlock(candidate.supportPos, record.currentRotation(), Direction.UP, false);
+                    : RaytraceUtils.overBlock(record.currentRotation(), candidate.supportPos, Direction.UP, false);
             if (!canPlace) {
                 InvUtils.swapBack();
                 return;

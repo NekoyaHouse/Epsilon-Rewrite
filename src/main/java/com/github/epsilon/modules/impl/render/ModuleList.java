@@ -108,7 +108,7 @@ public class ModuleList extends HudModule {
             roundRectRenderer.addRoundRect(itemX, currentY, boxWidth, boxHeight, 6.0f * moduleScale, animatedShadow);
 
             float textX = itemX + hPadding * moduleScale;
-            float textY = currentY + (boxHeight - textRenderer.getHeight(renderScale)) / 2.0f - 0.5f;
+            float textY = currentY + (boxHeight - textRenderer.getHeight(renderScale)) / 2.0f;
             textRenderer.addText(item.text(), textX, textY, renderScale, animatedText);
 
             if (showIcon.getValue() && item.module().category != null) {
