@@ -23,33 +23,33 @@ public class AutoClicker extends Module {
 
     private final EnumSetting<ClickButton> button = enumSetting("Button", ClickButton.BOTH);
 
-    private final IntSetting leftMinCPS = intSetting("LeftMinCPS", 8, 1, 520, 1, this::isLeftButtonEnabled); // ❤ 饥渴难耐
-    private final IntSetting leftMaxCPS = intSetting("LeftMaxCPS", 12, 1, 520, 1, this::isLeftButtonEnabled); // ❤ 饥渴难耐
-    private final BoolSetting leftJitter = boolSetting("LeftJitter", false, this::isLeftButtonEnabled);
+    private final IntSetting leftMinCPS = intSetting("Left Min CPS", 8, 1, 520, 1, this::isLeftButtonEnabled); // ❤ 饥渴难耐
+    private final IntSetting leftMaxCPS = intSetting("Left Max CPS", 12, 1, 520, 1, this::isLeftButtonEnabled); // ❤ 饥渴难耐
+    private final BoolSetting leftJitter = boolSetting("Left Jitter", false, this::isLeftButtonEnabled);
 
-    private final IntSetting rightMinCPS = intSetting("RightMinCPS", 8, 1, 520, 1, this::isRightButtonEnabled); // ❤ 饥渴难耐
-    private final IntSetting rightMaxCPS = intSetting("RightMaxCPS", 12, 1, 520, 1, this::isRightButtonEnabled); // ❤ 饥渴难耐
-    private final BoolSetting rightJitter = boolSetting("RightJitter", false, this::isRightButtonEnabled);
+    private final IntSetting rightMinCPS = intSetting("Right Min CPS", 8, 1, 520, 1, this::isRightButtonEnabled); // ❤ 饥渴难耐
+    private final IntSetting rightMaxCPS = intSetting("Right Max CPS", 12, 1, 520, 1, this::isRightButtonEnabled); // ❤ 饥渴难耐
+    private final BoolSetting rightJitter = boolSetting("Right Jitter", false, this::isRightButtonEnabled);
 
-    private final BoolSetting enableBurst = boolSetting("EnableBurst", true);
-    private final IntSetting burstChance = intSetting("BurstChance", 15, 1, 100, 1, enableBurst::getValue);
-    private final IntSetting burstDuration = intSetting("BurstDuration", 800, 100, 3000, 100, enableBurst::getValue);
-    private final DoubleSetting burstCPSMultiplier = doubleSetting("BurstCPSMultiplier", 1.8, 1.1, 3.0, 0.1, enableBurst::getValue);
-    private final IntSetting decayDuration = intSetting("DecayDuration", 1200, 500, 5000, 100, enableBurst::getValue);
-    private final DoubleSetting decayCurve = doubleSetting("DecayCurve", 1.5, 1.0, 3.0, 0.1, enableBurst::getValue);
+    private final BoolSetting enableBurst = boolSetting("Enable Burst", true);
+    private final IntSetting burstChance = intSetting("Burst Chance", 15, 1, 100, 1, enableBurst::getValue);
+    private final IntSetting burstDuration = intSetting("Burst Duration", 800, 100, 3000, 100, enableBurst::getValue);
+    private final DoubleSetting burstCPSMultiplier = doubleSetting("Burst CPS Multiplier", 1.8, 1.1, 3.0, 0.1, enableBurst::getValue);
+    private final IntSetting decayDuration = intSetting("Decay Duration", 1200, 500, 5000, 100, enableBurst::getValue);
+    private final DoubleSetting decayCurve = doubleSetting("Decay Curve", 1.5, 1.0, 3.0, 0.1, enableBurst::getValue);
 
-    private final BoolSetting enableDoubleClick = boolSetting("EnableDoubleClick", true);
-    private final IntSetting doubleClickChance = intSetting("DoubleClickChance", 8, 1, 50, 1, enableDoubleClick::getValue);
-    private final IntSetting doubleClickDelay = intSetting("DoubleClickDelay", 40, 10, 100, 5, enableDoubleClick::getValue);
+    private final BoolSetting enableDoubleClick = boolSetting("Enable Double Click", true);
+    private final IntSetting doubleClickChance = intSetting("Double Click Chance", 8, 1, 50, 1, enableDoubleClick::getValue);
+    private final IntSetting doubleClickDelay = intSetting("Double Click Delay", 40, 10, 100, 5, enableDoubleClick::getValue);
 
-    private final BoolSetting enableMiss = boolSetting("EnableMiss", true);
-    private final IntSetting missChance = intSetting("MissChance", 5, 1, 30, 1, enableMiss::getValue);
+    private final BoolSetting enableMiss = boolSetting("Enable Miss", true);
+    private final IntSetting missChance = intSetting("Miss Chance", 5, 1, 30, 1, enableMiss::getValue);
 
     private final ButtonState leftState = new ButtonState();
     private final ButtonState rightState = new ButtonState();
 
     private AutoClicker() {
-        super("AutoClicker", Category.COMBAT);
+        super("Auto Clicker", Category.COMBAT);
     }
 
     @Override

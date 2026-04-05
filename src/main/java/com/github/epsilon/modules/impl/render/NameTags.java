@@ -2,6 +2,7 @@ package com.github.epsilon.modules.impl.render;
 
 import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
+import com.github.epsilon.managers.FriendManager;
 import com.github.epsilon.managers.RenderManager;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
@@ -30,6 +31,7 @@ public class NameTags extends Module {
     private final DoubleSetting scale = doubleSetting("Scale", 1.0, 0.1, 1.5, 0.1);
     private final BoolSetting showEquipment = boolSetting("Show Equipment", true);
     private final BoolSetting showHands = boolSetting("Show Hands", true, showEquipment::getValue);
+    private final BoolSetting showSelf = boolSetting("Show Self", true);
 
     private final Supplier<TextRenderer> textRendererSupplier = Suppliers.memoize(TextRenderer::new);
     private final Supplier<RectRenderer> rectRendererSupplier = Suppliers.memoize(RectRenderer::new);
@@ -50,7 +52,9 @@ public class NameTags extends Module {
         List<TagDrawData> drawList = new ArrayList<>();
 
         for (Player target : mc.level.players()) {
-            if (target == mc.player || !target.isAlive() || target.isSpectator()) continue;
+            if (!target.isAlive() || target.isSpectator()) continue;
+            if (mc.options.getCameraType().isFirstPerson() && target == mc.player) continue;
+            if (target == mc.player && !showSelf.getValue()) continue;
             double distanceSq = mc.player.distanceToSqr(target);
             if (distanceSq > maxDistanceSq) continue;
 
@@ -92,7 +96,9 @@ public class NameTags extends Module {
             if (x + boxWidth < 0.0f || y + boxHeight < 0.0f || x > screenWidth || y > screenHeight) continue;
 
             Color healthColor = totalHealth < 10.0f ? new Color(255, 214, 64, 240) : new Color(120, 255, 120, 240);
-            drawList.add(new TagDrawData(equipmentLines, nameText, healthText, healthColor, x, y, boxWidth, boxHeight, renderScale, padding, lineGap));
+            final var isFriend = FriendManager.INSTANCE.isFriend(nameText);
+
+            drawList.add(new TagDrawData(equipmentLines, nameText, isFriend, healthText, healthColor, x, y, boxWidth, boxHeight, renderScale, padding, lineGap));
         }
 
         if (drawList.isEmpty()) return;
@@ -122,7 +128,7 @@ public class NameTags extends Module {
             float headerWidth = nameWidth + spaceWidth + healthWidth;
             float headerX = data.x + (data.width - headerWidth) * 0.5f;
 
-            textRenderer.addText(data.nameText, headerX, lineY, data.scale, new Color(255, 255, 255, 235));
+            textRenderer.addText(data.nameText, headerX, lineY, data.scale, data.isFriend ? new Color(20, 255, 20, 235) : new Color(255, 255, 255, 235));
             textRenderer.addText(data.healthText, headerX + nameWidth + spaceWidth, lineY, data.scale, data.healthColor);
         }
 
@@ -161,6 +167,7 @@ public class NameTags extends Module {
     private record TagDrawData(
             List<String> equipmentLines,
             String nameText,
+            boolean isFriend,
             String healthText,
             Color healthColor,
             float x,

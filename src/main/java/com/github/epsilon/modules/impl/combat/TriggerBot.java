@@ -33,15 +33,15 @@ public class TriggerBot extends Module {
     private static final float MAX_CRIT_FALL = 1.14f;
 
     private final DoubleSetting range = doubleSetting("Range", 3.0, 1.0, 7.0, 0.1);
-    private final IntSetting minDelay = intSetting("RandomDelayMin", 2, 0, 20, 1);
-    private final IntSetting maxDelay = intSetting("RandomDelayMax", 13, 0, 20, 1);
-    private final DoubleSetting attackCooldown = doubleSetting("AttackCooldown", 0.9, 0.5, 1.0, 0.05);
-    private final DoubleSetting critFallDistance = doubleSetting("CritFallDistance", 0.0, 0.0, 1.0, 0.05);
+    private final IntSetting minDelay = intSetting("Random Delay Min", 2, 0, 20, 1);
+    private final IntSetting maxDelay = intSetting("Random Delay Max", 13, 0, 20, 1);
+    private final DoubleSetting attackCooldown = doubleSetting("Attack Cooldown", 0.9, 0.5, 1.0, 0.05);
+    private final DoubleSetting critFallDistance = doubleSetting("Crit Fall Distance", 0.0, 0.0, 1.0, 0.05);
 
     private int delay;
 
     private TriggerBot() {
-        super("TriggerBot", Category.COMBAT);
+        super("Trigger Bot", Category.COMBAT);
     }
 
     @Override
