@@ -5,6 +5,8 @@
   "epsilon.categories.world": "World",
 
   "epsilon.gui.clientsettings": "Client Settings",
+  "epsilon.gui.tab.general": "General",
+  "epsilon.gui.tab.friend": "Friends",
   "epsilon.gui.gameaccount": "Account",
   "epsilon.gui.search": "Search ...",
 

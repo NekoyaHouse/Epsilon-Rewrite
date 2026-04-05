@@ -5,6 +5,8 @@
   "epsilon.categories.world": "世界",
 
   "epsilon.gui.clientsettings": "客户端设置",
+  "epsilon.gui.tab.general": "通用",
+  "epsilon.gui.tab.friend": "好友",
   "epsilon.gui.gameaccount": "游戏账号",
   "epsilon.gui.search": "搜索 ...",
 
