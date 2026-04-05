@@ -1,14 +1,8 @@
 package com.github.epsilon.modules.impl.combat;
 
-import com.github.epsilon.managers.TargetManager;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
-import com.github.epsilon.modules.impl.combat.AntiBot;
-import com.github.epsilon.settings.impl.BoolSetting;
-import com.github.epsilon.settings.impl.ColorSetting;
-import com.github.epsilon.settings.impl.DoubleSetting;
-import com.github.epsilon.settings.impl.EnumSetting;
-import com.github.epsilon.settings.impl.IntSetting;
+import com.github.epsilon.settings.impl.*;
 import com.github.epsilon.utils.math.MathUtils;
 import com.github.epsilon.utils.player.ChatUtils;
 import com.github.epsilon.utils.render.Render3DUtils;
@@ -28,11 +22,11 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/* 
-* Author Moli
-* 平滑测试 平滑, 距离, DVD, 6.2, 100, 180, 6, 500, 0.3, 0.25, 0.31, 1.5, 10, 2, 3, 0.03, 0.02, 12, 5
-* todo: 考虑引入机器学习预测目标轨迹、优化反作弊绕过。
-*/
+/*
+ * Author Moli
+ * 平滑测试 平滑, 距离, DVD, 6.2, 100, 180, 6, 500, 0.3, 0.25, 0.31, 1.5, 10, 2, 3, 0.03, 0.02, 12, 5
+ * todo: 考虑引入机器学习预测目标轨迹、优化反作弊绕过。
+ */
 
 public class AimAssist extends Module {
 
@@ -133,8 +127,12 @@ public class AimAssist extends Module {
         }
 
         void reset() {
-            velX = 0; velY = 0; velZ = 0;
-            accelX = 0; accelY = 0; accelZ = 0;
+            velX = 0;
+            velY = 0;
+            velZ = 0;
+            accelX = 0;
+            accelY = 0;
+            accelZ = 0;
         }
     }
 
@@ -330,13 +328,19 @@ public class AimAssist extends Module {
             AxisBounceResult resultY = handleAxisBounce(pointY, bounds.minY, bounds.maxY, velocityY, targetVelY);
             AxisBounceResult resultZ = handleAxisBounce(pointZ, bounds.minZ, bounds.maxZ, velocityZ, targetVelZ);
 
-            pointX = resultX.position; velocityX = resultX.velocity; targetVelX = resultX.targetVelocity;
-            pointY = resultY.position; velocityY = resultY.velocity; targetVelY = resultY.targetVelocity;
-            pointZ = resultZ.position; velocityZ = resultZ.velocity; targetVelZ = resultZ.targetVelocity;
+            pointX = resultX.position;
+            velocityX = resultX.velocity;
+            targetVelX = resultX.targetVelocity;
+            pointY = resultY.position;
+            velocityY = resultY.velocity;
+            targetVelY = resultY.targetVelocity;
+            pointZ = resultZ.position;
+            velocityZ = resultZ.velocity;
+            targetVelZ = resultZ.targetVelocity;
         }
 
         private AxisBounceResult handleAxisBounce(double value, double min, double max,
-                                                   double velocity, double targetVelocity) {
+                                                  double velocity, double targetVelocity) {
             AxisBounceResult result = new AxisBounceResult();
 
             if (value > max) {
@@ -359,11 +363,11 @@ public class AimAssist extends Module {
         // dvd debug
         private void sendDebugInfo(AABB bb, DVDBounds bounds) {
             String debugInfo = String.format(
-                "DVD Debug: Pos(%.3f, %.3f, %.3f) | Vel(%.2f, %.2f, %.2f) | TargetVel(%.2f, %.2f, %.2f) | Box[%.2f, %.2f] [%.2f, %.2f] [%.2f, %.2f]",
-                pointX, pointY, pointZ,
-                velocityX, velocityY, velocityZ,
-                targetVelX, targetVelY, targetVelZ,
-                bounds.minX, bounds.maxX, bounds.minY, bounds.maxY, bounds.minZ, bounds.maxZ
+                    "DVD Debug: Pos(%.3f, %.3f, %.3f) | Vel(%.2f, %.2f, %.2f) | TargetVel(%.2f, %.2f, %.2f) | Box[%.2f, %.2f] [%.2f, %.2f] [%.2f, %.2f]",
+                    pointX, pointY, pointZ,
+                    velocityX, velocityY, velocityZ,
+                    targetVelX, targetVelY, targetVelZ,
+                    bounds.minX, bounds.maxX, bounds.minY, bounds.maxY, bounds.minZ, bounds.maxZ
             );
             ChatUtils.addChatMessage(debugInfo);
         }
@@ -567,7 +571,7 @@ public class AimAssist extends Module {
 
     private boolean isScreenPaused() {
         return (ignoreScreen.getValue() && mc.screen != null) ||
-               (ignoreInventory.getValue() && (mc.screen instanceof AbstractContainerScreen));
+                (ignoreInventory.getValue() && (mc.screen instanceof AbstractContainerScreen));
     }
 
     private boolean shouldSkipRender() {
@@ -1071,12 +1075,12 @@ public class AimAssist extends Module {
         candidates.sort((a, b) -> {
             return switch (targetPriority.getValue()) {
                 case Distance -> Double.compare(
-                    mc.player.distanceTo(a),
-                    mc.player.distanceTo(b)
+                        mc.player.distanceTo(a),
+                        mc.player.distanceTo(b)
                 );
                 case Health -> Float.compare(
-                    a.getHealth(),
-                    b.getHealth()
+                        a.getHealth(),
+                        b.getHealth()
                 );
                 case Angle -> {
                     float yawA = Mth.wrapDegrees(RotationUtils.getRotationsToEntity(a).x - mc.player.getYRot());
@@ -1136,7 +1140,7 @@ public class AimAssist extends Module {
         double z = renderTarget.zo + (renderTarget.getZ() - renderTarget.zo) * partialTicks;
 
         AABB interpolatedBox = renderTarget.getBoundingBox()
-            .move(x - renderTarget.getX(), y - renderTarget.getY(), z - renderTarget.getZ());
+                .move(x - renderTarget.getX(), y - renderTarget.getY(), z - renderTarget.getZ());
 
         Color originalColor = lockedEspColor.getValue();
         int alpha = (int) (originalColor.getAlpha() * espAlpha);

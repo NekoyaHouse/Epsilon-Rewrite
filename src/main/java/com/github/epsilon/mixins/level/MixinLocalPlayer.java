@@ -3,9 +3,6 @@ package com.github.epsilon.mixins.level;
 import com.github.epsilon.events.MotionEvent;
 import com.github.epsilon.events.SlowdownEvent;
 import com.github.epsilon.modules.impl.combat.Velocity;
-import com.mojang.authlib.GameProfile;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.neoforged.neoforge.common.NeoForge;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,14 +13,10 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LocalPlayer.class)
-public class MixinLocalPlayer extends AbstractClientPlayer {
+public class MixinLocalPlayer {
 
     @Unique
     private MotionEvent lumin$motionEvent;
-
-    public MixinLocalPlayer(ClientLevel level, GameProfile gameProfile) {
-        super(level, gameProfile);
-    }
 
     @Inject(method = "sendPosition", at = @At("HEAD"), cancellable = true)
     private void onPreSendPosition(CallbackInfo ci) {

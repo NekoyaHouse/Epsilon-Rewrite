@@ -43,14 +43,8 @@ public class ClientSetting extends Module {
         mc.setScreen(HudEditorScreen.INSTANCE);
     });
 
-    private final BoolSetting backgroundBlur = boolSetting("Background Blur", false);
-
     public final EnumSetting<ThemeMode> themeMode = enumSetting("Theme Mode", ThemeMode.Dark);
     public final EnumSetting<ThemePreset> themePreset = enumSetting("Theme Preset", ThemePreset.TonalSpot);
-
-    public boolean shouldBlur() {
-        return backgroundBlur.getValue();
-    }
 
     public ThemePreset getThemePreset() {
         return themePreset.getValue();

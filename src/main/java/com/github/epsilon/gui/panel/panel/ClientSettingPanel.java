@@ -91,7 +91,7 @@ public class ClientSettingPanel {
     private static final float FRIEND_ROW_HEIGHT = 30.0f;
     private static final float FRIEND_INPUT_HEIGHT = 28.0f;
     private static final float FRIEND_INPUT_BOTTOM_MARGIN = 4.0f;
-    private static final float FRIEND_INPUT_FIELD_SCALE = 0.60f;
+    private static final float FRIEND_INPUT_FIELD_SCALE = 0.8f;
     private static final int MAX_FRIEND_NAME_LENGTH = 32;
 
     public ClientSettingPanel(PanelState state, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, ShadowRenderer shadowRenderer, TextRenderer textRenderer, PanelPopupHost popupHost) {

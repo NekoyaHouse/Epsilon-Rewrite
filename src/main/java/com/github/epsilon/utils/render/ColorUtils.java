@@ -16,7 +16,7 @@ public class ColorUtils {
     }
 
     public static int getRainbowOpaque(int index, float saturation, float brightness, float speed) {
-        float hue = (float)((System.currentTimeMillis() + (long)index) % (long)((int)speed)) / speed;
+        float hue = (float) ((System.currentTimeMillis() + (long) index) % (long) ((int) speed)) / speed;
         return Color.HSBtoRGB(hue, saturation, brightness);
     }
 
@@ -77,9 +77,9 @@ public class ColorUtils {
         return resultColor;
     }
 
-    public static Color fadeCustomColor(Color color, long time, int index,float speed1) {
+    public static Color fadeCustomColor(Color color, long time, int index, float speed1) {
         float speed = speed1;
-        int tick = (int)(time / (50 / speed)) + index * 15;
+        int tick = (int) (time / (50 / speed)) + index * 15;
 
         int red = (int) color.getRed();
         int green = (int) color.getGreen();
@@ -90,14 +90,14 @@ public class ColorUtils {
         float baseBrightness = hsb[2];
 
         float hueVariation = 0.05f;
-        float hue = baseHue + (float)Math.sin(tick * 0.02) * hueVariation;
+        float hue = baseHue + (float) Math.sin(tick * 0.02) * hueVariation;
 
         float saturationVariation = 0.15f;
         float saturation = Math.max(0.1f, Math.min(1.0f,
-                baseSaturation + (float)Math.sin(tick * 0.015) * saturationVariation));
+                baseSaturation + (float) Math.sin(tick * 0.015) * saturationVariation));
 
         float brightnessVariation = 0.2f;
-        float brightness = Math.max(0.3f, Math.min(1.0f, baseBrightness + (float)Math.sin(tick * 0.01) * brightnessVariation));
+        float brightness = Math.max(0.3f, Math.min(1.0f, baseBrightness + (float) Math.sin(tick * 0.01) * brightnessVariation));
 
         return Color.getHSBColor(hue, saturation, brightness);
     }

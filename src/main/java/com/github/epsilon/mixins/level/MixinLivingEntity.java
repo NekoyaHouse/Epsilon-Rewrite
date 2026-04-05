@@ -13,7 +13,6 @@ import org.joml.Vector2f;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -24,9 +23,6 @@ public abstract class MixinLivingEntity {
 
     @Shadow
     private int noJumpDelay;
-
-    @Unique
-    private boolean previousElytra;
 
     @Redirect(method = "jumpFromGround", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;getYRot()F"))
     private float redirectGetYRotInJumpFromGround(LivingEntity instance) {

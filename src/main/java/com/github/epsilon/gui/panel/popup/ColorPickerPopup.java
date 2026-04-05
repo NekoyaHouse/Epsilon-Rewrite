@@ -4,11 +4,9 @@ import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.ShadowRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
-import com.github.epsilon.graphics.shaders.BlurShader;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
 import com.github.epsilon.managers.RenderManager;
-import com.github.epsilon.modules.impl.ClientSetting;
 import com.github.epsilon.settings.impl.ColorSetting;
 import com.github.epsilon.utils.render.animation.Animation;
 import com.github.epsilon.utils.render.animation.Easing;
@@ -77,10 +75,6 @@ public class ColorPickerPopup implements PanelPopupHost.Popup {
         float progress = openAnimation.getValue();
         float popupY = bounds.y() - (1.0f - progress) * 6.0f;
         int alpha = (int) (245 * progress);
-
-        if (ClientSetting.INSTANCE.shouldBlur()) {
-            BlurShader.INSTANCE.drawBlur(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, 10.0f);
-        }
 
         shadowRenderer.addShadow(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, POPUP_SHADOW_RADIUS, MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (120 * progress)));
         roundRectRenderer.addRoundRect(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, alpha));

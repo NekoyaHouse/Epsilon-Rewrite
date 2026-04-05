@@ -36,7 +36,6 @@ public class ModuleManager {
     public void initModules() {
         modules = new ArrayList<>(List.of(
 
-                // Client
                 ClientSetting.INSTANCE,
 
                 // Combat
@@ -60,6 +59,7 @@ public class ModuleManager {
                 InvManager.INSTANCE,
                 JumpCooldown.INSTANCE,
                 MovementFix.INSTANCE,
+                NoFall.INSTANCE,
                 NoRotate.INSTANCE,
                 NoSlow.INSTANCE,
                 Phase.INSTANCE,
