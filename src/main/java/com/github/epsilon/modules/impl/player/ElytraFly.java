@@ -3,24 +3,24 @@ package com.github.epsilon.modules.impl.player;
 import com.github.epsilon.managers.RotationManager;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
-import com.github.epsilon.settings.impl.BoolSetting;
-import com.github.epsilon.settings.impl.DoubleSetting;
-import com.github.epsilon.settings.impl.EnumSetting;
-import com.github.epsilon.settings.impl.KeybindSetting;
-import com.github.epsilon.settings.impl.IntSetting;
+import com.github.epsilon.settings.impl.*;
 import com.github.epsilon.utils.player.FindItemResult;
 import com.github.epsilon.utils.player.InvUtils;
 import com.github.epsilon.utils.timer.TimerUtils;
-import com.google.common.eventbus.Subscribe;
 import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
-import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.projectile.FireworkRocketEntity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -40,7 +40,7 @@ public class ElytraFly extends Module {
         NeoForge.EVENT_BUS.register(new FireWorkTweak());
     }
 
-    private enum Mode {
+    public enum Mode {
         Control,
         Boost,
         Bounce,
@@ -50,7 +50,7 @@ public class ElytraFly extends Module {
         Pitch
     }
 
-    private final EnumSetting<Mode> mode = enumSetting("Mode", Mode.Control);
+    public final EnumSetting<Mode> mode = enumSetting("Mode", Mode.Control);
     private final BoolSetting infiniteDura = boolSetting("InfiniteDura", false);
     private final BoolSetting packet = boolSetting("Packet", false);
     private final IntSetting packetDelay = intSetting("PacketDelay", 0, 0, 20, 1, packet::getValue);
@@ -90,6 +90,9 @@ public class ElytraFly extends Module {
     private boolean flying = false;
     private int packetDelayInt = 0;
 
+    private float yaw = 0;
+    private float rotationPitch = 0;
+
     private boolean prev;
     private float prePitch;
     private boolean hasElytra = false;
@@ -101,8 +104,53 @@ public class ElytraFly extends Module {
     private float lastInfinitePitch;
     private float infinitePitch;
 
+    @Override
+    public void onEnable() {
+        if (nullCheck()) return;
+        hasElytra = false;
+        yaw = mc.player.getYRot();
+        rotationPitch = mc.player.getXRot();
+    }
+
+    @Override
+    public void onDisable() {
+        if (nullCheck()) return;
+        if (releaseSneak.getValue()) {
+            mc.getConnection().send(new ServerboundPlayerActionPacket(mc.player, ServerboundPlayerActionPacket.Action.RELEASE_SHIFT_KEY));
+        }
+    }
+
+    public static boolean recastElytra(LocalPlayer player) {
+        Minecraft mc = Minecraft.getInstance();
+        if (checkConditions(player) && ignoreGround(player)) {
+            player.connection.send(new ServerboundPlayerActionPacket(player, ServerboundPlayerActionPacket.Action.START_FALL_FLYING));
+            if (INSTANCE.setFlag.getValue()) {
+                mc.player.startFallFlying();
+            }
+            return true;
+        } else return false;
+    }
+
+    public static boolean checkConditions(LocalPlayer player) {
+        ItemStack itemStack = player.getItemBySlot(EquipmentSlot.CHEST);
+        return (!player.getAbilities().flying && !player.hasVehicle() && !player.isClimbing() && itemStack.is(Items.ELYTRA) && ElytraItem.isUsable(itemStack));
+    }
+
+    private static boolean ignoreGround(LocalPlayer player) {
+        if (!player.isTouchingWater() && !player.hasEffect(MobEffects.LEVITATION)) {
+            ItemStack itemStack = player.getItemBySlot(EquipmentSlot.CHEST);
+            if (itemStack.is(Items.ELYTRA) && ElytraItem.isUsable(itemStack)) {
+                player.startFallFlying();
+                return true;
+            } else return false;
+        } else return false;
+    }
+
     public void off() {
-        if (inventory.getValue() && !inInventory()) return;
+        if (inventory.getValue() && !inInventory()) {
+            return;
+        }
+
         if (onlyOne.getValue()) {
             for (Entity entity : mc.level.entitiesForRendering()) {
                 if (entity instanceof FireworkRocketEntity fireworkRocketEntity) {
@@ -112,7 +160,9 @@ public class ElytraFly extends Module {
                 }
             }
         }
-        ElytraFly.INSTANCE.fireworkTimer.reset();
+
+        fireworkTimer.reset();
+
         FindItemResult firework;
         if (mc.player.getMainHandItem().getItem() == Items.FIREWORK_ROCKET) {
             if (packetInteract.getValue()) {
@@ -148,16 +198,15 @@ public class ElytraFly extends Module {
         if (mc.screen instanceof InventoryScreen) {
             return true;
         }
-
         return mc.screen instanceof AbstractContainerScreen<?> container && container.getMenu().containerId == mc.player.inventoryMenu.containerId;
     }
 
     private class FireWorkTweak {
 
-        boolean press;
+        private boolean press;
 
         @SubscribeEvent
-        public void onTick(ClientTickEvent.Pre event) {
+        private void onClientTick(ClientTickEvent.Pre event) {
             if (nullCheck()) return;
             if (inventory.getValue() && !inInventory()) return;
             if (mc.screen == null) {

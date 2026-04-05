@@ -4,6 +4,7 @@ import com.github.epsilon.events.FallFlyingEvent;
 import com.github.epsilon.events.JumpEvent;
 import com.github.epsilon.events.TravelEvent;
 import com.github.epsilon.managers.RotationManager;
+import com.github.epsilon.modules.impl.player.ElytraFly;
 import com.github.epsilon.modules.impl.player.JumpCooldown;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
@@ -13,16 +14,21 @@ import org.joml.Vector2f;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LivingEntity.class)
 public abstract class MixinLivingEntity {
 
     @Shadow
     private int noJumpDelay;
+
+    @Unique
+    private boolean previousElytra;
 
     @Redirect(method = "jumpFromGround", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;getYRot()F"))
     private float redirectGetYRotInJumpFromGround(LivingEntity instance) {
@@ -58,6 +64,15 @@ public abstract class MixinLivingEntity {
         } else {
             this.noJumpDelay = value;
         }
+    }
+
+    @Inject(method = "isFallFlying", at = @At("TAIL"), cancellable = true)
+    public void recastOnLand(CallbackInfoReturnable<Boolean> cir) {
+        boolean elytra = cir.getReturnValue();
+        if (previousElytra && !elytra && ElytraFly.INSTANCE.isEnabled() && ElytraFly.INSTANCE.mode.is(ElytraFly.Mode.Bounce)) {
+            cir.setReturnValue(ElytraFly.recastElytra(Minecraft.getInstance().player));
+        }
+        previousElytra = elytra;
     }
 
     @Inject(method = "travel", at = @At("HEAD"), cancellable = true)
