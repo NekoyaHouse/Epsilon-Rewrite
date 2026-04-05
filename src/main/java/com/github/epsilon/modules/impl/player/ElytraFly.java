@@ -7,12 +7,15 @@ import com.github.epsilon.events.TravelEvent;
 import com.github.epsilon.managers.RotationManager;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
-import com.github.epsilon.settings.impl.*;
+import com.github.epsilon.settings.impl.BoolSetting;
+import com.github.epsilon.settings.impl.DoubleSetting;
+import com.github.epsilon.settings.impl.EnumSetting;
+import com.github.epsilon.settings.impl.IntSetting;
+import com.github.epsilon.utils.player.ChatUtils;
 import com.github.epsilon.utils.player.FindItemResult;
 import com.github.epsilon.utils.player.InvUtils;
 import com.github.epsilon.utils.player.MoveUtils;
 import com.github.epsilon.utils.timer.TimerUtils;
-import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -36,7 +39,6 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.common.NeoForge;
 
 /**
  * @author ZhouJiaMei
@@ -48,8 +50,6 @@ public class ElytraFly extends Module {
 
     private ElytraFly() {
         super("ElytraFly", Category.PLAYER);
-
-        NeoForge.EVENT_BUS.register(new FireWorkTweak());
     }
 
     public enum Mode {
@@ -68,7 +68,6 @@ public class ElytraFly extends Module {
     private final IntSetting packetDelay = intSetting("PacketDelay", 0, 0, 20, 1, packet::getValue);
     private final BoolSetting setFlag = boolSetting("SetFlag", false, () -> !mode.is(Mode.Bounce));
     private final BoolSetting firework = boolSetting("Firework", false);
-    private final KeybindSetting fireWork = keybindSetting("FireWorkBind", -1, firework::getValue);
     private final BoolSetting packetInteract = boolSetting("PacketInteract", true, firework::getValue);
     private final BoolSetting inventory = boolSetting("InventorySwap", true, firework::getValue);
     private final BoolSetting onlyOne = boolSetting("OnlyOne", true, firework::getValue);
@@ -182,6 +181,20 @@ public class ElytraFly extends Module {
     private void clickSlot(int slot) {
         int containerSlot = slot < 9 ? slot + 36 : slot;
         mc.gameMode.handleContainerInput(mc.player.inventoryMenu.containerId, containerSlot, 6, ContainerInput.SWAP, mc.player);
+    }
+
+    @SubscribeEvent
+    private void onClientTickFirework(ClientTickEvent.Pre event) {
+        if (nullCheck()) return;
+        if (firework.getValue()) {
+            if (fireworkTimer.passedMillise(delay.getValue()) && (!mc.player.isUsingItem() || !usingPause.getValue()) && isFallFlying()) {
+                ChatUtils.addChatMessage("b");
+                off();
+                fireworkTimer.reset();
+            } else {
+                ChatUtils.addChatMessage("fuck b");
+            }
+        }
     }
 
     @SubscribeEvent
@@ -542,10 +555,6 @@ public class ElytraFly extends Module {
     }
 
     public void off() {
-        if (inventory.getValue() && !inInventory()) {
-            return;
-        }
-
         if (onlyOne.getValue()) {
             for (Entity entity : mc.level.entitiesForRendering()) {
                 if (entity instanceof FireworkRocketEntity fireworkRocketEntity) {
@@ -589,13 +598,6 @@ public class ElytraFly extends Module {
         return mc.player.isFallFlying() || packet.getValue() && hasElytra && !mc.player.onGround() || flying;
     }
 
-    private boolean inInventory() {
-        if (mc.screen instanceof InventoryScreen) {
-            return true;
-        }
-        return mc.screen instanceof AbstractContainerScreen<?> container && container.getMenu().containerId == mc.player.inventoryMenu.containerId;
-    }
-
     private void setX(double x) {
         Vec3 deltaMovement = mc.player.getDeltaMovement();
         mc.player.setDeltaMovement(x, deltaMovement.y, deltaMovement.z);
@@ -631,32 +633,6 @@ public class ElytraFly extends Module {
             yaw += 90f;
         }
         return Mth.wrapDegrees(yaw);
-    }
-
-    private class FireWorkTweak {
-
-        private boolean press;
-
-        @SubscribeEvent
-        private void onClientTick(ClientTickEvent.Pre event) {
-            if (nullCheck()) return;
-            if (inventory.getValue() && !inInventory()) return;
-            if (mc.screen == null) {
-                if (InputConstants.isKeyDown(mc.getWindow(), fireWork.getValue())) {
-                    if (!press) {
-                        if (fireworkTimer.passedMillise(delay.getValue()) && (!mc.player.isUsingItem() || !usingPause.getValue()) && isFallFlying()) {
-                            off();
-                            fireworkTimer.reset();
-                        }
-                    }
-                    press = true;
-                } else {
-                    press = false;
-                }
-            } else {
-                press = false;
-            }
-        }
     }
 
 }
