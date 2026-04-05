@@ -29,6 +29,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import org.lwjgl.glfw.GLFW;
 
 import java.awt.*;
 import java.util.*;
@@ -557,16 +558,16 @@ public class ClientSettingPanel {
         }
 
         return switch (event.key()) {
-            case 257, 335 -> { // Enter / Numpad Enter
+            case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> { // Enter / Numpad Enter
                 addFriendFromInput();
                 yield true;
             }
-            case 256 -> { // Escape
+            case GLFW.GLFW_KEY_ESCAPE -> { // Escape
                 friendInputFocused = false;
                 markFriendDirty();
                 yield true;
             }
-            case 259 -> { // Backspace
+            case GLFW.GLFW_KEY_BACKSPACE -> { // Backspace
                 if (friendInputCursor > 0 && !friendInputBuffer.isEmpty()) {
                     friendInputBuffer = friendInputBuffer.substring(0, friendInputCursor - 1) + friendInputBuffer.substring(friendInputCursor);
                     friendInputCursor--;
@@ -574,30 +575,20 @@ public class ClientSettingPanel {
                 }
                 yield true;
             }
-            case 261 -> { // Delete
+            case GLFW.GLFW_KEY_DELETE -> { // Delete
                 if (friendInputCursor < friendInputBuffer.length()) {
                     friendInputBuffer = friendInputBuffer.substring(0, friendInputCursor) + friendInputBuffer.substring(friendInputCursor + 1);
                     markFriendDirty();
                 }
                 yield true;
             }
-            case 263 -> { // Left
+            case GLFW.GLFW_KEY_LEFT -> { // Left
                 friendInputCursor = Math.max(0, friendInputCursor - 1);
                 markFriendDirty();
                 yield true;
             }
-            case 262 -> { // Right
+            case GLFW.GLFW_KEY_RIGHT -> { // Right
                 friendInputCursor = Math.min(friendInputBuffer.length(), friendInputCursor + 1);
-                markFriendDirty();
-                yield true;
-            }
-            case 268 -> { // Home
-                friendInputCursor = 0;
-                markFriendDirty();
-                yield true;
-            }
-            case 269 -> { // End
-                friendInputCursor = friendInputBuffer.length();
                 markFriendDirty();
                 yield true;
             }
@@ -781,13 +772,9 @@ public class ClientSettingPanel {
         lastFriendList = new ArrayList<>(friends);
     }
 
-    // ─── Utility ────────────────────────────────────────────────────────
 
     private boolean isControlDown() {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft == null || minecraft.getWindow() == null) {
-            return false;
-        }
         return InputConstants.isKeyDown(minecraft.getWindow(), 341) || InputConstants.isKeyDown(minecraft.getWindow(), 345);
     }
 
