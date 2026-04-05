@@ -20,7 +20,7 @@ public class Disabler extends Module {
 
     private final BoolSetting badPacketsA = boolSetting("BadPacketsA", true);
     private final BoolSetting duplicateRotPlace = boolSetting("DuplicateRotPlace", false);
-    private final BoolSetting aim360 = boolSetting("AimModulo360", false);
+    private final BoolSetting aimModulo360 = boolSetting("AimModulo360", false);
     private final BoolSetting aimDuplicateLook = boolSetting("AimDuplicateLook", false);
 
     private int lastSlot = -1;
@@ -40,7 +40,7 @@ public class Disabler extends Module {
             }
         }
 
-        if (aim360.getValue()) {
+        if (aimModulo360.getValue()) {
             if (event.getPacket() instanceof ServerboundMovePlayerPacket packet && packet.hasRotation()) {
                 float yaw = packet.yRot;
                 if (yaw < 360.0f && yaw > -360.0f) {
