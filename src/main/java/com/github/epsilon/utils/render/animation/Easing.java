@@ -34,9 +34,11 @@ public enum Easing {
     EASE_OUT_ELASTIC(x -> x == 0 ? 0 : x == 1 ? 1 : (float) (Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * ((2 * Math.PI) / 3)) * 0.5F + 1)),
     EASE_IN_BACK(x -> (1.70158F + 1.0F) * x * x * x - 1.70158F * x * x),
     DYNAMIC_ISLAND(x -> {
-        float c1 = 1.70158f;
-        float c3 = c1 + 1.0f;
-        return 1.0f + c3 * (float) Math.pow(x - 1, 3) + c1 * (float) Math.pow(x - 1, 2);
+        float t = x;
+    float p = 0.22F;
+    return t < 0.5F 
+        ? (float)(Math.pow(2*t,3) * (3*p - 2*t*p)) 
+        : 1f - (float)Math.pow(2-2*t,3) * (3*p - 2*(2-2*t)*p);
     }),
     DYNAMIC_ISLAND_SMOOTH(x -> {
         float t = x;
