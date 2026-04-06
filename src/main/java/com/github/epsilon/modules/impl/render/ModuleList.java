@@ -89,7 +89,7 @@ public class ModuleList extends HudModule {
         for (ItemInfo item : items) {
             if (item.alpha() <= 0.001f) continue;
 
-            float alpha = item.alpha();
+            float alpha = Mth.clamp(item.alpha(), 0.0f, 1.0f);
             float boxHeight = item.boxHeight();
             float boxWidth = item.boxWidth();
 
