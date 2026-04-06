@@ -4,8 +4,6 @@ import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.ShadowRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
-import com.github.epsilon.utils.render.animation.Animation;
-import com.github.epsilon.utils.render.animation.Easing;
 import com.github.epsilon.gui.panel.input.PanelInputRouter;
 import com.github.epsilon.gui.panel.panel.CategoryRailPanel;
 import com.github.epsilon.gui.panel.panel.ClientSettingPanel;
@@ -25,6 +23,11 @@ import org.jspecify.annotations.NonNull;
 public class PanelScreen extends Screen {
 
     public static final PanelScreen INSTANCE = new PanelScreen();
+    private static final long OPEN_DURATION_MS = 220L;
+    private static final long CLOSE_DURATION_MS = 170L;
+    private static final float OPEN_START_SCALE = 0.5f;
+    private static final float OPEN_END_SCALE = 1.0f;
+    private static final float CLOSE_END_SCALE = 1.25f;
 
     private final PanelState state = new PanelState();
     private final PanelDirtyState dirtyState = new PanelDirtyState();
@@ -38,7 +41,6 @@ public class PanelScreen extends Screen {
     private final ModuleListPanel moduleListPanel = new ModuleListPanel(state, roundRectRenderer, rectRenderer, shadowRenderer, textRenderer);
     private final ModuleDetailPanel moduleDetailPanel = new ModuleDetailPanel(state, roundRectRenderer, rectRenderer, shadowRenderer, textRenderer, popupHost);
     private final ClientSettingPanel clientSettingPanel = new ClientSettingPanel(state, roundRectRenderer, rectRenderer, shadowRenderer, textRenderer, popupHost);
-    private final Animation openAnimation = new Animation(Easing.DYNAMIC_ISLAND, 350);
     private int lastWidth = -1;
     private int lastHeight = -1;
     private String lastSelectedCategory = "";
@@ -46,6 +48,11 @@ public class PanelScreen extends Screen {
     private String lastSearchQuery = "";
     private boolean lastSidebarExpanded;
     private boolean lastClientSettingMode;
+    private boolean closing;
+    private boolean closeCommitted;
+    private long animStartMs;
+    private float lastScale = OPEN_END_SCALE;
+    private float closeStartScale = OPEN_END_SCALE;
 
     private PanelScreen() {
         super(Component.literal("PanelGui"));
@@ -54,8 +61,11 @@ public class PanelScreen extends Screen {
     @Override
     public void init() {
         super.init();
-        openAnimation.setStartValue(0.0f);
-        openAnimation.reset();
+        closing = false;
+        closeCommitted = false;
+        animStartMs = System.currentTimeMillis();
+        lastScale = OPEN_START_SCALE;
+        closeStartScale = OPEN_END_SCALE;
     }
 
     @Override
@@ -111,9 +121,36 @@ public class PanelScreen extends Screen {
             clientSettingPanel.markDirty();
         }
 
-        openAnimation.run(1.0f);
-        float openScale = openAnimation.getValue();
-        if (!openAnimation.isFinished()) dirtyState.markAllDirty();
+        float animProgress = getAnimProgress();
+        float openScale;
+        float openAlpha;
+        if (closing) {
+            float scaleEased = easeOutCubic(animProgress);
+            float fadeEased = easeOutCubic(animProgress);
+            openAlpha = 1.0f - fadeEased;
+            openScale = lerp(closeStartScale, CLOSE_END_SCALE, scaleEased);
+        } else {
+            float eased = easeOutCubic(animProgress);
+            openAlpha = eased;
+            openScale = lerp(OPEN_START_SCALE, OPEN_END_SCALE, eased);
+        }
+        lastScale = openScale;
+        openAlpha = Math.max(0.0f, Math.min(1.0f, openAlpha));
+
+        shadowRenderer.setGlobalAlpha(openAlpha);
+        roundRectRenderer.setGlobalAlpha(openAlpha);
+        rectRenderer.setGlobalAlpha(openAlpha);
+        textRenderer.setGlobalAlpha(openAlpha);
+        categoryRailPanel.setGlobalAlpha(openAlpha);
+        moduleListPanel.setGlobalAlpha(openAlpha);
+        moduleDetailPanel.setGlobalAlpha(openAlpha);
+        clientSettingPanel.setGlobalAlpha(openAlpha);
+
+        if (animProgress < 1.0f) dirtyState.markAllDirty();
+        if (closing && animProgress >= 1.0f) {
+            commitClose();
+            return;
+        }
 
         MD3Theme.syncFromSettings();
         float railWidth = categoryRailPanel.getAnimatedWidth();
@@ -156,7 +193,7 @@ public class PanelScreen extends Screen {
     }
 
     private static PanelLayout.Layout scaleLayout(PanelLayout.Layout layout, float scale) {
-        if (scale >= 0.9999f) return layout;
+        if (Math.abs(scale - 1.0f) <= 0.0001f) return layout;
         float cx = layout.panel().x() + layout.panel().width() / 2;
         float cy = layout.panel().y() + layout.panel().height() / 2;
         return new PanelLayout.Layout(
@@ -192,6 +229,9 @@ public class PanelScreen extends Screen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {
+        if (closing) {
+            return true;
+        }
         double mouseX = event.x();
         double mouseY = event.y();
         if (event.button() != 0) {
@@ -205,7 +245,9 @@ public class PanelScreen extends Screen {
 
         PanelLayout.Layout layout = PanelLayout.compute(width, height, categoryRailPanel.getAnimatedWidth());
         if (!layout.panel().contains(mouseX, mouseY)) {
-            if (ClientSetting.INSTANCE.closeOnOutside.getValue()) minecraft.setScreen(null);
+            if (ClientSetting.INSTANCE.closeOnOutside.getValue()) {
+                requestCloseAnimation();
+            }
             return true;
         }
         if (!state.isClientSettingMode()) {
@@ -220,6 +262,9 @@ public class PanelScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (closing) {
+            return true;
+        }
         if (popupHost.mouseScrolled(mouseX, mouseY, scrollX, scrollY)) {
             dirtyState.markAllDirty();
             return true;
@@ -244,6 +289,9 @@ public class PanelScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
+        if (closing) {
+            return true;
+        }
         if (inputRouter.routeMouseReleased(event, popupHost, moduleDetailPanel, moduleListPanel, clientSettingPanel, state.isClientSettingMode())) {
             dirtyState.markAllDirty();
             return true;
@@ -253,6 +301,9 @@ public class PanelScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double mouseX, double mouseY) {
+        if (closing) {
+            return true;
+        }
         if (inputRouter.routeMouseDragged(event, mouseX, mouseY, popupHost, moduleDetailPanel, moduleListPanel, clientSettingPanel, state.isClientSettingMode())) {
             dirtyState.markAllDirty();
             return true;
@@ -263,7 +314,10 @@ public class PanelScreen extends Screen {
     @Override
     public boolean keyPressed(KeyEvent event) {
         if (event.key() == 256) {
-            onClose();
+            requestCloseAnimation();
+            return true;
+        }
+        if (closing) {
             return true;
         }
         if (inputRouter.routeKeyPressed(event, popupHost, moduleDetailPanel, moduleListPanel, clientSettingPanel, state.isClientSettingMode())) {
@@ -275,6 +329,9 @@ public class PanelScreen extends Screen {
 
     @Override
     public boolean charTyped(CharacterEvent event) {
+        if (closing) {
+            return true;
+        }
         if (inputRouter.routeCharTyped(event, popupHost, moduleDetailPanel, moduleListPanel, clientSettingPanel, state.isClientSettingMode())) {
             dirtyState.markAllDirty();
             return true;
@@ -284,7 +341,50 @@ public class PanelScreen extends Screen {
 
     @Override
     public void onClose() {
-        super.onClose();
+        if (closeCommitted) {
+            super.onClose();
+            return;
+        }
+        requestCloseAnimation();
+    }
+
+    private void requestCloseAnimation() {
+        if (closing) {
+            return;
+        }
+        closing = true;
+        closeStartScale = lastScale;
+        animStartMs = System.currentTimeMillis();
+        dirtyState.markAllDirty();
+    }
+
+    private void commitClose() {
+        if (closeCommitted) {
+            return;
+        }
+        closeCommitted = true;
+        if (minecraft != null) {
+            minecraft.setScreen(null);
+        }
+    }
+
+    private float getAnimProgress() {
+        long duration = closing ? CLOSE_DURATION_MS : OPEN_DURATION_MS;
+        if (duration <= 0L) {
+            return 1.0f;
+        }
+        long elapsed = System.currentTimeMillis() - animStartMs;
+        float t = elapsed / (float) duration;
+        return Math.max(0.0f, Math.min(1.0f, t));
+    }
+
+    private static float lerp(float a, float b, float t) {
+        return a + (b - a) * t;
+    }
+
+    private static float easeOutCubic(float t) {
+        float p = 1.0f - t;
+        return 1.0f - (p * p * p);
     }
 
 }

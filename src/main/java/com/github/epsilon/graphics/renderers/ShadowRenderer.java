@@ -22,6 +22,7 @@ public class ShadowRenderer implements IRenderer {
     private int scissorX, scissorY, scissorW, scissorH;
     private long currentOffset = 0;
     private int vertexCount = 0;
+    private float globalAlpha = 1.0f;
 
     public void addShadow(float x, float y, float width, float height, float radius, float blurRadius, Color color) {
         addShadow(x, y, width, height, radius, radius, radius, radius, blurRadius, color);
@@ -38,7 +39,7 @@ public class ShadowRenderer implements IRenderer {
         float bx2 = x + width;
         float by2 = y + height;
 
-        int argb = ARGB.toABGR(color.getRGB());
+        int argb = ARGB.toABGR(applyGlobalAlpha(color).getRGB());
 
         addVertex(vx, vy, x, y, bx2, by2, rTL, rTR, rBR, rBL, blurRadius, argb);
         addVertex(vx, vy2, x, y, bx2, by2, rTL, rTR, rBR, rBL, blurRadius, argb);
@@ -100,6 +101,19 @@ public class ShadowRenderer implements IRenderer {
 
     public void clearScissor() {
         scissorEnabled = false;
+    }
+
+    public void setGlobalAlpha(float globalAlpha) {
+        this.globalAlpha = Math.max(0.0f, Math.min(1.0f, globalAlpha));
+    }
+
+    private Color applyGlobalAlpha(Color color) {
+        if (globalAlpha >= 0.999f) {
+            return color;
+        }
+        int alpha = Math.round(color.getAlpha() * globalAlpha);
+        int clampedAlpha = Math.max(0, Math.min(255, alpha));
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), clampedAlpha);
     }
 
     @Override

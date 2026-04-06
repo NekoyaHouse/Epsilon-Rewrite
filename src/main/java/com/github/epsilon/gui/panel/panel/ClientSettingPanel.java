@@ -72,6 +72,7 @@ public class ClientSettingPanel {
     private final Animation friendInputHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
     private final Animation friendInputFocusAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
     private PanelState.ClientSettingTab lastTab = PanelState.ClientSettingTab.GENERAL;
+    private float globalAlpha = 1.0f;
 
     // Scrollbar drag state
     private final ScrollBarDragState generalScrollBarDrag = new ScrollBarDragState();
@@ -773,6 +774,18 @@ public class ClientSettingPanel {
         } else {
             friendContentBuffer.flush();
         }
+    }
+
+    public void setGlobalAlpha(float globalAlpha) {
+        float clampedAlpha = Math.max(0.0f, Math.min(1.0f, globalAlpha));
+        if (Math.abs(this.globalAlpha - clampedAlpha) < 0.0001f) {
+            return;
+        }
+        this.globalAlpha = clampedAlpha;
+        contentBuffer.setGlobalAlpha(clampedAlpha);
+        friendContentBuffer.setGlobalAlpha(clampedAlpha);
+        markDirty();
+        markFriendDirty();
     }
 
     public void markDirty() {

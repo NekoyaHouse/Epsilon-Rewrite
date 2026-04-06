@@ -24,6 +24,7 @@ public class RectRenderer implements IRenderer {
 
     private boolean scissorEnabled = false;
     private int scissorX, scissorY, scissorW, scissorH;
+    private float globalAlpha = 1.0f;
 
     public void addRect(float x, float y, float width, float height, Color color) {
         addRawRect(x, y, width, height, color, color, color, color);
@@ -59,10 +60,10 @@ public class RectRenderer implements IRenderer {
     public void addRawRect(float x, float y, float w, float h, Color c1, Color c2, Color c3, Color c4) {
         buffer.tryMap();
 
-        int argb1 = ARGB.toABGR(c1.getRGB());
-        int argb2 = ARGB.toABGR(c2.getRGB());
-        int argb3 = ARGB.toABGR(c3.getRGB());
-        int argb4 = ARGB.toABGR(c4.getRGB());
+        int argb1 = ARGB.toABGR(applyGlobalAlpha(c1).getRGB());
+        int argb2 = ARGB.toABGR(applyGlobalAlpha(c2).getRGB());
+        int argb3 = ARGB.toABGR(applyGlobalAlpha(c3).getRGB());
+        int argb4 = ARGB.toABGR(applyGlobalAlpha(c4).getRGB());
 
         addVertex(x, y, argb1);
         addVertex(x, y + h, argb2);
@@ -92,6 +93,19 @@ public class RectRenderer implements IRenderer {
         scissorY = y;
         scissorW = width;
         scissorH = height;
+    }
+
+    public void setGlobalAlpha(float globalAlpha) {
+        this.globalAlpha = Math.max(0.0f, Math.min(1.0f, globalAlpha));
+    }
+
+    private Color applyGlobalAlpha(Color color) {
+        if (globalAlpha >= 0.999f) {
+            return color;
+        }
+        int alpha = Math.round(color.getAlpha() * globalAlpha);
+        int clampedAlpha = Math.max(0, Math.min(255, alpha));
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), clampedAlpha);
     }
 
     public void clearScissor() {

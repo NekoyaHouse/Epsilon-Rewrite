@@ -51,6 +51,7 @@ public class ModuleListPanel {
     private final ScrollBarDragState scrollBarDrag = new ScrollBarDragState();
     private boolean searchFocused;
     private int searchCursorIndex;
+    private float globalAlpha = 1.0f;
 
     private static final TranslateComponent searchComponent = EpsilonTranslateComponent.create("gui", "search");
 
@@ -112,6 +113,16 @@ public class ModuleListPanel {
 
     public void flushContent() {
         contentBuffer.flush();
+    }
+
+    public void setGlobalAlpha(float globalAlpha) {
+        float clampedAlpha = Math.max(0.0f, Math.min(1.0f, globalAlpha));
+        if (Math.abs(this.globalAlpha - clampedAlpha) < 0.0001f) {
+            return;
+        }
+        this.globalAlpha = clampedAlpha;
+        contentBuffer.setGlobalAlpha(clampedAlpha);
+        markDirty();
     }
 
     public void markDirty() {

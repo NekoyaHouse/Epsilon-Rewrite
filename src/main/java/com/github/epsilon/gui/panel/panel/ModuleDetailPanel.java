@@ -51,6 +51,7 @@ public class ModuleDetailPanel {
     private final Animation bindModeHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
     private final Animation keybindHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
     private final Animation keybindFocusAnimation = new Animation(Easing.EASE_OUT_CUBIC, 150L);
+    private float globalAlpha = 1.0f;
 
     private static final TranslateComponent toggleComponent = EpsilonTranslateComponent.create("keybind", "toggle");
     private static final TranslateComponent holdComponent = EpsilonTranslateComponent.create("keybind", "hold");
@@ -415,6 +416,16 @@ public class ModuleDetailPanel {
 
     public void flushContent() {
         contentBuffer.flush();
+    }
+
+    public void setGlobalAlpha(float globalAlpha) {
+        float clampedAlpha = Math.max(0.0f, Math.min(1.0f, globalAlpha));
+        if (Math.abs(this.globalAlpha - clampedAlpha) < 0.0001f) {
+            return;
+        }
+        this.globalAlpha = clampedAlpha;
+        contentBuffer.setGlobalAlpha(clampedAlpha);
+        markDirty();
     }
 
     public void markDirty() {

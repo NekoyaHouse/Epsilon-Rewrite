@@ -12,6 +12,7 @@ import java.awt.*;
 public class TextRenderer implements IRenderer {
 
     private final ITextRenderer textRenderer;
+    private float globalAlpha = 1.0f;
 
     public TextRenderer(long bufferSize) {
         textRenderer = new TtfTextRenderer(bufferSize);
@@ -22,19 +23,19 @@ public class TextRenderer implements IRenderer {
     }
 
     public void addText(String text, float x, float y, float scale, Color color, TtfFontLoader fontLoader) {
-        textRenderer.addText(text, x, y, scale, color, fontLoader);
+        textRenderer.addText(text, x, y, scale, applyGlobalAlpha(color), fontLoader);
     }
 
     public void addText(String text, float x, float y, float scale, Color color) {
-        textRenderer.addText(text, x, y, scale, color, StaticFontLoader.DEFAULT);
+        textRenderer.addText(text, x, y, scale, applyGlobalAlpha(color), StaticFontLoader.DEFAULT);
     }
 
     public void addText(String text, float x, float y, Color color, TtfFontLoader fontLoader) {
-        textRenderer.addText(text, x, y, 1.0f, color, fontLoader);
+        textRenderer.addText(text, x, y, 1.0f, applyGlobalAlpha(color), fontLoader);
     }
 
     public void addText(String text, float x, float y, Color color) {
-        textRenderer.addText(text, x, y, 1.0f, color, StaticFontLoader.DEFAULT);
+        textRenderer.addText(text, x, y, 1.0f, applyGlobalAlpha(color), StaticFontLoader.DEFAULT);
     }
 
     public void addElement(TextElement element) {
@@ -43,7 +44,7 @@ public class TextRenderer implements IRenderer {
                 element.x(),
                 element.y(),
                 element.scale(),
-                element.color(),
+                applyGlobalAlpha(element.color()),
                 element.fontLoader()
         );
     }
@@ -84,6 +85,19 @@ public class TextRenderer implements IRenderer {
 
     public void clearScissor() {
         textRenderer.clearScissor();
+    }
+
+    public void setGlobalAlpha(float globalAlpha) {
+        this.globalAlpha = Math.max(0.0f, Math.min(1.0f, globalAlpha));
+    }
+
+    private Color applyGlobalAlpha(Color color) {
+        if (globalAlpha >= 0.999f) {
+            return color;
+        }
+        int alpha = Math.round(color.getAlpha() * globalAlpha);
+        int clampedAlpha = Math.max(0, Math.min(255, alpha));
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), clampedAlpha);
     }
 
     @Override

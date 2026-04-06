@@ -13,6 +13,7 @@ public final class PanelContentBuffer {
     private final ShadowRenderer shadowRenderer = new ShadowRenderer();
     private final TextRenderer textRenderer = new TextRenderer();
     private final RoundRectRenderer scrollBarRenderer = new RoundRectRenderer();
+    private float globalAlpha = 1.0f;
 
     private boolean pending;
 
@@ -68,6 +69,19 @@ public final class PanelContentBuffer {
     public void flushAndClear() {
         flush();
         clearContent();
+    }
+
+    public void setGlobalAlpha(float alpha) {
+        float clampedAlpha = Math.max(0.0f, Math.min(1.0f, alpha));
+        if (Math.abs(globalAlpha - clampedAlpha) < 0.0001f) {
+            return;
+        }
+        globalAlpha = clampedAlpha;
+        shadowRenderer.setGlobalAlpha(globalAlpha);
+        roundRectRenderer.setGlobalAlpha(globalAlpha);
+        rectRenderer.setGlobalAlpha(globalAlpha);
+        textRenderer.setGlobalAlpha(globalAlpha);
+        scrollBarRenderer.setGlobalAlpha(globalAlpha);
     }
 
 }

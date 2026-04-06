@@ -22,6 +22,7 @@ public class RoundRectRenderer implements IRenderer {
     private int scissorX, scissorY, scissorW, scissorH;
     private long currentOffset = 0;
     private int vertexCount = 0;
+    private float globalAlpha = 1.0f;
 
     public void addRoundRect(float x, float y, float width, float height, float radius, Color color) {
         addRoundRect(x, y, width, height, radius, radius, radius, radius, color);
@@ -30,7 +31,7 @@ public class RoundRectRenderer implements IRenderer {
     public void addRoundRect(float x, float y, float width, float height, float rTL, float rTR, float rBR, float rBL, Color color) {
         buffer.tryMap();
         float x2 = x + width, y2 = y + height;
-        int argb = ARGB.toABGR(color.getRGB());
+        int argb = ARGB.toABGR(applyGlobalAlpha(color).getRGB());
 
         addVertex(x, y, x, y, x2, y2, rTL, rTR, rBR, rBL, argb);
         addVertex(x, y2, x, y, x2, y2, rTL, rTR, rBR, rBL, argb);
@@ -124,5 +125,18 @@ public class RoundRectRenderer implements IRenderer {
 
     public void clearScissor() {
         scissorEnabled = false;
+    }
+
+    public void setGlobalAlpha(float globalAlpha) {
+        this.globalAlpha = Math.max(0.0f, Math.min(1.0f, globalAlpha));
+    }
+
+    private Color applyGlobalAlpha(Color color) {
+        if (globalAlpha >= 0.999f) {
+            return color;
+        }
+        int alpha = Math.round(color.getAlpha() * globalAlpha);
+        int clampedAlpha = Math.max(0, Math.min(255, alpha));
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), clampedAlpha);
     }
 }

@@ -29,7 +29,6 @@ public class CategoryRailPanel {
     protected final PanelState state;
     private final RectRenderer rectRenderer;
     private final RoundRectRenderer roundRectRenderer;
-    private final TextRenderer textRenderer;
     private final TextRenderer clippedTextRenderer = new TextRenderer();
     private final Animation expandAnimation = new Animation(Easing.EASE_OUT_CUBIC, 240L);
     private final Animation contentAnimation = new Animation(Easing.EASE_OUT_CUBIC, 180L);
@@ -51,7 +50,6 @@ public class CategoryRailPanel {
         this.state = state;
         this.rectRenderer = rectRenderer;
         this.roundRectRenderer = roundRectRenderer;
-        this.textRenderer = textRenderer;
         this.expandAnimation.setStartValue(MD3Theme.RAIL_COLLAPSED_WIDTH);
         this.contentAnimation.setStartValue(0.0f);
         this.menuHoverAnimation.setStartValue(0.0f);
@@ -280,6 +278,10 @@ public class CategoryRailPanel {
                 || !hoverYAnimation.isFinished()
                 || !hoverAlphaAnimation.isFinished()
                 || !settingsHoverAnimation.isFinished();
+    }
+
+    public void setGlobalAlpha(float globalAlpha) {
+        clippedTextRenderer.setGlobalAlpha(globalAlpha);
     }
 
     private boolean mouseOver(PanelLayout.Rect rect, int mouseX, int mouseY) {
