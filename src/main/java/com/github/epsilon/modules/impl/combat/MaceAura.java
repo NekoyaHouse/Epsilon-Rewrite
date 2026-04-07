@@ -24,6 +24,7 @@ import java.util.List;
 
 /*
  * Author Moli
+ * 用于无反香草服，如lblt
  */
 
 public class MaceAura extends Module {
