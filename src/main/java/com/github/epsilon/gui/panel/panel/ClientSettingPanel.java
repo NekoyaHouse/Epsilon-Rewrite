@@ -561,7 +561,7 @@ public class ClientSettingPanel {
         if (state.getClientSettingTab() == PanelState.ClientSettingTab.GENERAL) {
             PanelLayout.Rect viewport = getGeneralViewport();
             if (viewport.contains(mouseX, mouseY)) {
-                state.scrollClientSetting(scrollY * 20.0f);
+                state.scrollClientSetting(-scrollY * 20.0f);
                 markDirty();
                 return true;
             }

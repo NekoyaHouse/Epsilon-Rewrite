@@ -1,6 +1,5 @@
 package com.github.epsilon.gui.panel;
 
-import com.github.epsilon.gui.panel.util.SmoothScrollAnimation;
 import com.github.epsilon.managers.ModuleManager;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
@@ -49,11 +48,6 @@ public class PanelState {
     private float friendScroll;
     private float maxFriendScroll;
 
-    private final SmoothScrollAnimation moduleScrollAnimation = new SmoothScrollAnimation();
-    private final SmoothScrollAnimation detailScrollAnimation = new SmoothScrollAnimation();
-    private final SmoothScrollAnimation clientSettingScrollAnimation = new SmoothScrollAnimation();
-    private final SmoothScrollAnimation friendScrollAnimation = new SmoothScrollAnimation();
-
     public PanelState() {
         ensureValidSelection();
     }
@@ -65,8 +59,6 @@ public class PanelState {
     public void setSelectedCategory(Category category) {
         selectedCategory = category;
         moduleScroll = 0.0f;
-        moduleScrollAnimation.reset();
-        detailScrollAnimation.reset();
         ensureValidSelection();
     }
 
@@ -86,7 +78,6 @@ public class PanelState {
     public void setSearchQuery(String searchQuery) {
         this.searchQuery = searchQuery == null ? "" : searchQuery;
         moduleScroll = 0.0f;
-        moduleScrollAnimation.reset();
         ensureValidSelection();
     }
 
@@ -142,19 +133,19 @@ public class PanelState {
     }
 
     public float getModuleScroll() {
-        return moduleScrollAnimation.getCurrentScroll();
+        return moduleScroll;
     }
 
     public void scrollModules(double amount) {
-        moduleScrollAnimation.addImpulse((float) amount, maxModuleScroll);
+        moduleScroll = clampScroll(moduleScroll + (float) amount, maxModuleScroll);
     }
 
     public float getDetailScroll() {
-        return detailScrollAnimation.getCurrentScroll();
+        return detailScroll;
     }
 
     public void scrollDetail(double amount) {
-        detailScrollAnimation.addImpulse((float) amount, maxDetailScroll);
+        detailScroll = clampScroll(detailScroll + (float) amount, maxDetailScroll);
     }
 
     public float getMaxModuleScroll() {
@@ -162,8 +153,7 @@ public class PanelState {
     }
 
     public void setModuleScroll(float scroll) {
-        moduleScrollAnimation.setCurrentScroll(scroll);
-        moduleScroll = scroll;
+        this.moduleScroll = clampScroll(scroll, maxModuleScroll);
     }
 
     public void setMaxModuleScroll(float maxModuleScroll) {
@@ -176,36 +166,12 @@ public class PanelState {
     }
 
     public void setDetailScroll(float scroll) {
-        detailScrollAnimation.setCurrentScroll(scroll);
-        detailScroll = scroll;
+        this.detailScroll = clampScroll(scroll, maxDetailScroll);
     }
 
     public void setMaxDetailScroll(float maxDetailScroll) {
         this.maxDetailScroll = Math.max(0.0f, maxDetailScroll);
         detailScroll = clampScroll(detailScroll, this.maxDetailScroll);
-    }
-
-    public SmoothScrollAnimation getModuleScrollAnimation() {
-        return moduleScrollAnimation;
-    }
-
-    public SmoothScrollAnimation getDetailScrollAnimation() {
-        return detailScrollAnimation;
-    }
-
-    public boolean updateScrollAnimations() {
-        boolean moduleChanged = moduleScrollAnimation.update(maxModuleScroll);
-        boolean detailChanged = detailScrollAnimation.update(maxDetailScroll);
-        boolean clientSettingChanged = clientSettingScrollAnimation.update(maxClientSettingScroll);
-        boolean friendChanged = friendScrollAnimation.update(maxFriendScroll);
-        return moduleChanged || detailChanged || clientSettingChanged || friendChanged;
-    }
-
-    public boolean hasActiveScrollAnimations() {
-        return moduleScrollAnimation.isAnimating()
-                || detailScrollAnimation.isAnimating()
-                || clientSettingScrollAnimation.isAnimating()
-                || friendScrollAnimation.isAnimating();
     }
 
     private void ensureValidSelection() {
@@ -261,11 +227,11 @@ public class PanelState {
     }
 
     public float getClientSettingScroll() {
-        return clientSettingScrollAnimation.getCurrentScroll();
+        return clientSettingScroll;
     }
 
     public void scrollClientSetting(double amount) {
-        clientSettingScrollAnimation.addImpulse((float) amount, maxClientSettingScroll);
+        clientSettingScroll = clampScroll(clientSettingScroll + (float) amount, maxClientSettingScroll);
     }
 
     public float getMaxClientSettingScroll() {
@@ -273,8 +239,7 @@ public class PanelState {
     }
 
     public void setClientSettingScroll(float scroll) {
-        clientSettingScrollAnimation.setCurrentScroll(scroll);
-        clientSettingScroll = scroll;
+        this.clientSettingScroll = clampScroll(scroll, maxClientSettingScroll);
     }
 
     public void setMaxClientSettingScroll(float maxClientSettingScroll) {
@@ -291,17 +256,15 @@ public class PanelState {
             this.clientSettingTab = tab;
             friendScroll = 0.0f;
             clientSettingScroll = 0.0f;
-            friendScrollAnimation.reset();
-            clientSettingScrollAnimation.reset();
         }
     }
 
     public float getFriendScroll() {
-        return friendScrollAnimation.getCurrentScroll();
+        return friendScroll;
     }
 
     public void scrollFriend(double amount) {
-        friendScrollAnimation.addImpulse((float) amount, maxFriendScroll);
+        friendScroll = clampScroll(friendScroll + (float) amount, maxFriendScroll);
     }
 
     public float getMaxFriendScroll() {
@@ -309,21 +272,12 @@ public class PanelState {
     }
 
     public void setFriendScroll(float scroll) {
-        friendScrollAnimation.setCurrentScroll(scroll);
-        friendScroll = scroll;
+        this.friendScroll = clampScroll(scroll, maxFriendScroll);
     }
 
     public void setMaxFriendScroll(float maxFriendScroll) {
         this.maxFriendScroll = Math.max(0.0f, maxFriendScroll);
         friendScroll = clampScroll(friendScroll, this.maxFriendScroll);
-    }
-
-    public SmoothScrollAnimation getClientSettingScrollAnimation() {
-        return clientSettingScrollAnimation;
-    }
-
-    public SmoothScrollAnimation getFriendScrollAnimation() {
-        return friendScrollAnimation;
     }
 
     private float clampScroll(float scroll, float maxScroll) {
