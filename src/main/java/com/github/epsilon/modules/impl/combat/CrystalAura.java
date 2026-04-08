@@ -263,26 +263,40 @@ public class CrystalAura extends Module {
         if (!crystalItem.found()) return;
         List<PlaceCandidate> candidates = collectPlaceCandidates(predictedTargetPos);
 
-        PlaceCandidate bestNormal = findBestCandidate(candidates,
+        PlaceCandidate bestPlacement = findBestCandidate(candidates,
                 placeMinDmg.getValue().floatValue(),
                 placeMaxSelfDmg.getValue().floatValue(),
                 placeBalance.getValue().floatValue());
 
-        if (bestNormal != null) {
-            doPlaceCrystal(bestNormal, crystalItem);
-            return;
-        }
-
-        if (shouldForcePlace()) {
-            PlaceCandidate bestForce = findBestCandidate(candidates,
+        if (bestPlacement == null && shouldForcePlace()) {
+            bestPlacement = findBestCandidate(candidates,
                     forcePlaceMinDamage.getValue().floatValue(),
                     placeMaxSelfDmg.getValue().floatValue(),
                     forcePlaceBalance.getValue().floatValue());
+        }
 
-            if (bestForce != null) {
-                doPlaceCrystal(bestForce, crystalItem);
+        if (bestPlacement == null) return;
+
+        Direction bestDirection = getPlacementDirection(bestPlacement.targetRotation, bestPlacement.supportPos);
+
+        // 检查 smooth 是否能转到最佳目标
+        Vector2f smoothedRotation = RotationUtils.smooth(bestPlacement.targetRotation, placeRotationSpeed.getValue());
+        if (!RaytraceUtils.overBlock(smoothedRotation, bestPlacement.supportPos, bestDirection, false)) {
+            BlockHitResult hitResult = RaytraceUtils.rayCast(smoothedRotation, placeRange.getValue());
+            BlockPos placePos = hitResult.getBlockPos();
+
+            // smooth 旋转未能对准最佳目标，检查当前实际命中位置是否在候选列表中
+            for (PlaceCandidate candidate : candidates) {
+                if (candidate.supportPos.equals(placePos)) {
+                    doPlaceCrystal(candidate, crystalItem);
+                    return;
+                }
             }
         }
+
+        // smooth 旋转能对准最佳目标或者实际命中位置不在候选列表中，直接放置
+        doPlaceCrystal(bestPlacement, crystalItem);
+
     }
 
     private boolean shouldForcePlace() {
