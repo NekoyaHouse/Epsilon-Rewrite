@@ -553,7 +553,7 @@ public class CrystalAura extends Module {
         });
 
         for (Direction direction : directions) {
-            if (RaytraceUtils.overBlock(currentRotation, placePos, direction, false)) return direction;
+            if (RaytraceUtils.overBlock(currentRotation, placePos, direction, true)) return direction;
         }
         return null;
     }
