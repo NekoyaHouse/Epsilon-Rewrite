@@ -61,6 +61,7 @@ public class ModuleManager {
                 Disabler.INSTANCE,
                 ElytraFly.INSTANCE,
                 InvManager.INSTANCE,
+                IQBoost.INSTANCE,
                 JumpCooldown.INSTANCE,
                 MovementFix.INSTANCE,
                 NoFall.INSTANCE,
