@@ -1,4 +1,4 @@
-package com.github.epsilon.modules.impl.combat;
+package com.github.epsilon.modules.impl.player;
 
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
@@ -12,7 +12,7 @@ public class IQBoost extends Module {
     private final IntSetting iq = intSetting("IQ", 520, 0, 5201314, 1);
 
     private IQBoost() {
-        super("IQ Boost", Category.COMBAT);
+        super("IQ Boost", Category.PLAYER);
     }
 
     @Override
