@@ -4,6 +4,7 @@ import com.github.epsilon.events.KeyboardInputEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec2;
 
 public class MovementFix extends Module {
 
@@ -19,14 +20,13 @@ public class MovementFix extends Module {
         float cos = Mth.cos(delta);
         float sin = Mth.sin(delta);
 
-        float left = event.getLeft();
-        float forward = event.getForward();
+        float left = event.getInput().getMovementFactor().x;
+        float forward = event.getInput().getMovementFactor().y;
 
-        float fixedLeft = Math.round(left * cos - forward * sin);
+        float fixedSideway = Math.round(left * cos - forward * sin);
         float fixedForward = Math.round(forward * cos + left * sin);
 
-        event.setLeft(fixedLeft);
-        event.setForward(fixedForward);
+        event.getInput().setMovementFactor(new Vec2(fixedSideway,fixedForward));
     }
 
 }

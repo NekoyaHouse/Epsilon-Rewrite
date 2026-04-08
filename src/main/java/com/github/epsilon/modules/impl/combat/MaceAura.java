@@ -49,7 +49,11 @@ public class MaceAura extends Module {
     private final EnumSetting<AttackMode> mode = enumSetting("Mode", AttackMode.Mace);
     private final EnumSetting<TargetPriority> priority = enumSetting("Priority", TargetPriority.Distance);
     private final DoubleSetting range = doubleSetting("Range", 3.0, 1.0, 6.0, 0.1);
-    private final DoubleSetting moveDistance = doubleSetting("Move Distance", 8.0, 1.0, 16.0, 0.1);
+    private final DoubleSetting moveDistance = doubleSetting("Move Distance", 8.0, 1.0, 20, 0.1);
+    private final BoolSetting paperServer = boolSetting("Paper Server", true);
+    private final DoubleSetting vclip = doubleSetting("VClip", 10, 1.0, 512, 1.0);
+    private final BoolSetting damageOverride = boolSetting("Damage VClip", true);
+    private final DoubleSetting overrideVClip = doubleSetting("Override VClip", 30, 1.0, 512, 1.0);
     private final BoolSetting swingHand = boolSetting("Swing Hand", false);
     private final BoolSetting cooldown = boolSetting("Cooldown", true);
     private final DoubleSetting cooldownBase = doubleSetting("Cooldown Base", 0.75, 0.1, 1.0, 0.05, cooldown::getValue);
@@ -172,7 +176,10 @@ public class MaceAura extends Module {
         if (mode.is(AttackMode.Normal)) {
             doNormalAttack();
         } else {
-            doMaceAttack(16.0);
+            doMaceAttack(vclip.getValue());
+            if (damageOverride.getValue()){
+                doMaceAttack(overrideVClip.getValue());
+            }
         }
 
         attackTimer.reset();
@@ -199,12 +206,14 @@ public class MaceAura extends Module {
 
         Vec3 startPos = mc.player.position();
         Vec3 targetPos = startPos.add(0.0, vclip, 0.0);
-
-        for (int i = 0; i < 4; i++) {
-            mc.getConnection().send(new ServerboundMovePlayerPacket.StatusOnly(false, false));
+        // 何意味，，，
+        if (paperServer.getValue()){
+            for (int i = 0; i < 4; i++) {
+                mc.getConnection().send(new ServerboundMovePlayerPacket.StatusOnly(false, false));
+            }
         }
 
-        doTp(startPos, targetPos, moveDistance.getValue(), false, 8);
+        doTp(startPos, targetPos, moveDistance.getValue(), false, 20);
         sendMovePacket(startPos, false);
         attack();
         sendMovePacket(mc.player.getX(), mc.player.getY() + 1.0E-4, mc.player.getZ(), false);

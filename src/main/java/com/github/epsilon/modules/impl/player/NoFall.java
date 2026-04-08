@@ -1,5 +1,6 @@
 package com.github.epsilon.modules.impl.player;
 
+import com.github.epsilon.events.KeyboardInputEvent;
 import com.github.epsilon.events.MotionEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
@@ -43,12 +44,19 @@ public class NoFall extends Module {
                     mc.getConnection().send(new ServerboundMovePlayerPacket.StatusOnly(false, false));
                 }
                 case GrimMotion -> {
-                    // TODO :你的moveinputEvent并不支持跳跃所以没触发
                     e.setY(e.getY() + 0.1f);
                     jump = true;
                 }
             }
             flag = false;
+        }
+    }
+    @SubscribeEvent
+    private void onMovementInputEvent(KeyboardInputEvent event){
+        if (jump){
+            //shit fixed
+            event.getInput().setJumping(true);
+            jump = false;
         }
     }
 
