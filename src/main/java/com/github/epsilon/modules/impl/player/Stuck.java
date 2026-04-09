@@ -10,6 +10,7 @@ import com.github.epsilon.utils.network.PacketUtils;
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.world.phys.Vec2;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
@@ -42,8 +43,7 @@ public class Stuck extends Module {
 
     @SubscribeEvent
     private void onKeyboardInput(KeyboardInputEvent event) {
-        event.setLeft(0);
-        event.setForward(0);
+        event.getInput().setMovementFactor(new Vec2(0,0));
     }
 
     @SubscribeEvent

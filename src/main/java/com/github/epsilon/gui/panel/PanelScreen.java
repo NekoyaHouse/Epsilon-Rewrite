@@ -4,8 +4,6 @@ import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.ShadowRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
-import com.github.epsilon.utils.render.animation.Animation;
-import com.github.epsilon.utils.render.animation.Easing;
 import com.github.epsilon.gui.panel.input.PanelInputRouter;
 import com.github.epsilon.gui.panel.panel.CategoryRailPanel;
 import com.github.epsilon.gui.panel.panel.ClientSettingPanel;
@@ -38,7 +36,6 @@ public class PanelScreen extends Screen {
     private final ModuleListPanel moduleListPanel = new ModuleListPanel(state, roundRectRenderer, rectRenderer, shadowRenderer, textRenderer);
     private final ModuleDetailPanel moduleDetailPanel = new ModuleDetailPanel(state, roundRectRenderer, rectRenderer, shadowRenderer, textRenderer, popupHost);
     private final ClientSettingPanel clientSettingPanel = new ClientSettingPanel(state, roundRectRenderer, rectRenderer, shadowRenderer, textRenderer, popupHost);
-    private final Animation openAnimation = new Animation(Easing.DYNAMIC_ISLAND, 350);
     private int lastWidth = -1;
     private int lastHeight = -1;
     private String lastSelectedCategory = "";
@@ -52,23 +49,12 @@ public class PanelScreen extends Screen {
     }
 
     @Override
-    public void init() {
-        super.init();
-        openAnimation.setStartValue(0.0f);
-        openAnimation.reset();
-    }
-
-    @Override
     public boolean isPauseScreen() {
         return false;
     }
 
     @Override
     public void extractRenderState(@NonNull GuiGraphicsExtractor GuiGraphicsExtractor, int mouseX, int mouseY, float partialTick) {
-        if (state.updateScrollAnimations()) {
-            dirtyState.markAllDirty();
-        }
-
         String currentCategory = state.getSelectedCategory().name();
         String currentModule = state.getSelectedModule() == null ? "" : state.getSelectedModule().getName();
         String currentQuery = state.getSearchQuery();
@@ -90,8 +76,7 @@ public class PanelScreen extends Screen {
         if (categoryRailPanel.hasActiveAnimations()
                 || moduleListPanel.hasActiveAnimations()
                 || moduleDetailPanel.hasActiveAnimations()
-                || clientSettingPanel.hasActiveAnimations()
-                || state.hasActiveScrollAnimations()) {
+                || clientSettingPanel.hasActiveAnimations()) {
             dirtyState.markAllDirty();
         }
 
@@ -111,13 +96,9 @@ public class PanelScreen extends Screen {
             clientSettingPanel.markDirty();
         }
 
-        openAnimation.run(1.0f);
-        float openScale = openAnimation.getValue();
-        if (!openAnimation.isFinished()) dirtyState.markAllDirty();
-
         MD3Theme.syncFromSettings();
         float railWidth = categoryRailPanel.getAnimatedWidth();
-        PanelLayout.Layout layout = scaleLayout(PanelLayout.compute(width, height, railWidth), openScale);
+        PanelLayout.Layout layout = PanelLayout.compute(width, height, railWidth);
 
         drawChrome(layout);
         categoryRailPanel.render(GuiGraphicsExtractor, layout.rail(), mouseX, mouseY, partialTick);
@@ -153,27 +134,6 @@ public class PanelScreen extends Screen {
             roundRectRenderer.addRoundRect(layout.modules().x(), layout.modules().y(), layout.modules().width(), layout.modules().height(), MD3Theme.SECTION_RADIUS, MD3Theme.SURFACE_DIM);
             roundRectRenderer.addRoundRect(layout.detail().x(), layout.detail().y(), layout.detail().width(), layout.detail().height(), MD3Theme.SECTION_RADIUS, MD3Theme.SURFACE_DIM);
         }
-    }
-
-    private static PanelLayout.Layout scaleLayout(PanelLayout.Layout layout, float scale) {
-        if (scale >= 0.9999f) return layout;
-        float cx = layout.panel().x() + layout.panel().width() / 2;
-        float cy = layout.panel().y() + layout.panel().height() / 2;
-        return new PanelLayout.Layout(
-                scaleRect(layout.panel(), cx, cy, scale),
-                scaleRect(layout.rail(), cx, cy, scale),
-                scaleRect(layout.modules(), cx, cy, scale),
-                scaleRect(layout.detail(), cx, cy, scale)
-        );
-    }
-
-    private static PanelLayout.Rect scaleRect(PanelLayout.Rect rect, float cx, float cy, float scale) {
-        return new PanelLayout.Rect(
-                cx + (rect.x() - cx) * scale,
-                cy + (rect.y() - cy) * scale,
-                rect.width() * scale,
-                rect.height() * scale
-        );
     }
 
     private void flushQueuedRenderers() {

@@ -58,9 +58,7 @@ public class CrystalAura extends Module {
 
     // General
     private final DoubleSetting targetRange = doubleSetting("Target Range", 6.0, 0.0, 12.0, 0.5);
-    private final EnumSetting<AimOptimizeMode> aimOptimizeMode = enumSetting("Aim Optimize Mode", AimOptimizeMode.MaxDamage);
-    private final DoubleSetting aimDamageSacrifice = doubleSetting("Aim Damage Sacrifice", 1.0, 0.0, 10.0, 0.25,
-            () -> aimOptimizeMode.is(AimOptimizeMode.LowRotation));
+    private final EnumSetting<DamagePriority> damagePriority = enumSetting("Damage Priority", DamagePriority.Efficient);
     private final BoolSetting eatingPause = boolSetting("Eating Pause", false);
 
     // Calculation
@@ -70,6 +68,11 @@ public class CrystalAura extends Module {
     private final IntSetting predictTick = intSetting("Predict Tick", 6, 0, 10, 1, motionPrediction::getValue);
     private final EnumSetting<DamageUtils.ArmorEnchantmentMode> armorMode = enumSetting("Armor Mode", DamageUtils.ArmorEnchantmentMode.PPBP);
     private final BoolSetting armorForSelf = boolSetting("Armor Mode For Self", false, () -> !armorMode.is(DamageUtils.ArmorEnchantmentMode.None));
+    private final BoolSetting lethalOverride = boolSetting("Lethal Override", true);
+    private final DoubleSetting lethalThresholdAddition = doubleSetting("Lethal Threshold Addition", 0.5, -5.0, 5.0, 0.1,
+            lethalOverride::getValue);
+    private final DoubleSetting safeMaxTargetDmgReduction = doubleSetting("Safe Max Target Dmg Reduction", 1.0, 0.0, 10.0, 0.1);
+    private final DoubleSetting safeMinSelfDmgReduction = doubleSetting("Safe Min Self Dmg Reduction", 2.0, 0.0, 10.0, 0.1);
 
     // Force Place
     private final DoubleSetting forcePlaceHealth = doubleSetting("Force Place Health", 8.0, 0.0, 36.0, 0.5);
@@ -163,43 +166,50 @@ public class CrystalAura extends Module {
 
         Vec3 predictedPos = getPredictedTargetPos(target);
 
-        tryBreakCrystal(predictedPos);
-        tryPlaceCrystal(predictedPos);
+        if (!tryBreakCrystal()) {
+            tryPlaceCrystal(predictedPos);
+        }
     }
 
-    private void tryBreakCrystal(Vec3 predictedTargetPos) {
-        if (!breakTimer.passedMillise(breakDelay.getValue())) return;
+    private boolean tryBreakCrystal() {
+        if (!breakTimer.passedMillise(breakDelay.getValue())) return false;
 
         List<BreakCandidate> candidates = new ArrayList<>();
+
+        final var breakRangeSq = breakRange.getValue() * breakRange.getValue();
 
         for (Entity entity : mc.level.entitiesForRendering()) {
             if (!(entity instanceof EndCrystal crystal)) continue;
             if (!crystal.isAlive()) continue;
 
-            double distToPlayer = mc.player.distanceTo(crystal);
-            if (distToPlayer > breakRange.getValue()) continue;
+            double distToPlayerSq = mc.player.distanceToSqr(crystal);
+            if (distToPlayerSq > breakRangeSq) continue;
 
             Vec3 crystalPos = crystal.position();
 
-            float targetDmg = DamageUtils.crystalDamage(target, crystalPos, predictedTargetPos, armorMode.getValue());
+            float targetDmg = DamageUtils.crystalDamage(target, crystalPos, target.position(), armorMode.getValue());
             float selfDmg = DamageUtils.selfCrystalDamage(crystalPos, armorForSelf.getValue() ? armorMode.getValue() : DamageUtils.ArmorEnchantmentMode.None);
-            if (exceedsSelfDamageLimit(selfDmg, breakMaxSelfDmg.getValue())) continue;
-            if (targetDmg < breakMinDmg.getValue()) continue;
-            float balance = targetDmg - selfDmg;
-            if (balance < breakBalance.getValue()) continue;
+            float hp = mc.player.getHealth() + mc.player.getAbsorptionAmount();
+            if (noSuicide.getValue() && hp - selfDmg <= 0.5f) continue;
+            if (!lethalOverride.getValue()) {
+                if (exceedsSelfDamageLimit(selfDmg, breakMaxSelfDmg.getValue())) continue;
+                if (targetDmg < breakMinDmg.getValue()) continue;
+                if (targetDmg - selfDmg < breakBalance.getValue()) continue;
+            }
 
             Vector2f targetRotation = RotationUtils.calculate(crystal);
-            float rotationDelta = getRotationDelta(getPrevTickRotation(), targetRotation);
-            candidates.add(new BreakCandidate(crystal, targetDmg, targetRotation, rotationDelta));
+            candidates.add(new BreakCandidate(crystal, targetDmg, selfDmg, targetRotation));
         }
 
         EndCrystal bestCrystal = selectBestBreakCandidate(candidates);
         if (bestCrystal != null) {
-            doBreakCrystal(bestCrystal, predictedTargetPos);
+            doBreakCrystal(bestCrystal);
+            return true;
         }
+        return false;
     }
 
-    private void doBreakCrystal(EndCrystal crystal, Vec3 predictedTargetPos) {
+    private void doBreakCrystal(EndCrystal crystal) {
         if (antiWeak.getValue() && mc.player.hasEffect(MobEffects.WEAKNESS)) {
             FindItemResult sword = InvUtils.findInHotbar(Items.DIAMOND_SWORD, Items.NETHERITE_SWORD, Items.IRON_SWORD, Items.STONE_SWORD);
             if (sword.found()) {
@@ -238,7 +248,7 @@ public class CrystalAura extends Module {
             doSwing(breakSwing.getValue());
             breakTimer.reset();
             Vec3 crystalPosition = currentCrystal.position();
-            float tgtDmg = DamageUtils.crystalDamage(target, crystalPosition, predictedTargetPos, armorMode.getValue());
+            float tgtDmg = DamageUtils.crystalDamage(target, crystalPosition, target.position(), armorMode.getValue());
             float selfDmg = DamageUtils.selfCrystalDamage(crystalPosition, armorForSelf.getValue() ? armorMode.getValue() : DamageUtils.ArmorEnchantmentMode.None);
             updateRenderTarget(currentCrystal.blockPosition().below(), tgtDmg, selfDmg);
 
@@ -253,26 +263,40 @@ public class CrystalAura extends Module {
         if (!crystalItem.found()) return;
         List<PlaceCandidate> candidates = collectPlaceCandidates(predictedTargetPos);
 
-        PlaceCandidate bestNormal = findBestCandidate(candidates,
+        PlaceCandidate bestPlacement = findBestCandidate(candidates,
                 placeMinDmg.getValue().floatValue(),
                 placeMaxSelfDmg.getValue().floatValue(),
                 placeBalance.getValue().floatValue());
 
-        if (bestNormal != null) {
-            doPlaceCrystal(bestNormal, crystalItem);
-            return;
-        }
-
-        if (shouldForcePlace()) {
-            PlaceCandidate bestForce = findBestCandidate(candidates,
+        if (bestPlacement == null && shouldForcePlace()) {
+            bestPlacement = findBestCandidate(candidates,
                     forcePlaceMinDamage.getValue().floatValue(),
                     placeMaxSelfDmg.getValue().floatValue(),
                     forcePlaceBalance.getValue().floatValue());
+        }
 
-            if (bestForce != null) {
-                doPlaceCrystal(bestForce, crystalItem);
+        if (bestPlacement == null) return;
+
+        Direction bestDirection = getPlacementDirection(bestPlacement.targetRotation, bestPlacement.supportPos);
+
+        // 检查 smooth 是否能转到最佳目标
+        Vector2f smoothedRotation = RotationUtils.smooth(bestPlacement.targetRotation, placeRotationSpeed.getValue());
+        if (!RaytraceUtils.overBlock(smoothedRotation, bestPlacement.supportPos, bestDirection, false)) {
+            BlockHitResult hitResult = RaytraceUtils.rayCast(smoothedRotation, placeRange.getValue());
+            BlockPos placePos = hitResult.getBlockPos();
+
+            // smooth 旋转未能对准最佳目标，检查当前实际命中位置是否在候选列表中
+            for (PlaceCandidate candidate : candidates) {
+                if (candidate.supportPos.equals(placePos)) {
+                    doPlaceCrystal(candidate, crystalItem);
+                    return;
+                }
             }
         }
+
+        // smooth 旋转能对准最佳目标或者实际命中位置不在候选列表中，直接放置
+        doPlaceCrystal(bestPlacement, crystalItem);
+
     }
 
     private boolean shouldForcePlace() {
@@ -337,60 +361,74 @@ public class CrystalAura extends Module {
 
     private PlaceCandidate findBestCandidate(List<PlaceCandidate> candidates,
                                              float minDmg, float maxSelfDmg, float minBalance) {
+        if (candidates.isEmpty()) return null;
+
+        float targetHealth = target.getHealth() + target.getAbsorptionAmount();
+        float hp = mc.player.getHealth() + mc.player.getAbsorptionAmount();
+        DamagePriority priority = damagePriority.getValue();
+        boolean isLethalOverride = lethalOverride.getValue();
+        float lethalThreshold = lethalThresholdAddition.getValue().floatValue();
+        float lethalMaxSelf = lethalMaxSelfDamage.getValue().floatValue();
+        float safeMaxTgtRed = safeMaxTargetDmgReduction.getValue().floatValue();
+        float safeMinSelfRed = safeMinSelfDmgReduction.getValue().floatValue();
+
         List<PlaceCandidate> visibleValid = new ArrayList<>();
         List<PlaceCandidate> wallValid = new ArrayList<>();
 
         for (PlaceCandidate c : candidates) {
-            if (exceedsSelfDamageLimit(c.selfDmg, maxSelfDmg)) continue;
-            if (c.targetDmg < minDmg) continue;
-            float balance = c.targetDmg - c.selfDmg;
-            if (balance < minBalance) continue;
+            if (noSuicide.getValue() && hp - c.selfDmg <= 0.5f) continue;
+            if (!isLethalOverride && exceedsSelfDamageLimit(c.selfDmg, maxSelfDmg)) continue;
             if (c.throughWall) {
-                if (c.wallBypassAllowed) {
-                    wallValid.add(c);
-                }
+                if (c.wallBypassAllowed) wallValid.add(c);
             } else {
                 visibleValid.add(c);
             }
         }
 
         List<PlaceCandidate> valid = !visibleValid.isEmpty() ? visibleValid : wallValid;
-
         if (valid.isEmpty()) return null;
 
-        float bestDamage = Float.MIN_VALUE;
+        PlaceCandidate maxCandidate = null;
+        float maxScore = Float.NEGATIVE_INFINITY;
+        PlaceCandidate safeCandidate = null;
+        PlaceCandidate lethalCandidate = null;
+        float lethalSelfDmg = Float.MAX_VALUE;
+
         for (PlaceCandidate c : valid) {
-            if (c.targetDmg > bestDamage) {
-                bestDamage = c.targetDmg;
+            if (isLethalOverride
+                    && c.targetDmg - targetHealth > lethalThreshold
+                    && c.selfDmg < lethalSelfDmg
+                    && c.selfDmg <= lethalMaxSelf) {
+                lethalCandidate = c;
+                lethalSelfDmg = c.selfDmg;
+            }
+
+            if (exceedsSelfDamageLimit(c.selfDmg, maxSelfDmg)) continue;
+            if (c.targetDmg < minDmg) continue;
+            if (c.targetDmg - c.selfDmg < minBalance) continue;
+
+            float score = priority.score(c.selfDmg, c.targetDmg);
+
+            if (score > maxScore) {
+                maxCandidate = c;
+                maxScore = score;
+            } else if (maxCandidate != null
+                    && maxCandidate.targetDmg - c.targetDmg <= safeMaxTgtRed
+                    && maxCandidate.selfDmg - c.selfDmg >= safeMinSelfRed) {
+                safeCandidate = c;
             }
         }
 
-        if (aimOptimizeMode.is(AimOptimizeMode.MaxDamage)) {
-            PlaceCandidate best = null;
-            float bestScore = Float.MIN_VALUE;
-            for (PlaceCandidate c : valid) {
-                if (c.targetDmg > bestScore) {
-                    bestScore = c.targetDmg;
-                    best = c;
-                }
-            }
-            return best;
-        }
-
-        float threshold = bestDamage - aimDamageSacrifice.getValue().floatValue();
-        PlaceCandidate selected = null;
-        float bestDelta = Float.MAX_VALUE;
-        Vector2f prev = getPrevTickRotation();
-        for (PlaceCandidate c : valid) {
-            if (c.targetDmg < threshold) continue;
-            float delta = getRotationDelta(prev, c.targetRotation);
-            if (delta < bestDelta) {
-                bestDelta = delta;
-                selected = c;
+        if (maxCandidate != null && safeCandidate != null) {
+            if (maxCandidate.targetDmg - safeCandidate.targetDmg > safeMaxTgtRed
+                    || maxCandidate.selfDmg - safeCandidate.selfDmg <= safeMinSelfRed) {
+                safeCandidate = null;
             }
         }
 
-        return selected != null ? selected : valid.get(0);
+        if (lethalCandidate != null) return lethalCandidate;
+        if (safeCandidate != null) return safeCandidate;
+        return maxCandidate;
     }
 
     private void doPlaceCrystal(PlaceCandidate candidate, FindItemResult crystalItem) {
@@ -419,15 +457,19 @@ public class CrystalAura extends Module {
                 return;
             }
             if (record.selectedPriorityValue() != requestPriority) return;
+
+            Direction placementDirection = getPlacementDirection(record.currentRotation(), candidate.supportPos);
+            if (placementDirection == null) return;
+
             boolean canPlace = candidate.throughWall
                     ? candidate.wallBypassAllowed && isAimingAtBlock(record.currentRotation(), candidate.targetRotation)
-                    : RaytraceUtils.overBlock(record.currentRotation(), candidate.supportPos, Direction.UP, false);
+                    : RaytraceUtils.overBlock(record.currentRotation(), candidate.supportPos, placementDirection, false);
             if (!canPlace) {
                 InvUtils.swapBack();
                 return;
             }
 
-            BlockHitResult hitResult = new BlockHitResult(hitVec, Direction.UP, candidate.supportPos, false);
+            BlockHitResult hitResult = new BlockHitResult(hitVec, placementDirection, candidate.supportPos, false);
             InteractionResult result = mc.gameMode.useItemOn(mc.player, placeHand, hitResult);
             if (result.consumesAction()) {
                 doSwing(placeSwing.getValue());
@@ -445,12 +487,8 @@ public class CrystalAura extends Module {
         float hp = mc.player.getHealth() + mc.player.getAbsorptionAmount();
         if (noSuicide.getValue() && hp - selfDmg <= 0.5f) return true;
         float remainingHp = hp - selfDmg;
-        if (noSuicide.getValue() && remainingHp <= lethalMaxSelfDamage.getValue()
-                && selfDmg > lethalMaxSelfDamage.getValue()) {
-            return true;
-        }
-
-        return false;
+        return noSuicide.getValue() && remainingHp <= lethalMaxSelfDamage.getValue()
+                && selfDmg > lethalMaxSelfDamage.getValue();
     }
 
     private Vec3 getPredictedTargetPos(LivingEntity entity) {
@@ -500,6 +538,24 @@ public class CrystalAura extends Module {
             default -> {
             }
         }
+    }
+
+    private Direction getPlacementDirection(Vector2f currentRotation, BlockPos placePos) {
+        Vec3 playerEye = mc.player.getEyePosition();
+        Vec3 blockCenter = Vec3.atCenterOf(placePos);
+        Vec3 toPlayer = playerEye.subtract(blockCenter);
+
+        List<Direction> directions = new ArrayList<>(List.of(Direction.values()));
+        directions.sort((a, b) -> {
+            double dotA = a.getStepX() * toPlayer.x + a.getStepY() * toPlayer.y + a.getStepZ() * toPlayer.z;
+            double dotB = b.getStepX() * toPlayer.x + b.getStepY() * toPlayer.y + b.getStepZ() * toPlayer.z;
+            return Double.compare(dotB, dotA);
+        });
+
+        for (Direction direction : directions) {
+            if (RaytraceUtils.overBlock(currentRotation, placePos, direction, true)) return direction;
+        }
+        return null;
     }
 
     private void updateRenderTarget(BlockPos pos, float damage, float selfDmg) {
@@ -671,39 +727,66 @@ public class CrystalAura extends Module {
     private EndCrystal selectBestBreakCandidate(List<BreakCandidate> candidates) {
         if (candidates.isEmpty()) return null;
 
-        float bestDamage = Float.MIN_VALUE;
-        BreakCandidate maxDamage = null;
+        float targetHealth = target.getHealth() + target.getAbsorptionAmount();
+        DamagePriority priority = damagePriority.getValue();
+        boolean isLethalOverride = lethalOverride.getValue();
+        float lethalThreshold = lethalThresholdAddition.getValue().floatValue();
+        float lethalMaxSelf = lethalMaxSelfDamage.getValue().floatValue();
+        float safeMaxTgtRed = safeMaxTargetDmgReduction.getValue().floatValue();
+        float safeMinSelfRed = safeMinSelfDmgReduction.getValue().floatValue();
+
+        float minDmg;
+        float minBalance;
+        if (shouldForcePlace()) {
+            minDmg = forcePlaceMinDamage.getValue().floatValue();
+            minBalance = forcePlaceBalance.getValue().floatValue();
+        } else {
+            minDmg = breakMinDmg.getValue().floatValue();
+            minBalance = breakBalance.getValue().floatValue();
+        }
+        float maxSelfDmg = breakMaxSelfDmg.getValue().floatValue();
+
+        BreakCandidate maxCandidate = null;
+        float maxScore = Float.NEGATIVE_INFINITY;
+        BreakCandidate safeCandidate = null;
+        BreakCandidate lethalCandidate = null;
+        float lethalSelfDmg = Float.MAX_VALUE;
+
         for (BreakCandidate c : candidates) {
-            if (c.targetDmg > bestDamage) {
-                bestDamage = c.targetDmg;
-                maxDamage = c;
+            if (isLethalOverride
+                    && c.targetDmg - targetHealth > lethalThreshold
+                    && c.selfDmg < lethalSelfDmg
+                    && c.selfDmg <= lethalMaxSelf) {
+                lethalCandidate = c;
+                lethalSelfDmg = c.selfDmg;
+            }
+
+            if (exceedsSelfDamageLimit(c.selfDmg, maxSelfDmg)) continue;
+            if (c.targetDmg < minDmg) continue;
+            if (c.targetDmg - c.selfDmg < minBalance) continue;
+
+            float score = priority.score(c.selfDmg, c.targetDmg);
+
+            if (score > maxScore) {
+                maxCandidate = c;
+                maxScore = score;
+            } else if (maxCandidate != null
+                    && maxCandidate.targetDmg - c.targetDmg <= safeMaxTgtRed
+                    && maxCandidate.selfDmg - c.selfDmg >= safeMinSelfRed) {
+                safeCandidate = c;
             }
         }
 
-        if (maxDamage == null || aimOptimizeMode.is(AimOptimizeMode.MaxDamage)) {
-            return maxDamage != null ? maxDamage.crystal : null;
-        }
-
-        float threshold = bestDamage - aimDamageSacrifice.getValue().floatValue();
-        BreakCandidate selected = null;
-        float bestDelta = Float.MAX_VALUE;
-        for (BreakCandidate c : candidates) {
-            if (c.targetDmg < threshold) continue;
-            if (c.rotationDelta < bestDelta) {
-                bestDelta = c.rotationDelta;
-                selected = c;
+        if (maxCandidate != null && safeCandidate != null) {
+            if (maxCandidate.targetDmg - safeCandidate.targetDmg > safeMaxTgtRed
+                    || maxCandidate.selfDmg - safeCandidate.selfDmg <= safeMinSelfRed) {
+                safeCandidate = null;
             }
         }
 
-        return selected != null ? selected.crystal : maxDamage.crystal;
-    }
-
-    private Vector2f getPrevTickRotation() {
-        Vector2f prev = RotationManager.INSTANCE.lastRotations;
-        if (prev == null) {
-            return new Vector2f(mc.player.getYRot(), mc.player.getXRot());
-        }
-        return new Vector2f(prev.x, prev.y);
+        BreakCandidate result = lethalCandidate != null ? lethalCandidate
+                : (safeCandidate != null ? safeCandidate : maxCandidate);
+        return result != null ? result.crystal : null;
     }
 
     private float getRotationDelta(Vector2f from, Vector2f to) {
@@ -715,8 +798,8 @@ public class CrystalAura extends Module {
     private record BreakCandidate(
             EndCrystal crystal,
             float targetDmg,
-            Vector2f targetRotation,
-            float rotationDelta
+            float selfDmg,
+            Vector2f targetRotation
     ) {
     }
 
@@ -733,9 +816,21 @@ public class CrystalAura extends Module {
         Packet,
     }
 
-    private enum AimOptimizeMode {
-        MaxDamage,
-        LowRotation
+    private enum DamagePriority {
+        Efficient {
+            @Override
+            float score(float selfDmg, float targetDmg) {
+                return targetDmg - selfDmg;
+            }
+        },
+        Aggressive {
+            @Override
+            float score(float selfDmg, float targetDmg) {
+                return targetDmg;
+            }
+        };
+
+        abstract float score(float selfDmg, float targetDmg);
     }
 
 }
