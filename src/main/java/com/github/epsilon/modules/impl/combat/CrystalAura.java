@@ -58,6 +58,10 @@ public class CrystalAura extends Module {
 
     // General
     private final DoubleSetting targetRange = doubleSetting("Target Range", 6.0, 0.0, 12.0, 0.5);
+    private final BoolSetting targetPlayers = boolSetting("Players", true);
+    private final BoolSetting targetMobs = boolSetting("Mobs", false);
+    private final BoolSetting targetAnimals = boolSetting("Animals", false);
+    private final BoolSetting targetVillagers = boolSetting("Villagers", false);
     private final EnumSetting<DamagePriority> damagePriority = enumSetting("Damage Priority", DamagePriority.Efficient);
     private final BoolSetting eatingPause = boolSetting("Eating Pause", false);
 
@@ -150,10 +154,10 @@ public class CrystalAura extends Module {
                 TargetManager.TargetRequest.of(
                         targetRange.getValue(),
                         360.0f,
-                        true,
-                        false,
-                        false,
-                        false,
+                        targetPlayers.getValue(),
+                        targetMobs.getValue(),
+                        targetAnimals.getValue(),
+                        targetVillagers.getValue(),
                         true,
                         1
                 )
@@ -285,8 +289,15 @@ public class CrystalAura extends Module {
             BlockHitResult hitResult = RaytraceUtils.rayCast(smoothedRotation, placeRange.getValue());
             BlockPos placePos = hitResult.getBlockPos();
 
-            // smooth 旋转未能对准最佳目标，检查当前实际命中位置是否在候选列表中
-            for (PlaceCandidate candidate : candidates) {
+            // smooth 旋转未能对准最佳目标，检查当前实际命中位置是否在满足常规 place 限制的候选列表中
+            for (PlaceCandidate candidate :
+                    getValidCandidates(
+                        candidates,
+                        placeMinDmg.getValue().floatValue(),
+                        placeMaxSelfDmg.getValue().floatValue(),
+                        placeBalance.getValue().floatValue()
+                    )
+            ) {
                 if (candidate.supportPos.equals(placePos)) {
                     doPlaceCrystal(candidate, crystalItem);
                     return;
@@ -306,6 +317,11 @@ public class CrystalAura extends Module {
         return targetArmor <= forcePlaceArmorRate.getValue();
     }
 
+    /**
+     * 收集所有可行的放置位置，计算它们的伤害和可见性，并返回一个候选列表。
+     * @param predictedTargetPos 预判后的目标坐标
+     * @return 可行的位置
+     */
     private List<PlaceCandidate> collectPlaceCandidates(Vec3 predictedTargetPos) {
         List<PlaceCandidate> candidates = new ArrayList<>();
 
@@ -363,21 +379,86 @@ public class CrystalAura extends Module {
                                              float minDmg, float maxSelfDmg, float minBalance) {
         if (candidates.isEmpty()) return null;
 
-        float targetHealth = target.getHealth() + target.getAbsorptionAmount();
-        float hp = mc.player.getHealth() + mc.player.getAbsorptionAmount();
         DamagePriority priority = damagePriority.getValue();
-        boolean isLethalOverride = lethalOverride.getValue();
-        float lethalThreshold = lethalThresholdAddition.getValue().floatValue();
-        float lethalMaxSelf = lethalMaxSelfDamage.getValue().floatValue();
         float safeMaxTgtRed = safeMaxTargetDmgReduction.getValue().floatValue();
         float safeMinSelfRed = safeMinSelfDmgReduction.getValue().floatValue();
 
+        // 优先返回致命候选
+        if (lethalOverride.getValue()) {
+            PlaceCandidate lethal = findLethalCandidate(candidates);
+            if (lethal != null) return lethal;
+        }
+
+        // 收集所有满足条件的候选，再按分数排序
+        List<PlaceCandidate> valid = getValidCandidates(candidates, minDmg, maxSelfDmg, minBalance);
+        if (valid.isEmpty()) return null;
+
+        valid.sort((a, b) -> Float.compare(
+                priority.score(b.selfDmg, b.targetDmg),
+                priority.score(a.selfDmg, a.targetDmg)
+        ));
+
+        PlaceCandidate maxCandidate = valid.get(0);
+
+        // 在高分候选之后，寻找自伤更低且伤害损失可接受的安全候选
+        for (int i = 1; i < valid.size(); i++) {
+            PlaceCandidate c = valid.get(i);
+            if (maxCandidate.targetDmg - c.targetDmg <= safeMaxTgtRed
+                    && maxCandidate.selfDmg - c.selfDmg >= safeMinSelfRed) {
+                return c;
+            }
+        }
+
+        return maxCandidate;
+    }
+
+    /**
+     * 从所有候选中找到可击杀目标且自伤最低的致命候选 (跳过常规伤害门槛限制)
+     * @param candidates 可行的放置点
+     * @return 致命候选，如果没有则返回 null
+     */
+    private PlaceCandidate findLethalCandidate(List<PlaceCandidate> candidates) {
+        float targetHealth = target.getHealth() + target.getAbsorptionAmount();
+        float lethalThreshold = lethalThresholdAddition.getValue().floatValue();
+        float lethalMaxSelf = lethalMaxSelfDamage.getValue().floatValue();
+        float hp = mc.player.getHealth() + mc.player.getAbsorptionAmount();
+
+        PlaceCandidate best = null;
+        float bestSelfDmg = Float.MAX_VALUE;
+
+        for (PlaceCandidate c : candidates) {
+            if (noSuicide.getValue() && hp - c.selfDmg <= 0.5f) continue;
+            if (c.targetDmg - targetHealth <= lethalThreshold) continue;
+            if (c.selfDmg > lethalMaxSelf) continue;
+            if (c.selfDmg < bestSelfDmg) {
+                best = c;
+                bestSelfDmg = c.selfDmg;
+            }
+        }
+
+        return best;
+    }
+
+    /**
+     * 收集满足所有常规条件的候选，优先返回可直接看见的候选，否则返回穿墙候选
+     * @param candidates 可行的放置点
+     * @param minDmg 放置点最小伤害
+     * @param maxSelfDmg 最大自伤
+     * @param minBalance 对目标伤害与对自伤害的最低可承受值
+     * @return 满足条件的放置点列表
+     */
+    private List<PlaceCandidate> getValidCandidates(List<PlaceCandidate> candidates,
+                                                     float minDmg, float maxSelfDmg, float minBalance) {
+        float hp = mc.player.getHealth() + mc.player.getAbsorptionAmount();
         List<PlaceCandidate> visibleValid = new ArrayList<>();
         List<PlaceCandidate> wallValid = new ArrayList<>();
 
         for (PlaceCandidate c : candidates) {
             if (noSuicide.getValue() && hp - c.selfDmg <= 0.5f) continue;
-            if (!isLethalOverride && exceedsSelfDamageLimit(c.selfDmg, maxSelfDmg)) continue;
+            if (exceedsSelfDamageLimit(c.selfDmg, maxSelfDmg)) continue;
+            if (c.targetDmg < minDmg) continue;
+            if (c.targetDmg - c.selfDmg < minBalance) continue;
+
             if (c.throughWall) {
                 if (c.wallBypassAllowed) wallValid.add(c);
             } else {
@@ -385,50 +466,7 @@ public class CrystalAura extends Module {
             }
         }
 
-        List<PlaceCandidate> valid = !visibleValid.isEmpty() ? visibleValid : wallValid;
-        if (valid.isEmpty()) return null;
-
-        PlaceCandidate maxCandidate = null;
-        float maxScore = Float.NEGATIVE_INFINITY;
-        PlaceCandidate safeCandidate = null;
-        PlaceCandidate lethalCandidate = null;
-        float lethalSelfDmg = Float.MAX_VALUE;
-
-        for (PlaceCandidate c : valid) {
-            if (isLethalOverride
-                    && c.targetDmg - targetHealth > lethalThreshold
-                    && c.selfDmg < lethalSelfDmg
-                    && c.selfDmg <= lethalMaxSelf) {
-                lethalCandidate = c;
-                lethalSelfDmg = c.selfDmg;
-            }
-
-            if (exceedsSelfDamageLimit(c.selfDmg, maxSelfDmg)) continue;
-            if (c.targetDmg < minDmg) continue;
-            if (c.targetDmg - c.selfDmg < minBalance) continue;
-
-            float score = priority.score(c.selfDmg, c.targetDmg);
-
-            if (score > maxScore) {
-                maxCandidate = c;
-                maxScore = score;
-            } else if (maxCandidate != null
-                    && maxCandidate.targetDmg - c.targetDmg <= safeMaxTgtRed
-                    && maxCandidate.selfDmg - c.selfDmg >= safeMinSelfRed) {
-                safeCandidate = c;
-            }
-        }
-
-        if (maxCandidate != null && safeCandidate != null) {
-            if (maxCandidate.targetDmg - safeCandidate.targetDmg > safeMaxTgtRed
-                    || maxCandidate.selfDmg - safeCandidate.selfDmg <= safeMinSelfRed) {
-                safeCandidate = null;
-            }
-        }
-
-        if (lethalCandidate != null) return lethalCandidate;
-        if (safeCandidate != null) return safeCandidate;
-        return maxCandidate;
+        return !visibleValid.isEmpty() ? visibleValid : wallValid;
     }
 
     private void doPlaceCrystal(PlaceCandidate candidate, FindItemResult crystalItem) {
