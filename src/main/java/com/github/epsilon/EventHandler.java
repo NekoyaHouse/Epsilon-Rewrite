@@ -43,7 +43,7 @@ public class EventHandler {
     }
 
     @SubscribeEvent
-    public static void onRenderInGameGuiPre(EpsilonRenderGuiEvent.BeforeInGameGui event) {
+    public static void onRenderInGameGuiPre(EpsilonRenderGuiEvent.AfterInGameGui event) {
         RenderManager.INSTANCE.callInGameGui(Minecraft.getInstance().getDeltaTracker());
     }
 
