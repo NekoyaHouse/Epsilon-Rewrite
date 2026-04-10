@@ -57,14 +57,12 @@ public class Disabler extends Module {
         }
 
         if (aimDuplicateLook.getValue()) {
-            if (event.getPacket() instanceof ServerboundMovePlayerPacket packet) {
-                if (packet.hasRotation()) {
-                    if (lastYaw == packet.yRot && lastPitch == packet.xRot) {
-                        packet.yRot = packet.yRot + 0.001f;
-                    }
-                    lastYaw = packet.yRot;
-                    lastPitch = packet.xRot;
+            if (event.getPacket() instanceof ServerboundMovePlayerPacket packet && packet.hasRotation()) {
+                if (lastYaw == packet.yRot && lastPitch == packet.xRot) {
+                    packet.yRot = packet.yRot + 0.001f;
                 }
+                lastYaw = packet.yRot;
+                lastPitch = packet.xRot;
                 return;
             }
         }

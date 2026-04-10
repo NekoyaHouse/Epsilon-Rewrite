@@ -70,7 +70,7 @@ public class Phase extends Module {
         afterPearlTime = 0;
         clipTimer = 0;
 
-        if (mc.player.onGround() && mode.is(Mode.CCClip)) {
+        if (!nullCheck() && mc.player.onGround() && mode.is(Mode.CCClip)) {
             double[] diagonalOffset = MoveUtils.forwardWithoutStrafe(0.44);
             boolean diagonal = mc.player.getYRot() % 90 > 35 && mc.player.getYRot() % 90 < 55;
 

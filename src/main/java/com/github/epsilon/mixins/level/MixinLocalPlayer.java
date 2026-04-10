@@ -4,6 +4,7 @@ import com.github.epsilon.events.MotionEvent;
 import com.github.epsilon.events.SlowdownEvent;
 import com.github.epsilon.modules.impl.combat.Velocity;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.NeoForge;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -25,6 +26,11 @@ public class MixinLocalPlayer {
         if (lumin$motionEvent.isCanceled()) {
             ci.cancel();
         }
+    }
+
+    @Redirect(method = "sendPosition", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;position()Lnet/minecraft/world/phys/Vec3;"))
+    private Vec3 redirectPosition(LocalPlayer instance) {
+        return new Vec3(lumin$motionEvent.getX(), lumin$motionEvent.getY(), lumin$motionEvent.getZ());
     }
 
     @Redirect(method = "sendPosition", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;getX()D"))

@@ -44,7 +44,7 @@ public class NoFall extends Module {
                     mc.getConnection().send(new ServerboundMovePlayerPacket.StatusOnly(false, false));
                 }
                 case GrimMotion -> {
-                    event.setY(event.getY() + 0.1f);
+                    event.setY(event.getY() + 0.1);
                     jump = true;
                 }
             }
