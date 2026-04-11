@@ -35,7 +35,6 @@ public class ElytraFly extends Module {
 
     private enum Mode {
         Control,
-        Firework,
         Boost
     }
 
@@ -44,14 +43,14 @@ public class ElytraFly extends Module {
         InvSwitch
     }
 
-    private final EnumSetting<Mode> mode = enumSetting("Mode", Mode.Firework);
+    private final EnumSetting<Mode> mode = enumSetting("Mode", Mode.Control);
     private final EnumSetting<SwapMode> swapMode = enumSetting("SwapMode", SwapMode.InvSwitch);
     private final BoolSetting armored = boolSetting("Armored", false);
-    private final DoubleSetting horizontalSpeed = doubleSetting("HorizontalSpeed", 1.35, 0.1, 5.0, 0.05, () -> mode.is(Mode.Firework));
-    private final DoubleSetting verticalSpeed = doubleSetting("VerticalSpeed", 0.8, 0.1, 2.0, 0.05, () -> mode.is(Mode.Firework));
-    private final DoubleSetting accel = doubleSetting("Acceleration", 0.35, 0.05, 1.0, 0.05, () -> mode.is(Mode.Firework));
-    private final IntSetting boostDelay = intSetting("BoostDelay", 20, 2, 50, 1, () -> mode.is(Mode.Firework));
-    private final IntSetting rotationSpeed = intSetting("RotationSpeed", 10, 1, 10, 1, () -> mode.is(Mode.Firework));
+    private final DoubleSetting horizontalSpeed = doubleSetting("HorizontalSpeed", 1.35, 0.1, 5.0, 0.05, () -> mode.is(Mode.Control));
+    private final DoubleSetting verticalSpeed = doubleSetting("VerticalSpeed", 0.8, 0.1, 2.0, 0.05, () -> mode.is(Mode.Control));
+    private final DoubleSetting accel = doubleSetting("Acceleration", 0.35, 0.05, 1.0, 0.05, () -> mode.is(Mode.Control));
+    private final BoolSetting useFireworks = boolSetting("UseFireworks", true, () -> mode.is(Mode.Control));
+    private final IntSetting boostDelay = intSetting("BoostDelay", 20, 2, 50, 1, () -> mode.is(Mode.Control) && useFireworks.getValue());
 
     private boolean hasFirstFirework;
     private final TimerUtils timer = new TimerUtils();
@@ -68,16 +67,11 @@ public class ElytraFly extends Module {
 
         switch (mode.getValue()) {
             case Control -> updateControl();
-            case Firework -> updateFirework();
             case Boost -> updateBoost();
         }
     }
 
     private void updateControl() {
-        // Todo: 完善
-    }
-
-    private void updateFirework() {
         FindItemResult elytra = InvUtils.find(Items.ELYTRA);
 
         if (!canGlide(elytra.found()) || mc.player.onGround()) {
@@ -96,7 +90,7 @@ public class ElytraFly extends Module {
             useFirework();
         }
 
-        if (hasFirstFirework) {
+        if (!useFireworks.getValue() || hasFirstFirework) {
             applyMotion();
         }
     }
@@ -130,7 +124,7 @@ public class ElytraFly extends Module {
     }
 
     private void useFirework() {
-        if (!timer.hasDelayed(boostDelay.getValue())) return;
+        if (!useFireworks.getValue() || !timer.hasDelayed(boostDelay.getValue())) return;
 
         FindItemResult rocket = swapMode.is(SwapMode.Silent) ? InvUtils.findInHotbar(Items.FIREWORK_ROCKET) : InvUtils.find(Items.FIREWORK_ROCKET);
         if (!rocket.found()) return;
@@ -192,7 +186,7 @@ public class ElytraFly extends Module {
         float yaw = (float) Math.toDegrees(Math.atan2(z, x)) - 90.0f;
         float pitch = (float) (-Math.toDegrees(Math.atan2(y, Math.max(horizontal, 1.0E-5))));
         // TODO: 这为啥有时候转头会纠正？
-        RotationManager.INSTANCE.applyRotation(new Vector2f(Mth.wrapDegrees(yaw), Mth.clamp(pitch, -90.0f, 90.0f)), rotationSpeed.getValue(), Priority.Highest);
+        RotationManager.INSTANCE.applyRotation(new Vector2f(Mth.wrapDegrees(yaw), Mth.clamp(pitch, -90.0f, 90.0f)), 10, Priority.Highest);
     }
 
     private boolean hasInput() {
@@ -239,7 +233,7 @@ public class ElytraFly extends Module {
     }
 
     public boolean isArmorMode() {
-        return mode.is(Mode.Firework) && armored.getValue();
+        return mode.is(Mode.Control) && armored.getValue();
     }
 
 }
