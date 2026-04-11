@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 public class ModuleList extends HudModule {
 
     private static final float ROW_HEIGHT = 16.0f;
-    private static final float ROW_SPACING = 2.0f;
+    private static final float ROW_SPACING = 3.0f;
     private static final float ICON_GAP = 2.0f;
 
     public static final ModuleList INSTANCE = new ModuleList();
@@ -55,8 +55,9 @@ public class ModuleList extends HudModule {
         }
 
         float moduleScale = scale.getValue().floatValue();
+        float borderPadding = ROW_SPACING * moduleScale;
         float maxTotalWidth = 0.0f;
-        float totalHeight = 0.0f;
+        float totalHeight = borderPadding; // 顶部 padding
 
         for (ItemInfo item : items) {
             if (item.alpha() > 0.001f) {
@@ -66,7 +67,8 @@ public class ModuleList extends HudModule {
             }
         }
 
-        setBounds(maxTotalWidth, totalHeight);
+        // 左右 border padding
+        setBounds(maxTotalWidth + borderPadding * 2, totalHeight);
     }
 
     @Override
@@ -82,9 +84,10 @@ public class ModuleList extends HudModule {
         float moduleScale = scale.getValue().floatValue();
         float renderScale = moduleScale + textScaleOffset.getValue().floatValue();
         float hPadding = horizontalPadding.getValue().floatValue();
+        float borderPadding = ROW_SPACING * moduleScale;
 
         HorizontalAnchor hAnchor = getHorizontalAnchor();
-        float currentY = this.y;
+        float currentY = this.y + borderPadding;
 
         for (ItemInfo item : items) {
             if (item.alpha() <= 0.001f) continue;
@@ -95,9 +98,9 @@ public class ModuleList extends HudModule {
 
             float itemX;
             switch (hAnchor) {
-                case Right -> itemX = this.x + this.width - item.totalWidth();
+                case Right -> itemX = this.x + this.width - item.totalWidth() - borderPadding;
                 case Center -> itemX = this.x + (this.width - item.totalWidth()) / 2.0f;
-                default -> itemX = this.x;
+                default -> itemX = this.x + borderPadding;
             }
 
             Color baseShadow = shadowColor.getValue();
