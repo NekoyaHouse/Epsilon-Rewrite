@@ -1,4 +1,4 @@
-package com.github.epsilon.mixins.level;
+package com.github.epsilon.mixins.entity;
 
 import com.github.epsilon.events.MotionEvent;
 import com.github.epsilon.events.SlowdownEvent;

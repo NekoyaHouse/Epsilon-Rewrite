@@ -6,16 +6,16 @@
     "client.MixinKeyboardInput",
     "client.MixinMinecraft",
     "debug.MixinGlDebug",
+    "entity.MixinEntity",
+    "entity.MixinLivingEntity",
+    "entity.MixinLocalPlayer",
+    "entity.MixinPlayer",
     "level.MixinBlockCollisions",
     "level.MixinClientLevel",
-    "level.MixinEntity",
     "level.MixinFlowingFluid",
     "level.MixinItem",
-    "level.MixinLivingEntity",
-    "level.MixinLocalPlayer",
     "level.MixinMobEffectFogEnvironment",
     "level.MixinMultiPlayerGameMode",
-    "level.MixinPlayer",
     "packet.MixinClientPacketListener",
     "packet.MixinConnection",
     "render.MixinAvatarRenderer",
@@ -35,5 +35,8 @@
   },
   "overwrites": {
     "requireAnnotations": true
-  }
+  },
+  "mixins": [
+    "entity.MixinFireworkRocketEntity"
+  ]
 }

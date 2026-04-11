@@ -6,10 +6,7 @@ import com.github.epsilon.modules.Module;
 import com.github.epsilon.settings.impl.BoolSetting;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
 import net.neoforged.bus.api.SubscribeEvent;
-
-import java.util.Random;
 
 public class Disabler extends Module {
 

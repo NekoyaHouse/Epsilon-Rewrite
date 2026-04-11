@@ -18,6 +18,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.FireworkRocketEntity;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
@@ -232,8 +233,12 @@ public class ElytraFly extends Module {
         mc.gameMode.handleContainerInput(containerId, containerSlot, 0, ContainerInput.PICKUP, mc.player);
     }
 
+    public boolean isFirework(FireworkRocketEntity firework) {
+        return firework.getOwner() == mc.player;
+    }
+
     public boolean isArmorMode() {
-        return mode.is(Mode.Control) && armored.getValue();
+        return isEnabled() && mode.is(Mode.Control) && armored.getValue();
     }
 
 }

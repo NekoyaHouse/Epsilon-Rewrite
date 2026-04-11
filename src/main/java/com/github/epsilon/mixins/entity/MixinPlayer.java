@@ -1,4 +1,4 @@
-package com.github.epsilon.mixins.level;
+package com.github.epsilon.mixins.entity;
 
 import com.github.epsilon.managers.RotationManager;
 import com.github.epsilon.modules.impl.player.AutoSprint;
