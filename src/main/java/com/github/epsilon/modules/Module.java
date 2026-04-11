@@ -25,6 +25,8 @@ public class Module {
 
     private BindMode bindMode = BindMode.Toggle;
 
+    private final BoolSetting hidden;
+
     private boolean enabled;
 
     public final List<Setting<?>> settings = new ArrayList<>();
@@ -34,10 +36,10 @@ public class Module {
     public TranslateComponent translateComponent;
 
     public Module(String name, Category category) {
+        mc = Minecraft.getInstance();
         this.name = name;
         this.category = category;
-        // TranslateComponent creation is deferred to initI18n()
-        mc = Minecraft.getInstance();
+        hidden = boolSetting("Hidden", false);
     }
 
     /**
@@ -142,12 +144,8 @@ public class Module {
         return translateComponent != null ? translateComponent.getTranslatedName() : name;
     }
 
-    public String getDescription() {
-        return name;
-    }
-
-    public String getChineseDescription() {
-        return name;
+    public boolean isHidden() {
+        return hidden.getValue();
     }
 
     protected IntSetting intSetting(String name, int defaultValue, int min, int max, int step, Setting.Dependency dependency) {

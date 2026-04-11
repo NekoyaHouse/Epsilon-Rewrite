@@ -7,7 +7,7 @@ public record ModuleViewModel(Module module, String displayName, String descript
                               String searchText) {
     public static ModuleViewModel from(Module module) {
         String displayName = module.getTranslatedName();
-        String description = module.getDescription();
+        String description = module.getName();
         String categoryName = module.category != null ? module.category.getName() : "";
         String searchText = (displayName + " " + description + " " + categoryName).toLowerCase();
         return new ModuleViewModel(module, displayName, description, module.isEnabled(), module.category, searchText);

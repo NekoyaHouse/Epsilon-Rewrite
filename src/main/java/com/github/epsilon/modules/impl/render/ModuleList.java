@@ -151,7 +151,7 @@ public class ModuleList extends HudModule {
         }
 
         List<Module> activeModules = allModules.stream()
-                .filter(m -> moduleAlphaMap.getOrDefault(m, 0.0f) > 0.001f)
+                .filter(m -> !m.isHidden() && moduleAlphaMap.getOrDefault(m, 0.0f) > 0.001f)
                 .sorted(Comparator.comparingInt(m -> -getTextWidth(m)))
                 .toList();
 
