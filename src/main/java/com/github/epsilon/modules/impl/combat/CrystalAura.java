@@ -1,6 +1,5 @@
 package com.github.epsilon.modules.impl.combat;
 
-import com.github.epsilon.Epsilon;
 import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.managers.RenderManager;
 import com.github.epsilon.managers.RotationManager;
@@ -129,7 +128,7 @@ public class CrystalAura extends Module {
     private float renderSelfDamage;
     private boolean renderHasTarget;
 
-    private final Supplier<TextRenderer> rectRenderer = Suppliers.memoize(() -> new TextRenderer(128 * 1024));
+    private final Supplier<TextRenderer> textRenderer = Suppliers.memoize(() -> new TextRenderer(128 * 1024));
 
     @Override
     protected void onEnable() {
@@ -693,7 +692,7 @@ public class CrystalAura extends Module {
         }
         String text = sb.toString();
 
-        TextRenderer textRenderer = rectRenderer.get();
+        TextRenderer textRenderer = this.textRenderer.get();
         float textScale = 1.0f;
         float textWidth = textRenderer.getWidth(text, textScale);
         float textHeight = textRenderer.getHeight(textScale);
@@ -707,7 +706,7 @@ public class CrystalAura extends Module {
         Color textColor = new Color(255, 255, 255, Math.max(0, Math.min(255, (int) (220 * renderScale))));
 
         RenderManager.INSTANCE.applyRenderAfterWorld(() -> {
-            TextRenderer tr = rectRenderer.get();
+            TextRenderer tr = this.textRenderer.get();
             tr.addText(text, textX, textY, textScale, textColor);
             tr.drawAndClear();
         });
