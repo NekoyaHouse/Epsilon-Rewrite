@@ -21,13 +21,11 @@ public class Disabler extends Module {
 
 
     private final BoolSetting badPacketsA = boolSetting("Bad Packets A", true);
-    private final BoolSetting duplicateRotPlace = boolSetting("Duplicate Rot Place", false);
     private final BoolSetting aimModulo360 = boolSetting("Aim Modulo 360", false);
     private final BoolSetting aimDuplicateLook = boolSetting("Aim Duplicate Look", false);
 
     private int lastSlot = -1;
-    private float playerYaw, lastYaw, lastPitch;
-    private float yawOffset = 0.0f;
+    private float lastYaw, lastPitch;
 
     @SubscribeEvent
     public void onPacket(PacketEvent.Send event) {
@@ -47,10 +45,7 @@ public class Disabler extends Module {
             if (event.getPacket() instanceof ServerboundMovePlayerPacket packet && packet.hasRotation()) {
                 float yaw = packet.yRot;
                 if (yaw < 360.0f && yaw > -360.0f) {
-                    yawOffset = 720f;
-                    packet.yRot = yaw + yawOffset;
-                } else {
-                    yawOffset = 0.0f;
+                    packet.yRot = yaw + 720f;
                 }
                 return;
             }
@@ -63,45 +58,6 @@ public class Disabler extends Module {
                 }
                 lastYaw = packet.yRot;
                 lastPitch = packet.xRot;
-                return;
-            }
-        }
-
-        if (duplicateRotPlace.getValue()) {
-            if (event.getPacket() instanceof ServerboundMovePlayerPacket packet && packet.hasRotation()) {
-                float originalYaw = packet.yRot;
-
-                if (originalYaw < 360.0F && originalYaw > -360.0F) {
-                    yawOffset = 720f;
-                    packet.yRot = originalYaw + yawOffset;
-                } else {
-                    yawOffset = 0.0f;
-                }
-
-                float lastPlayerYaw = this.playerYaw;
-                this.playerYaw = packet.yRot;
-
-                float deltaYaw = Math.abs(this.playerYaw - lastPlayerYaw);
-                if (deltaYaw > 2.0F) {
-                    Random random = new Random();
-                    float perturbation = 0.005f + random.nextFloat() * 0.015f;
-                    if (random.nextBoolean()) {
-                        packet.yRot = packet.yRot + perturbation;
-                        yawOffset += perturbation;
-                    } else {
-                        packet.yRot = packet.yRot - perturbation;
-                        yawOffset -= perturbation;
-                    }
-                }
-            }
-        }
-
-        if (event.getPacket() instanceof ServerboundUseItemPacket packet) {
-            if ((aimModulo360.getValue() || duplicateRotPlace.getValue()) && yawOffset != 0.0f) {
-                float yaw = packet.yRot;
-                if (yaw < 360.0f && yaw > -360.0f) {
-                    packet.yRot = yaw + yawOffset;
-                }
             }
         }
     }
