@@ -78,14 +78,16 @@ public class ElytraFly extends Module {
     }
 
     private void updateFirework() {
-        if (!canGlide() || mc.player.onGround()) {
+        FindItemResult elytra = InvUtils.find(Items.ELYTRA);
+
+        if (!canGlide(elytra.found()) || mc.player.onGround()) {
             hasFirstFirework = false;
             return;
         }
 
         if (armored.getValue()) {
             if (canFFlying()) {
-                jiaFei();
+                jiaFei(elytra.slot());
             }
         } else {
             if (canFFlying()) {
@@ -115,8 +117,8 @@ public class ElytraFly extends Module {
         return false;
     }
 
-    private boolean canGlide() {
-        if (armored.getValue() && mode.is(Mode.Firework) && hasElytra()) {
+    private boolean canGlide(boolean hasElytra) {
+        if (armored.getValue() && hasElytra) {
             return true;
         }
         for (EquipmentSlot slot : EquipmentSlot.VALUES) {
@@ -217,26 +219,8 @@ public class ElytraFly extends Module {
         return new Vec3(x / length, 0, z / length);
     }
 
-    private boolean hasElytra() {
-        return findElytra() != -1;
-    }
-
-    private int findElytra() {
-        return InvUtils.find(Items.ELYTRA).slot();
-    }
-
-    private int toContainerSlot(int slot) {
-        if (slot < 9) {
-            return slot + 36;
-        }
-        return slot;
-    }
-
-    private void jiaFei() {
-        int elytraSlot = findElytra();
-        if (elytraSlot < 0) return;
-
-        int elytra = toContainerSlot(elytraSlot);
+    private void jiaFei(int elytraSlot) {
+        int elytra = elytraSlot < 9 ? elytraSlot + 36 : elytraSlot;
 
         swapArmor(elytra);
 
