@@ -1,7 +1,6 @@
 package com.github.epsilon.mixins.render;
 
 import com.github.epsilon.events.bus.EpsilonEventBus;
-import com.github.epsilon.events.render.ComputeFovEvent;
 import com.github.epsilon.events.render.RenderFrameEvent;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.GameRenderer;
@@ -9,7 +8,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(GameRenderer.class)
 public class MixinGameRenderer {

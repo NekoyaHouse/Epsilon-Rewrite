@@ -5,7 +5,6 @@ import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.events.bus.EpsilonEventBus;
 import com.github.epsilon.events.bus.EventHandler;
-import com.github.epsilon.events.render.Render2DEvent;
 import com.github.epsilon.events.render.RenderFrameEvent;
 import com.github.epsilon.gui.panel.PanelScreen;
 import com.github.epsilon.modules.HudModule;
@@ -81,7 +80,6 @@ public class ModuleManager {
                 // Render
                 CameraClip.INSTANCE,
                 ESP.INSTANCE,
-                FOV.INSTANCE,
                 Fullbright.INSTANCE,
                 NameTags.INSTANCE,
                 NoRender.INSTANCE,
