@@ -1,0 +1,37 @@
+accessWidener v2 official
+
+# MultiPlayerGameMode
+accessible field net/minecraft/client/multiplayer/MultiPlayerGameMode destroyProgress F
+accessible method net/minecraft/client/multiplayer/MultiPlayerGameMode ensureHasSentCarriedItem ()V
+
+# ServerboundMovePlayerPacket
+mutable field net/minecraft/network/protocol/game/ServerboundMovePlayerPacket xRot F
+accessible field net/minecraft/network/protocol/game/ServerboundMovePlayerPacket xRot F
+mutable field net/minecraft/network/protocol/game/ServerboundMovePlayerPacket yRot F
+accessible field net/minecraft/network/protocol/game/ServerboundMovePlayerPacket yRot F
+mutable field net/minecraft/network/protocol/game/ServerboundMovePlayerPacket onGround Z
+accessible field net/minecraft/network/protocol/game/ServerboundMovePlayerPacket onGround Z
+
+# ServerboundUseItemPacket
+mutable field net/minecraft/network/protocol/game/ServerboundUseItemPacket yRot F
+accessible field net/minecraft/network/protocol/game/ServerboundUseItemPacket yRot F
+mutable field net/minecraft/network/protocol/game/ServerboundUseItemPacket xRot F
+accessible field net/minecraft/network/protocol/game/ServerboundUseItemPacket xRot F
+
+# LocalPlayer
+accessible field net/minecraft/client/player/LocalPlayer positionReminder I
+
+# ChatComponent
+accessible method net/minecraft/client/gui/components/ChatComponent addMessage (Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V
+
+# ClientLevel
+accessible method net/minecraft/client/multiplayer/ClientLevel getBlockStatePredictionHandler ()Lnet/minecraft/client/multiplayer/prediction/BlockStatePredictionHandler;
+
+# RenderPipelines snippets
+accessible field net/minecraft/client/renderer/RenderPipelines MATRICES_PROJECTION_SNIPPET Lcom/mojang/blaze3d/pipeline/RenderPipeline$Snippet;
+accessible field net/minecraft/client/renderer/RenderPipelines GUI_TEXTURED_SNIPPET Lcom/mojang/blaze3d/pipeline/RenderPipeline$Snippet;
+accessible field net/minecraft/client/renderer/RenderPipelines DEBUG_FILLED_SNIPPET Lcom/mojang/blaze3d/pipeline/RenderPipeline$Snippet;
+accessible field net/minecraft/client/renderer/RenderPipelines LINES_SNIPPET Lcom/mojang/blaze3d/pipeline/RenderPipeline$Snippet;
+
+# RenderType.create
+accessible method net/minecraft/client/renderer/rendertype/RenderType create (Ljava/lang/String;Lnet/minecraft/client/renderer/rendertype/RenderSetup;)Lnet/minecraft/client/renderer/rendertype/RenderType;

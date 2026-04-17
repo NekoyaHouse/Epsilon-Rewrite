@@ -1,0 +1,9 @@
+package com.github.epsilon.events.movement;
+
+public class StrafeEvent {
+    private float yaw;
+    public StrafeEvent(float yaw) { this.yaw = yaw; }
+    public float getYaw() { return yaw; }
+    public void setYaw(float yaw) { this.yaw = yaw; }
+}
+

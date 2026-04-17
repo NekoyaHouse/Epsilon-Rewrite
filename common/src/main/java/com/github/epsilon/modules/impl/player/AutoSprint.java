@@ -1,0 +1,36 @@
+package com.github.epsilon.modules.impl.player;
+
+import com.github.epsilon.modules.Category;
+import com.github.epsilon.modules.Module;
+import com.github.epsilon.modules.impl.combat.KillAura;
+import com.github.epsilon.settings.impl.BoolSetting;
+import com.github.epsilon.settings.impl.DoubleSetting;
+import com.github.epsilon.utils.player.MoveUtils;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
+
+public class AutoSprint extends Module {
+
+    public static final AutoSprint INSTANCE = new AutoSprint();
+
+    private AutoSprint() {
+        super("Auto Sprint", Category.PLAYER);
+    }
+
+    public final BoolSetting keepSprint = boolSetting("Keep Sprint", true);
+    public final DoubleSetting motion = doubleSetting("Motion", 1.0, 0.0, 1.0, 0.1, keepSprint::getValue);
+    private final BoolSetting stopWhileUsing = boolSetting("Stop While Using", false);
+    private final BoolSetting pauseWhileAura = boolSetting("Pause While Aura", false);
+
+    @EventHandler
+    private void onClientTick(TickEvent.Pre event) {
+        if (nullCheck()) return;
+        mc.player.setSprinting(
+                MoveUtils.isMoving()
+                        && mc.player.getFoodData().getFoodLevel() > 6
+                        && !mc.player.horizontalCollision
+                        && (!mc.player.isUsingItem() || !stopWhileUsing.getValue())
+                        && (!pauseWhileAura.getValue() || !KillAura.INSTANCE.isEnabled() || KillAura.INSTANCE.target == null));
+    }
+
+}
