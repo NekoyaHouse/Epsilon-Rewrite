@@ -14,8 +14,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.render.Render3DEvent;
 import org.joml.Vector4d;
 
 import java.awt.*;
@@ -40,8 +40,8 @@ public class NameTags extends Module {
         super("Name Tags", Category.RENDER);
     }
 
-    @SubscribeEvent
-    public void onRender3D(RenderLevelStageEvent.AfterLevel event) {
+    @EventHandler
+    public void onRender3D(Render3DEvent event) {
         if (nullCheck()) return;
 
         float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);

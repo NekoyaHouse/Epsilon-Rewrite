@@ -1,10 +1,10 @@
 package com.github.epsilon.modules.impl.render;
 
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.render.ComputeFovEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.settings.impl.IntSetting;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ViewportEvent;
 
 public class FOV extends Module {
 
@@ -16,9 +16,8 @@ public class FOV extends Module {
         super("FOV", Category.RENDER);
     }
 
-    @SubscribeEvent
-    private void onComputeFov(ViewportEvent.ComputeFov event) {
+    @EventHandler
+    private void onComputeFov(ComputeFovEvent event) {
         event.setFOV(fovModifier.getValue());
     }
-
 }

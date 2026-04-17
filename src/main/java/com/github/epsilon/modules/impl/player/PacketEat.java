@@ -1,13 +1,13 @@
 package com.github.epsilon.modules.impl.player;
 
-import com.github.epsilon.events.PacketEvent;
+import com.github.epsilon.events.network.PacketEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 
 public class PacketEat extends Module {
 
@@ -19,19 +19,19 @@ public class PacketEat extends Module {
 
     private ItemStack item;
 
-    @SubscribeEvent
-    private void onClientTickPost(ClientTickEvent.Post event) {
+    @EventHandler
+    private void onClientTickPost(TickEvent.Post event) {
         if (nullCheck()) return;
         if (mc.player.isUsingItem()) {
             item = mc.player.getUseItem();
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onPacket(PacketEvent.Send event) {
         if (event.getPacket() instanceof ServerboundPlayerActionPacket packet && packet.getAction() == ServerboundPlayerActionPacket.Action.RELEASE_USE_ITEM) {
             if (item.get(DataComponents.FOOD).canAlwaysEat()) {
-                event.setCanceled(true);
+                event.setCancelled(true);
             }
         }
     }

@@ -7,8 +7,8 @@ import com.github.epsilon.settings.impl.StringSetting;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.world.entity.Entity;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -73,8 +73,8 @@ public class FakePlayer extends Module {
         deathTime = 0;
     }
 
-    @SubscribeEvent
-    private void onClientTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    private void onClientTick(TickEvent.Pre event) {
         if (nullCheck()) return;
 
         if (record.getValue()) {

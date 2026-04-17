@@ -1,5 +1,9 @@
 package com.github.epsilon.managers;
 
+import com.github.epsilon.events.bus.EpsilonEventBus;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.bus.EventPriority;
+import com.github.epsilon.events.tick.TickEvent;
 import com.github.epsilon.modules.impl.combat.AntiBot;
 import com.github.epsilon.utils.rotation.RotationUtils;
 import net.minecraft.client.Minecraft;
@@ -9,10 +13,6 @@ import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.bus.api.EventPriority;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.common.NeoForge;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -28,11 +28,11 @@ public class TargetManager {
     private LivingEntity sharedTarget;
 
     private TargetManager() {
-        NeoForge.EVENT_BUS.register(this);
+        EpsilonEventBus.INSTANCE.subscribe(this);
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    private void onTick(ClientTickEvent.Pre event) {
+    @EventHandler(priority = EventPriority.HIGHEST)
+    private void onTick(TickEvent.Pre event) {
         if (mc.player == null || mc.level == null) {
             sharedTarget = null;
             return;
@@ -186,6 +186,3 @@ public class TargetManager {
         }
     }
 }
-
-
-

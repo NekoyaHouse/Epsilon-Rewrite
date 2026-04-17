@@ -13,10 +13,10 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RenderFrameEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
+import com.github.epsilon.events.render.RenderFrameEvent;
+import com.github.epsilon.events.render.Render3DEvent;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -501,8 +501,8 @@ public class AimAssist extends Module {
         resetAllStates();
     }
 
-    @SubscribeEvent
-    public void onTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    public void onTick(TickEvent.Pre event) {
         if (shouldResetStates()) {
             resetAllStates();
             return;
@@ -545,8 +545,8 @@ public class AimAssist extends Module {
         updateEspAlpha();
     }
 
-    @SubscribeEvent
-    public void onRenderFrame(RenderFrameEvent.Pre event) {
+    @EventHandler
+    public void onRenderFrame(com.github.epsilon.events.render.RenderFrameEvent.Pre event) {
         if (shouldSkipRender()) return;
 
         if (shouldTakeControl()) {
@@ -1124,8 +1124,8 @@ public class AimAssist extends Module {
         return true;
     }
 
-    @SubscribeEvent
-    public void onRender3D(RenderLevelStageEvent.AfterLevel event) {
+    @EventHandler
+    public void onRender3D(Render3DEvent event) {
         if (nullCheck()) return;
         if (!lockedEsp.getValue()) return;
         if (!lockTarget.getValue()) return;

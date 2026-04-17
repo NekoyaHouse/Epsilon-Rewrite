@@ -22,8 +22,8 @@ import net.minecraft.world.entity.projectile.FireworkRocketEntity;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 import org.joml.Vector2f;
 
 public class ElytraFly extends Module {
@@ -62,8 +62,8 @@ public class ElytraFly extends Module {
         timer.setMs(917813L);
     }
 
-    @SubscribeEvent
-    private void onTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    private void onTick(TickEvent.Pre event) {
         if (nullCheck()) return;
 
         switch (mode.getValue()) {

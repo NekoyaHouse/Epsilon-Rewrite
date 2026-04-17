@@ -1,22 +1,26 @@
 package com.github.epsilon.managers.network;
 
-import com.github.epsilon.Epsilon;
-import com.github.epsilon.events.WorldEvent;
+import com.github.epsilon.events.bus.EpsilonEventBus;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.world.WorldEvent;
 import com.github.epsilon.utils.player.ChatUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.*;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static com.github.epsilon.Epsilon.mc;
 
-@EventBusSubscriber(modid = Epsilon.MODID, value = Dist.CLIENT)
 public class ClientboundPacketManager {
+
+    public static final ClientboundPacketManager INSTANCE = new ClientboundPacketManager();
+
     public static LinkedBlockingQueue<Packet> packets = new LinkedBlockingQueue<>();
+
+    private ClientboundPacketManager() {
+        EpsilonEventBus.INSTANCE.subscribe(this);
+    }
 
     public static void flush() {
         if (mc.getConnection() != null)
@@ -52,8 +56,8 @@ public class ClientboundPacketManager {
                 && !(packet instanceof ClientboundSetScorePacket);
     }
 
-    @SubscribeEvent
-    private static void onWorldChange(WorldEvent event) {
+    @EventHandler
+    private void onWorldChange(WorldEvent event) {
         shouldFlush = true;
         tracking = false;
     }
@@ -79,5 +83,4 @@ public class ClientboundPacketManager {
         }
         return false;
     }
-
 }

@@ -6,8 +6,8 @@ import com.github.epsilon.modules.Module;
 import com.github.epsilon.settings.impl.EnumSetting;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 
 public class Fullbright extends Module {
 
@@ -34,8 +34,8 @@ public class Fullbright extends Module {
         mc.player.removeEffect(MobEffects.NIGHT_VISION);
     }
 
-    @SubscribeEvent
-    public void onTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    public void onTick(TickEvent.Pre event) {
         if (nullCheck() || mode.is(Mode.Gamma)) return;
         mc.player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, -1, 0));
     }

@@ -1,6 +1,6 @@
 package com.github.epsilon.modules.impl.player;
 
-import com.github.epsilon.events.SlowdownEvent;
+import com.github.epsilon.events.movement.SlowdownEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.settings.impl.BoolSetting;
@@ -8,7 +8,7 @@ import com.github.epsilon.settings.impl.EnumSetting;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.neoforged.bus.api.SubscribeEvent;
+import com.github.epsilon.events.bus.EventHandler;
 
 public class NoSlow extends Module {
     public static final NoSlow INSTANCE = new NoSlow();
@@ -34,7 +34,7 @@ public class NoSlow extends Module {
         onGroundTick = 0;
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onSlowdown(SlowdownEvent event) {
         if (nullCheck() || (checkFood() && mc.player.getUseItemRemainingTicks() > 30)) return;
 

@@ -1,6 +1,6 @@
 package com.github.epsilon.modules.impl.player;
 
-import com.github.epsilon.events.KeyboardInputEvent;
+import com.github.epsilon.events.input.KeyboardInputEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import net.minecraft.util.Mth;

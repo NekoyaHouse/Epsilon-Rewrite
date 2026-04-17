@@ -8,8 +8,8 @@ import com.github.epsilon.utils.player.InvHelper;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 
 public class AutoTotem extends Module {
 
@@ -23,8 +23,8 @@ public class AutoTotem extends Module {
         super("Auto Totem", Category.COMBAT);
     }
 
-    @SubscribeEvent
-    public void onTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    public void onTick(TickEvent.Pre event) {
         if (nullCheck() || mc.gameMode == null) return;
 
         if (!shouldHoldTotem()) {

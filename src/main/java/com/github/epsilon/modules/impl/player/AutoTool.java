@@ -11,8 +11,8 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.AirBlock;
 import net.minecraft.world.level.block.EnderChestBlock;
 import net.minecraft.world.phys.BlockHitResult;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,8 +35,8 @@ public class AutoTool extends Module {
     private long swapDelay;
     private final List<Integer> lastItem = new ArrayList<>();
 
-    @SubscribeEvent
-    public void onClientTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    public void onClientTick(TickEvent.Pre event) {
         if (nullCheck()) return;
         if (!(mc.hitResult instanceof BlockHitResult result)) return;
 

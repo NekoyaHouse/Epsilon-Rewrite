@@ -5,8 +5,8 @@ import com.github.epsilon.modules.Module;
 import com.github.epsilon.settings.impl.EnumSetting;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.util.Mth;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 
 public class VClip extends Module {
 
@@ -24,8 +24,8 @@ public class VClip extends Module {
 
     private final EnumSetting<Mode> mode = enumSetting("Mode", Mode.Jump);
 
-    @SubscribeEvent
-    private void onTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    private void onTick(TickEvent.Pre event) {
         if (nullCheck()) return;
 
         toggle();

@@ -1,6 +1,6 @@
 package com.github.epsilon.modules.impl.player;
 
-import com.github.epsilon.events.PacketEvent;
+import com.github.epsilon.events.network.PacketEvent;
 import com.github.epsilon.gui.panel.PanelScreen;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
@@ -23,8 +23,8 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.equipment.Equippable;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
@@ -165,7 +165,7 @@ public class InvManager extends Module {
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     public void onPacket(PacketEvent.Send event) {
         if (event.getPacket() instanceof ServerboundContainerClosePacket) {
             this.inventoryOpen = false;
@@ -230,8 +230,8 @@ public class InvManager extends Module {
         return true;
     }
 
-    @SubscribeEvent
-    private void onTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    private void onTick(TickEvent.Pre event) {
         if (nullCheck()) return;
 
         if (!(mc.screen instanceof PanelScreen) && !this.checkConfig()) {

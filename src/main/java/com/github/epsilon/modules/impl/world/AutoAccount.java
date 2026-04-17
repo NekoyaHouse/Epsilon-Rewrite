@@ -1,6 +1,6 @@
 package com.github.epsilon.modules.impl.world;
 
-import com.github.epsilon.events.PacketEvent;
+import com.github.epsilon.events.network.PacketEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.modules.impl.combat.AimAssist;
@@ -18,9 +18,9 @@ import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.scores.*;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
+import com.github.epsilon.events.world.EntityJoinWorldEvent;
 
 import java.util.Collection;
 import java.util.Random;
@@ -63,14 +63,14 @@ public class AutoAccount extends Module {
         mc.options.pauseOnLostFocus = true;
     }
 
-    @SubscribeEvent
-    private void onEntityJoinLevel(EntityJoinLevelEvent event) {
+    @EventHandler
+    private void onEntityJoinLevel(EntityJoinWorldEvent event) {
         if (event.getEntity() != mc.player) return;
         timer.reset();
     }
 
-    @SubscribeEvent
-    private void onTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    private void onTick(TickEvent.Pre event) {
         if (nullCheck()) return;
 
         mc.options.pauseOnLostFocus = false;
@@ -249,7 +249,7 @@ public class AutoAccount extends Module {
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onPacket(PacketEvent.Receive event) {
         if (mc.player == null) return;
 

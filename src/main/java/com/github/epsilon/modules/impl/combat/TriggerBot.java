@@ -18,8 +18,8 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 
 /*
  * Author Moli
@@ -49,8 +49,8 @@ public class TriggerBot extends Module {
         delay = 0;
     }
 
-    @SubscribeEvent
-    public void onTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    public void onTick(TickEvent.Pre event) {
         if (nullCheck() || mc.screen != null) return;
 
         if (mc.player.isUsingItem() || mc.player.isBlocking()) {

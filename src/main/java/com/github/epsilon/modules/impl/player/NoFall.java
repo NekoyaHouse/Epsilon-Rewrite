@@ -1,13 +1,13 @@
 package com.github.epsilon.modules.impl.player;
 
-import com.github.epsilon.events.KeyboardInputEvent;
-import com.github.epsilon.events.MotionEvent;
+import com.github.epsilon.events.input.KeyboardInputEvent;
+import com.github.epsilon.events.movement.MotionEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.settings.impl.DoubleSetting;
 import com.github.epsilon.settings.impl.EnumSetting;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.neoforged.bus.api.SubscribeEvent;
+import com.github.epsilon.events.bus.EventHandler;
 
 public class NoFall extends Module {
 
@@ -29,7 +29,7 @@ public class NoFall extends Module {
     private boolean flag;
     private boolean jump;
 
-    @SubscribeEvent
+    @EventHandler
     private void onMotion(MotionEvent event) {
         if (nullCheck()) return;
 
@@ -50,7 +50,7 @@ public class NoFall extends Module {
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onMovementInputEvent(KeyboardInputEvent event) {
         if (jump) {
             event.setJump(true);

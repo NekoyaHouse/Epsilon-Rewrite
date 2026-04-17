@@ -6,8 +6,8 @@ import com.github.epsilon.modules.impl.combat.KillAura;
 import com.github.epsilon.settings.impl.BoolSetting;
 import com.github.epsilon.settings.impl.DoubleSetting;
 import com.github.epsilon.utils.player.MoveUtils;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 
 public class AutoSprint extends Module {
 
@@ -22,8 +22,8 @@ public class AutoSprint extends Module {
     private final BoolSetting stopWhileUsing = boolSetting("Stop While Using", false);
     private final BoolSetting pauseWhileAura = boolSetting("Pause While Aura", false);
 
-    @SubscribeEvent
-    private void onClientTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    private void onClientTick(TickEvent.Pre event) {
         if (nullCheck()) return;
         mc.player.setSprinting(
                 MoveUtils.isMoving()

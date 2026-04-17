@@ -1,9 +1,11 @@
-package com.github.epsilon.events;
+package com.github.epsilon.events.input;
 
 import net.minecraft.world.entity.player.Input;
-import net.neoforged.bus.api.Event;
 
-public class KeyboardInputEvent extends Event {
+/**
+ * Fired when keyboard input is processed.
+ */
+public class KeyboardInputEvent {
 
     private float forward;
     private float strafe;
@@ -33,44 +35,16 @@ public class KeyboardInputEvent extends Event {
         );
     }
 
-    public float getForward() {
-        return this.forward;
-    }
+    public float getForward() { return this.forward; }
+    public float getStrafe() { return this.strafe; }
+    public boolean isJump() { return this.jump; }
+    public boolean isSneak() { return this.sneak; }
+    public boolean isSprint() { return sprint; }
 
-    public float getStrafe() {
-        return this.strafe;
-    }
-
-    public boolean isJump() {
-        return this.jump;
-    }
-
-    public boolean isSneak() {
-        return this.sneak;
-    }
-
-    public void setForward(float forward) {
-        this.forward = forward;
-    }
-
-    public void setStrafe(float strafe) {
-        this.strafe = strafe;
-    }
-
-    public void setJump(boolean jump) {
-        this.jump = jump;
-    }
-
-    public void setSneak(boolean sneak) {
-        this.sneak = sneak;
-    }
-
-    public boolean isSprint() {
-        return sprint;
-    }
-
-    public void setSprint(boolean sprint) {
-        this.sprint = sprint;
-    }
-
+    public void setForward(float forward) { this.forward = forward; }
+    public void setStrafe(float strafe) { this.strafe = strafe; }
+    public void setJump(boolean jump) { this.jump = jump; }
+    public void setSneak(boolean sneak) { this.sneak = sneak; }
+    public void setSprint(boolean sprint) { this.sprint = sprint; }
 }
+

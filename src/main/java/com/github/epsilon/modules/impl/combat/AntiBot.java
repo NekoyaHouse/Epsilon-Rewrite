@@ -1,6 +1,6 @@
 package com.github.epsilon.modules.impl.combat;
 
-import com.github.epsilon.events.PacketEvent;
+import com.github.epsilon.events.network.PacketEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
@@ -9,9 +9,8 @@ import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.GameType;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -35,8 +34,8 @@ public class AntiBot extends Module {
         return (ids.contains(entity.getId()) || !mc.getConnection().getOnlinePlayerIds().contains(entity.getUUID())) && isEnabled();
     }
 
-    @SubscribeEvent
-    public void onRespawn(PlayerTickEvent.Pre event) {
+    @EventHandler
+    public void onRespawn(TickEvent.Pre event) {
         if (mc.player == null) return;
         if (mc.player.tickCount <= 1) {
             ids.clear();
@@ -44,8 +43,8 @@ public class AntiBot extends Module {
         }
     }
 
-    @SubscribeEvent
-    public void onMotion(ClientTickEvent.Pre event) {
+    @EventHandler
+    public void onMotion(TickEvent.Pre event) {
         for (Map.Entry<UUID, Long> entry : uuids.entrySet()) {
             if (System.currentTimeMillis() - entry.getValue() > 500L) {
                 uuids.remove(entry.getKey());
@@ -53,7 +52,7 @@ public class AntiBot extends Module {
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     public void onPacket(PacketEvent.Receive event) {
         if (event.getPacket() instanceof ClientboundPlayerInfoUpdatePacket packet) {
             if (packet.actions().contains(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER)) {

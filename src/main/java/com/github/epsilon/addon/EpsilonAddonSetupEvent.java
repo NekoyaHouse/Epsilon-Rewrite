@@ -1,10 +1,8 @@
 package com.github.epsilon.addon;
 
-import net.neoforged.bus.api.Event;
-
 import java.util.ArrayList;
 
-public class EpsilonAddonSetupEvent extends Event {
+public class EpsilonAddonSetupEvent {
 
     public final ArrayList<EpsilonAddon> addons = new ArrayList<>();
 

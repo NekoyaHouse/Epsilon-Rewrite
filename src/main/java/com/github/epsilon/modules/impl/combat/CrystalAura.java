@@ -35,9 +35,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
+import com.github.epsilon.events.render.Render3DEvent;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 
@@ -143,8 +143,8 @@ public class CrystalAura extends Module {
         resetRenderState();
     }
 
-    @SubscribeEvent
-    private void onTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    private void onTick(TickEvent.Pre event) {
         if (nullCheck()) return;
         if (eatingPause.getValue() && mc.player.isUsingItem()) return;
 
@@ -640,8 +640,8 @@ public class CrystalAura extends Module {
         return Math.clamp((float) elapsed / Math.max(1, lengthMs), 0.0f, 1.0f);
     }
 
-    @SubscribeEvent
-    private void onRender3D(RenderLevelStageEvent.AfterLevel event) {
+    @EventHandler
+    private void onRender3D(Render3DEvent event) {
         if (nullCheck()) return;
         if (renderPrevPos == null || renderCurrentPos == null) return;
 

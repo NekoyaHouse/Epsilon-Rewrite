@@ -1,7 +1,7 @@
 package com.github.epsilon.modules.impl.combat;
 
-import com.github.epsilon.events.KeyboardInputEvent;
-import com.github.epsilon.events.PacketEvent;
+import com.github.epsilon.events.input.KeyboardInputEvent;
+import com.github.epsilon.events.network.PacketEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.settings.impl.BoolSetting;
@@ -19,8 +19,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -91,14 +91,14 @@ public class Velocity extends Module {
         clear(true);
     }
 
-    @SubscribeEvent
+    @EventHandler
     public void onPacket(PacketEvent.Receive event) {
         switch (mode.getValue()) {
             case Cancel -> {
                 if (nullCheck()) return;
 
                 if (serverMotion.getValue() && event.getPacket() instanceof ClientboundSetEntityMotionPacket packet && packet.id() == mc.player.getId()) {
-                    event.setCanceled(true);
+                    event.setCancelled(true);
                     return;
                 }
 
@@ -126,7 +126,7 @@ public class Velocity extends Module {
                         if (!lag) {
                             stage = VelocityStage.DELAY;
                             velocityTime = System.currentTimeMillis();
-                            event.setCanceled(true);
+                            event.setCancelled(true);
                             velocity = movement;
                         } else {
                             lag = false;
@@ -134,7 +134,7 @@ public class Velocity extends Module {
                     } else {
                         velocity = movement;
                         stage = VelocityStage.LAG;
-                        event.setCanceled(true);
+                        event.setCancelled(true);
                     }
                     return;
                 }
@@ -181,7 +181,7 @@ public class Velocity extends Module {
                     }
 
                     packets.add(packet);
-                    event.setCanceled(true);
+                    event.setCancelled(true);
                 }
             }
             case Legit -> {
@@ -192,8 +192,8 @@ public class Velocity extends Module {
         }
     }
 
-    @SubscribeEvent
-    public void onPreTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    public void onPreTick(TickEvent.Pre event) {
         if (nullCheck()) return;
 
         switch (mode.getValue()) {
@@ -237,7 +237,7 @@ public class Velocity extends Module {
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     public void onKeyboardInput(KeyboardInputEvent event) {
         if (mode.is(Mode.NoXZ)) {
             if (stage == VelocityStage.DELAY && velocity != null && mc.hitResult instanceof EntityHitResult entityHitResult && entityHitResult.getEntity() instanceof Player player && !AntiBot.INSTANCE.isBot(player)) {

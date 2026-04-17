@@ -1,8 +1,8 @@
 package com.github.epsilon.modules.impl.player;
 
-import com.github.epsilon.events.KeyboardInputEvent;
-import com.github.epsilon.events.PacketEvent;
-import com.github.epsilon.events.TravelEvent;
+import com.github.epsilon.events.input.KeyboardInputEvent;
+import com.github.epsilon.events.network.PacketEvent;
+import com.github.epsilon.events.movement.TravelEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.settings.impl.EnumSetting;
@@ -10,8 +10,8 @@ import com.github.epsilon.utils.network.PacketUtils;
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.player.PlayerInteractEvent;
 
 public class Stuck extends Module {
 
@@ -40,17 +40,17 @@ public class Stuck extends Module {
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onKeyboardInput(KeyboardInputEvent event) {
         event.setForward(0);
         event.setStrafe(0);
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onPacket(PacketEvent.Send e) {
         if (mode.is(Mode.NoPacket)) {
             if (e.getPacket() instanceof ServerboundMovePlayerPacket || (e.getPacket() instanceof ClientboundSetEntityMotionPacket setEntityMotionPacket && setEntityMotionPacket.id() == mc.player.getId())) {
-                e.setCanceled(true);
+                e.setCancelled(true);
             }
         }
         if (e.getPacket() instanceof ClientboundPlayerPositionPacket) {
@@ -58,16 +58,16 @@ public class Stuck extends Module {
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onMoveMath(TravelEvent event) {
         if (mode.is(Mode.CancelMove)) {
             if (mc.player.positionReminder < 19) {
-                event.setCanceled(true);
+                event.setCancelled(true);
             }
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onInteract(PlayerInteractEvent.RightClickItem event) {
         if (mode.is(Mode.NoPacket)) {
             if (mc.player.getYRot() != lastYaw || mc.player.getXRot() != lastPitch) {

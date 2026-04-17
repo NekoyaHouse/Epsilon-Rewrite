@@ -1,6 +1,6 @@
 package com.github.epsilon.modules.impl.player;
 
-import com.github.epsilon.events.MotionEvent;
+import com.github.epsilon.events.movement.MotionEvent;
 import com.github.epsilon.managers.RotationManager;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
@@ -30,10 +30,9 @@ import net.minecraft.world.level.block.*;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-import net.neoforged.neoforge.common.NeoForge;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
+import com.github.epsilon.events.render.Render3DEvent;
 import org.joml.Vector2f;
 
 import java.awt.*;
@@ -46,42 +45,43 @@ public class Scaffold extends Module {
 
     private Scaffold() {
         super("Scaffold", Category.PLAYER);
+    }
 
-        NeoForge.EVENT_BUS.addListener((RenderLevelStageEvent.AfterLevel event) -> {
-            if (nullCheck()) return;
+    @EventHandler
+    private void onRender3D(Render3DEvent event) {
+        if (nullCheck()) return;
 
-            if (!render.getValue() || renderBoxes.isEmpty()) return;
+        if (!render.getValue() || renderBoxes.isEmpty()) return;
 
-            long time = System.currentTimeMillis();
-            long fadeTime = this.fadeTime.getValue().longValue();
+        long time = System.currentTimeMillis();
+        long fadeTime = this.fadeTime.getValue().longValue();
 
-            renderBoxes.removeIf(box -> time - box.startTime() > fadeTime);
+        renderBoxes.removeIf(box -> time - box.startTime() > fadeTime);
 
-            for (RenderBox box : renderBoxes) {
-                long age = time - box.startTime();
-                float progress = Mth.clamp((float) age / fadeTime, 0.0f, 1.0f);
+        for (RenderBox box : renderBoxes) {
+            long age = time - box.startTime();
+            float progress = Mth.clamp((float) age / fadeTime, 0.0f, 1.0f);
 
-                double scale = 1.0;
-                if (box.shrink()) {
-                    scale = 1.0 - Easing.EASE_OUT_QUAD.getFunction().apply(progress);
-                    if (scale < 0) scale = 0;
-                }
-
-                float alphaFactor = box.fade() ? Mth.clamp(1.0f - progress, 0.0f, 1.0f) : 1.0f;
-
-                Color sideColor = box.sideColor();
-                Color lineColor = box.lineColor();
-
-                Color side = new Color(sideColor.getRed(), sideColor.getGreen(), sideColor.getBlue(), (int) (sideColor.getAlpha() * alphaFactor));
-                Color line = new Color(lineColor.getRed(), lineColor.getGreen(), lineColor.getBlue(), (int) (lineColor.getAlpha() * alphaFactor));
-
-
-                AABB renderBox = getRenderBox(box, scale);
-
-                Render3DUtils.drawFilledBox(renderBox, side);
-                Render3DUtils.drawOutlineBox(event.getPoseStack(), renderBox, line.getRGB(), 2f);
+            double scale = 1.0;
+            if (box.shrink()) {
+                scale = 1.0 - Easing.EASE_OUT_QUAD.getFunction().apply(progress);
+                if (scale < 0) scale = 0;
             }
-        });
+
+            float alphaFactor = box.fade() ? Mth.clamp(1.0f - progress, 0.0f, 1.0f) : 1.0f;
+
+            Color sideColor = box.sideColor();
+            Color lineColor = box.lineColor();
+
+            Color side = new Color(sideColor.getRed(), sideColor.getGreen(), sideColor.getBlue(), (int) (sideColor.getAlpha() * alphaFactor));
+            Color line = new Color(lineColor.getRed(), lineColor.getGreen(), lineColor.getBlue(), (int) (lineColor.getAlpha() * alphaFactor));
+
+
+            AABB renderBox = getRenderBox(box, scale);
+
+            Render3DUtils.drawFilledBox(renderBox, side);
+            Render3DUtils.drawOutlineBox(event.getPoseStack(), renderBox, line.getRGB(), 2f);
+        }
     }
 
     private final EnumSetting<Mode> mode = enumSetting("Mode", Mode.TellyBridge);
@@ -131,15 +131,15 @@ public class Scaffold extends Module {
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onMotion(MotionEvent event) {
         if (safeWalk.getValue() && mode.is(Mode.GodBridge)) {
             mc.options.keyShift.setDown(mc.player.onGround() && SafeWalk.INSTANCE.isOnBlockEdge(0.3F));
         }
     }
 
-    @SubscribeEvent
-    private void onTickPre(ClientTickEvent.Pre event) {
+    @EventHandler
+    private void onTickPre(TickEvent.Pre event) {
         if (nullCheck()) return;
 
         hasJump = false;
@@ -174,8 +174,8 @@ public class Scaffold extends Module {
         }
     }
 
-    @SubscribeEvent
-    private void onTickPost(ClientTickEvent.Post event) {
+    @EventHandler
+    private void onTickPost(TickEvent.Post event) {
         if (hasJump) {
             mc.options.keyJump.setDown(false);
             hasJump = false;

@@ -1,7 +1,7 @@
 package com.github.epsilon.modules.impl.player;
 
-import com.github.epsilon.events.CollisionEvent;
-import com.github.epsilon.events.DestroyBlockEvent;
+import com.github.epsilon.events.movement.CollisionEvent;
+import com.github.epsilon.events.world.DestroyBlockEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.settings.impl.BoolSetting;
@@ -24,8 +24,8 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 import org.joml.Vector2f;
 
 public class Phase extends Module {
@@ -114,12 +114,12 @@ public class Phase extends Module {
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onDestroyBlock(DestroyBlockEvent event) {
         clipTimer = afterBreak.getValue();
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onCollide(CollisionEvent event) {
         BlockPos playerPos = BlockPos.containing(mc.player.position());
 
@@ -143,8 +143,8 @@ public class Phase extends Module {
         }
     }
 
-    @SubscribeEvent
-    public void onClientTickPre(ClientTickEvent.Pre event) {
+    @EventHandler
+    public void onClientTickPre(TickEvent.Pre event) {
         if (nullCheck()) return;
         if (clipTimer > 0) clipTimer--;
         if (afterPearlTime > 0) afterPearlTime--;

@@ -16,8 +16,8 @@ import net.minecraft.tags.ItemTags;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.*;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 
 import java.util.Collections;
 import java.util.List;
@@ -103,8 +103,8 @@ public class Stealer extends Module {
         }
     }
 
-    @SubscribeEvent
-    public void onTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    public void onTick(TickEvent.Pre event) {
         if (nullCheck()) return;
 
         Screen currentScreen = mc.screen;

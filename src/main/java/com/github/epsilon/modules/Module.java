@@ -1,11 +1,11 @@
 package com.github.epsilon.modules;
 
 import com.github.epsilon.assets.i18n.TranslateComponent;
+import com.github.epsilon.events.bus.EpsilonEventBus;
 import com.github.epsilon.modules.impl.render.notification.Notifications;
 import com.github.epsilon.settings.Setting;
 import com.github.epsilon.settings.impl.*;
 import net.minecraft.client.Minecraft;
-import net.neoforged.neoforge.common.NeoForge;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -87,7 +87,7 @@ public class Module {
             if (enabled) {
                 try {
                     Notifications.addModuleNotification(this.getTranslatedName(), true);
-                    NeoForge.EVENT_BUS.register(this);
+                    EpsilonEventBus.INSTANCE.subscribe(this);
 
                 } catch (Exception ignored) {
                 }
@@ -95,7 +95,7 @@ public class Module {
             } else {
                 try {
                     Notifications.addModuleNotification(this.getTranslatedName(), false);
-                    NeoForge.EVENT_BUS.unregister(this);
+                    EpsilonEventBus.INSTANCE.unsubscribe(this);
                 } catch (Exception ignored) {
                 }
                 onDisable();

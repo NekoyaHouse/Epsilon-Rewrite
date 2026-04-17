@@ -1,13 +1,13 @@
 package com.github.epsilon.mixins.entity;
 
-import com.github.epsilon.events.RaytraceEvent;
-import com.github.epsilon.events.StrafeEvent;
+import com.github.epsilon.events.bus.EpsilonEventBus;
+import com.github.epsilon.events.player.RaytraceEvent;
+import com.github.epsilon.events.movement.StrafeEvent;
 import com.github.epsilon.modules.impl.combat.AimAssist;
 import com.github.epsilon.modules.impl.combat.Velocity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.common.NeoForge;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArgs;
@@ -21,7 +21,7 @@ public class MixinEntity {
     @Redirect(method = "getViewVector", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;calculateViewVector(FF)Lnet/minecraft/world/phys/Vec3;"))
     private Vec3 redirectGetViewYRot(Entity instance, float xRot, float yRot) {
         if (instance == Minecraft.getInstance().player) {
-            RaytraceEvent event = NeoForge.EVENT_BUS.post(new RaytraceEvent(instance, yRot, xRot));
+            RaytraceEvent event = EpsilonEventBus.INSTANCE.post(new RaytraceEvent(instance, yRot, xRot));
             return instance.calculateViewVector(event.getPitch(), event.getYaw());
         }
         return instance.calculateViewVector(xRot, yRot);
@@ -30,7 +30,7 @@ public class MixinEntity {
     @Redirect(method = "moveRelative", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;getYRot()F"))
     private float redirectGetYRotInMoveRelative(Entity instance) {
         if (instance == Minecraft.getInstance().player) {
-            StrafeEvent event = NeoForge.EVENT_BUS.post(new StrafeEvent(instance.getYRot()));
+            StrafeEvent event = EpsilonEventBus.INSTANCE.post(new StrafeEvent(instance.getYRot()));
             return event.getYaw();
         }
         return instance.getYRot();

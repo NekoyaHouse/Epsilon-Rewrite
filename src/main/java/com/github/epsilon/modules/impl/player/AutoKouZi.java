@@ -6,8 +6,8 @@ import com.github.epsilon.settings.impl.EnumSetting;
 import com.github.epsilon.settings.impl.IntSetting;
 import com.github.epsilon.settings.impl.StringSetting;
 import net.minecraft.network.chat.Component;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -57,8 +57,8 @@ public class AutoKouZi extends Module {
         sentSentences.clear();
     }
 
-    @SubscribeEvent
-    private void onClientTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    private void onClientTick(TickEvent.Pre event) {
         if (nullCheck() || !canSend()) return;
 
         if (mode.getValue() == Mode.TXT) {

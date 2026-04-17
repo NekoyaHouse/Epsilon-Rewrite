@@ -3,6 +3,10 @@ package com.github.epsilon.managers;
 import com.github.epsilon.addon.EpsilonAddon;
 import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
+import com.github.epsilon.events.bus.EpsilonEventBus;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.render.Render2DEvent;
+import com.github.epsilon.events.render.RenderFrameEvent;
 import com.github.epsilon.gui.panel.PanelScreen;
 import com.github.epsilon.modules.HudModule;
 import com.github.epsilon.modules.Module;
@@ -17,9 +21,6 @@ import com.github.epsilon.modules.impl.world.FakePlayer;
 import com.github.epsilon.modules.impl.world.Stealer;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.RenderGuiEvent;
-import net.neoforged.neoforge.common.NeoForge;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,7 @@ public class ModuleManager {
     private List<Module> modules;
 
     private ModuleManager() {
-        NeoForge.EVENT_BUS.register(this);
+        EpsilonEventBus.INSTANCE.subscribe(this);
     }
 
     public void initModules() {
@@ -146,8 +147,10 @@ public class ModuleManager {
         }
     }
 
-    @SubscribeEvent
-    public void onRenderGui(RenderGuiEvent.Post event) {
+    @EventHandler
+    public void onRenderGui(RenderFrameEvent.Pre event) {
+
+        if (Minecraft.getInstance().level == null) return;
 
         modules.forEach(module -> {
             if (module.isEnabled() && module instanceof HudModule hudModule) {

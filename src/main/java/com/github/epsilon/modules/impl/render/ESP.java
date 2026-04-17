@@ -11,8 +11,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.render.Render3DEvent;
 
 import java.awt.*;
 
@@ -27,8 +27,8 @@ public class ESP extends Module {
     private final BoolSetting chests = boolSetting("Chests", true);
     private final DoubleSetting range = doubleSetting("Range", 64.0, 1.0, 128.0, 1.0);
 
-    @SubscribeEvent
-    public void onRender3D(RenderLevelStageEvent.AfterLevel event) {
+    @EventHandler
+    public void onRender3D(Render3DEvent event) {
         if (nullCheck()) return;
 
         if (chests.getValue()) {

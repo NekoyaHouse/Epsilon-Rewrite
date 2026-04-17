@@ -1,7 +1,9 @@
 package com.github.epsilon.mixins.level;
 
-import com.github.epsilon.events.AttackBlockEvent;
-import com.github.epsilon.events.DestroyBlockEvent;
+import com.github.epsilon.events.bus.EpsilonEventBus;
+import com.github.epsilon.events.player.PlayerInteractEvent;
+import com.github.epsilon.events.world.AttackBlockEvent;
+import com.github.epsilon.events.world.DestroyBlockEvent;
 import com.github.epsilon.managers.RotationManager;
 import com.github.epsilon.modules.impl.player.BreakCooldown;
 import net.minecraft.client.Minecraft;
@@ -9,7 +11,6 @@ import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.neoforge.common.NeoForge;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -32,6 +33,7 @@ public class MixinMultiPlayerGameMode {
     @Redirect(method = "lambda$useItem$0", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getYRot()F"))
     private float redirectUseItemYaw(Player player) {
         if (player == this.minecraft.player) {
+            EpsilonEventBus.INSTANCE.post(new PlayerInteractEvent.RightClickItem());
             return RotationManager.INSTANCE.getYaw();
         }
         return player.getYRot();
@@ -47,16 +49,16 @@ public class MixinMultiPlayerGameMode {
 
     @Inject(method = "destroyBlock", at = @At("RETURN"), cancellable = true)
     public void hookDestroyBlock(BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
-        DestroyBlockEvent event = NeoForge.EVENT_BUS.post(new DestroyBlockEvent(pos));
-        if (event.isCanceled()) {
+        DestroyBlockEvent event = EpsilonEventBus.INSTANCE.postCancellable(new DestroyBlockEvent(pos));
+        if (event.isCancelled()) {
             cir.setReturnValue(false);
         }
     }
 
     @Inject(method = "startDestroyBlock", at = @At("HEAD"), cancellable = true)
     private void onStartDestroyBlock(BlockPos blockPos, Direction direction, CallbackInfoReturnable<Boolean> cir) {
-        AttackBlockEvent event = NeoForge.EVENT_BUS.post(new AttackBlockEvent(blockPos, direction));
-        if (event.isCanceled()) {
+        AttackBlockEvent event = EpsilonEventBus.INSTANCE.postCancellable(new AttackBlockEvent(blockPos, direction));
+        if (event.isCancelled()) {
             cir.setReturnValue(false);
         }
     }

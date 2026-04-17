@@ -13,8 +13,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 
 /**
  * @author Moli
@@ -70,8 +70,8 @@ public class SpearKill extends Module {
         firstPhase = false;
     }
 
-    @SubscribeEvent
-    public void onTick(ClientTickEvent.Pre e) {
+    @EventHandler
+    public void onTick(TickEvent.Pre e) {
         if (nullCheck()) return;
 
         updateTarget();

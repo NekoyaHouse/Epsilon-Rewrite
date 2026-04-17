@@ -13,9 +13,9 @@ import com.github.epsilon.utils.rotation.RotationUtils;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.HitResult;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
+import com.github.epsilon.events.render.Render3DEvent;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -85,8 +85,8 @@ public class KillAura extends Module {
         rotationReady = false;
     }
 
-    @SubscribeEvent
-    public void onTick(ClientTickEvent.Pre e) {
+    @EventHandler
+    public void onTick(TickEvent.Pre e) {
         if (nullCheck()) return;
 
         targets.clear();
@@ -138,8 +138,8 @@ public class KillAura extends Module {
         }
     }
 
-    @SubscribeEvent
-    public void onClick(ClientTickEvent.Pre event) {
+    @EventHandler
+    public void onClick(TickEvent.Pre event) {
         if (nullCheck()) return;
         if (target == null) return;
         if (!rotationReady) return;
@@ -166,8 +166,8 @@ public class KillAura extends Module {
         }
     }
 
-    @SubscribeEvent
-    private void onRender3D(RenderLevelStageEvent.AfterLevel event) {
+    @EventHandler
+    private void onRender3D(Render3DEvent event) {
         if (nullCheck() || !esp.getValue() || target == null) return;
 
         switch (espMode.getValue()) {

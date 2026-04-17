@@ -1,10 +1,11 @@
 package com.github.epsilon.mixins.client;
 
-import com.github.epsilon.events.WorldEvent;
+import com.github.epsilon.events.bus.EpsilonEventBus;
+import com.github.epsilon.events.tick.TickEvent;
+import com.github.epsilon.events.world.WorldEvent;
 import com.github.epsilon.modules.impl.player.UseCooldown;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.neoforged.neoforge.common.NeoForge;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,9 +26,18 @@ public class MixinMinecraft {
         }
     }
 
-    @Inject(method = "updateLevelInEngines", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "updateLevelInEngines", at = @At("HEAD"))
     private void worldEvent(ClientLevel world, CallbackInfo ci) {
-        WorldEvent worldEvent = new WorldEvent();
-        NeoForge.EVENT_BUS.post(worldEvent);
+        EpsilonEventBus.INSTANCE.post(new WorldEvent());
+    }
+
+    @Inject(method = "tick", at = @At("HEAD"))
+    private void onTickPre(CallbackInfo ci) {
+        EpsilonEventBus.INSTANCE.post(new TickEvent.Pre());
+    }
+
+    @Inject(method = "tick", at = @At("RETURN"))
+    private void onTickPost(CallbackInfo ci) {
+        EpsilonEventBus.INSTANCE.post(new TickEvent.Post());
     }
 }

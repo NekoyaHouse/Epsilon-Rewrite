@@ -1,8 +1,8 @@
 package com.github.epsilon.modules.impl.combat;
 
-import com.github.epsilon.events.AttackBlockEvent;
-import com.github.epsilon.events.MotionEvent;
-import com.github.epsilon.events.PacketEvent;
+import com.github.epsilon.events.world.AttackBlockEvent;
+import com.github.epsilon.events.movement.MotionEvent;
+import com.github.epsilon.events.network.PacketEvent;
 import com.github.epsilon.managers.RotationManager;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
@@ -33,9 +33,9 @@ import net.minecraft.world.level.block.AirBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
+import com.github.epsilon.events.render.Render3DEvent;
 import org.joml.Vector2f;
 
 import java.awt.*;
@@ -124,8 +124,8 @@ public class PacketMine extends Module {
         delayedActions.clear();
     }
 
-    @SubscribeEvent
-    private void onClientTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    private void onClientTick(TickEvent.Pre event) {
         if (nullCheck() || mc.player.getAbilities().instabuild) return;
 
         runDelayedActions();
@@ -142,7 +142,7 @@ public class PacketMine extends Module {
         actions.removeIf(MineAction::update);
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onAttackBlock(AttackBlockEvent event) {
         if (!canBreak(event.getBlockPos()) || mc.player.getAbilities().instabuild || mode.is(Mode.Damage))
             return;
@@ -157,23 +157,23 @@ public class PacketMine extends Module {
             actions.add(new MineAction(event.getBlockPos(), event.getDirection()));
         }
 
-        event.setCanceled(true);
+        event.setCancelled(true);
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onPacketSend(PacketEvent.Send event) {
         if (event.getPacket() instanceof ServerboundSetCarriedItemPacket && resetOnSwitch.getValue() && !switchMode.is(SwitchMode.Silent) && !mode.is(Mode.Instant)) {
             actions.forEach(MineAction::reset);
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onMotion(MotionEvent event) {
         actions.forEach(MineAction::onRotationSync);
     }
 
-    @SubscribeEvent
-    private void onRenderLevel(RenderLevelStageEvent.AfterLevel event) {
+    @EventHandler
+    private void onRenderLevel(Render3DEvent event) {
         if (!render.getValue() || actions.isEmpty() || mode.is(Mode.Damage)) return;
 
         float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);

@@ -8,8 +8,8 @@ import com.github.epsilon.settings.impl.EnumSetting;
 import com.github.epsilon.settings.impl.IntSetting;
 import com.github.epsilon.utils.math.MathUtils;
 import net.minecraft.client.KeyMapping;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 
 /*
  * Author Moli
@@ -58,8 +58,8 @@ public class AutoClicker extends Module {
         rightState.reset();
     }
 
-    @SubscribeEvent
-    public void onTick(ClientTickEvent.Pre event) {
+    @EventHandler
+    public void onTick(TickEvent.Pre event) {
         if (nullCheck() || mc.screen != null) return;
 
         long currentTime = System.currentTimeMillis();

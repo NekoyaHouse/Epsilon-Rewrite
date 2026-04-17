@@ -1,12 +1,12 @@
 package com.github.epsilon.modules.impl.player;
 
-import com.github.epsilon.events.PacketEvent;
+import com.github.epsilon.events.network.PacketEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.settings.impl.BoolSetting;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.neoforged.bus.api.SubscribeEvent;
+import com.github.epsilon.events.bus.EventHandler;
 
 public class Disabler extends Module {
 
@@ -24,14 +24,14 @@ public class Disabler extends Module {
     private int lastSlot = -1;
     private float lastYaw, lastPitch;
 
-    @SubscribeEvent
+    @EventHandler
     public void onPacket(PacketEvent.Send event) {
         if (badPacketsA.getValue()) {
             if (event.getPacket() instanceof ServerboundSetCarriedItemPacket packet) {
                 int slot = packet.getSlot();
 
                 if (slot == lastSlot && slot != -1) {
-                    event.setCanceled(true);
+                    event.setCancelled(true);
                 }
 
                 lastSlot = packet.getSlot();

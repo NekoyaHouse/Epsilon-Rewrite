@@ -1,16 +1,21 @@
 package com.github.epsilon.managers;
 
-import com.github.epsilon.events.*;
+import com.github.epsilon.events.bus.EpsilonEventBus;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.bus.EventPriority;
+import com.github.epsilon.events.input.KeyboardInputEvent;
+import com.github.epsilon.events.movement.FallFlyingEvent;
+import com.github.epsilon.events.movement.JumpEvent;
+import com.github.epsilon.events.movement.MotionEvent;
+import com.github.epsilon.events.movement.StrafeEvent;
+import com.github.epsilon.events.player.RaytraceEvent;
+import com.github.epsilon.events.tick.TickEvent;
 import com.github.epsilon.modules.impl.player.MovementFix;
 import com.github.epsilon.utils.rotation.Priority;
 import com.github.epsilon.utils.rotation.RotationUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.EventPriority;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.common.NeoForge;
 import org.joml.Vector2f;
 
 import java.util.ArrayList;
@@ -61,7 +66,7 @@ public class RotationManager {
     }
 
     private RotationManager() {
-        NeoForge.EVENT_BUS.register(this);
+        EpsilonEventBus.INSTANCE.subscribe(this);
     }
 
     public void applyRotation(final Vector2f rotations, final double rotationSpeed) {
@@ -243,8 +248,8 @@ public class RotationManager {
         return new float[]{Mth.wrapDegrees(yaw), Mth.wrapDegrees(pitch)};
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    private void onClientTick(ClientTickEvent.Pre event) {
+    @EventHandler(priority = EventPriority.LOWEST)
+    private void onClientTick(TickEvent.Pre event) {
         if (mc.player == null || mc.level == null) {
             tickRequests.clear();
             return;
@@ -311,7 +316,7 @@ public class RotationManager {
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onRaytrace(RaytraceEvent event) {
         if (active && rotations != null) {
             event.setYaw(rotations.x);
@@ -319,7 +324,7 @@ public class RotationManager {
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onKeyboardInput(KeyboardInputEvent event) {
         MovementFix moveFix = MovementFix.INSTANCE;
         if (active && moveFix.isEnabled() && rotations != null && !mc.player.isFallFlying()) {
@@ -327,28 +332,28 @@ public class RotationManager {
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onStrafe(StrafeEvent event) {
         if (active && MovementFix.INSTANCE.isEnabled() && rotations != null) {
             event.setYaw(rotations.x);
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onJump(JumpEvent event) {
         if (active && MovementFix.INSTANCE.isEnabled() && rotations != null) {
             event.setYaw(rotations.x);
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     public void onFallFlying(FallFlyingEvent event) {
         if (active && MovementFix.INSTANCE.isEnabled() && rotations != null) {
             event.setPitch(rotations.y);
         }
     }
 
-    @SubscribeEvent
+    @EventHandler
     private void onMotion(MotionEvent event) {
         if (active && rotations != null) {
             float yaw = rotations.x;

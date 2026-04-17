@@ -1,6 +1,7 @@
 package com.github.epsilon.mixins.packet;
 
-import com.github.epsilon.events.PacketEvent;
+import com.github.epsilon.events.bus.EpsilonEventBus;
+import com.github.epsilon.events.network.PacketEvent;
 import com.github.epsilon.managers.network.ClientboundPacketManager;
 import com.github.epsilon.managers.network.ServerboundPacketManager;
 import com.github.epsilon.utils.network.PacketUtils;
@@ -8,7 +9,6 @@ import io.netty.channel.ChannelFutureListener;
 import net.minecraft.network.Connection;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.Packet;
-import net.neoforged.neoforge.common.NeoForge;
 import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -31,8 +31,8 @@ public class MixinConnection {
         if (ClientboundPacketManager.onPacketReceive(packet)) {
             return;
         }
-        PacketEvent.Receive event = NeoForge.EVENT_BUS.post(new PacketEvent.Receive(packet));
-        if (!event.isCanceled()) {
+        PacketEvent.Receive event = EpsilonEventBus.INSTANCE.postCancellable(new PacketEvent.Receive(packet));
+        if (!event.isCancelled()) {
             genericsFtw(event.getPacket(), listener);
         }
     }
@@ -47,10 +47,9 @@ public class MixinConnection {
             sendPacket(packet, listener, flush);
         } else {
             PacketEvent.Send event = new PacketEvent.Send(packet);
-            if (!NeoForge.EVENT_BUS.post(event).isCanceled()) {
+            if (!EpsilonEventBus.INSTANCE.postCancellable(event).isCancelled()) {
                 this.sendPacket(event.getPacket(), listener, flush);
             }
         }
     }
-
 }

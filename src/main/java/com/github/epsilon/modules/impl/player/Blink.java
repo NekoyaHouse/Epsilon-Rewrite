@@ -1,7 +1,7 @@
 package com.github.epsilon.modules.impl.player;
 
-import com.github.epsilon.events.MotionEvent;
-import com.github.epsilon.events.PacketEvent;
+import com.github.epsilon.events.movement.MotionEvent;
+import com.github.epsilon.events.network.PacketEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.settings.impl.BoolSetting;
@@ -15,8 +15,8 @@ import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.network.protocol.handshake.ClientIntentionPacket;
 import net.minecraft.network.protocol.login.ServerboundHelloPacket;
 import net.minecraft.world.entity.Entity;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.render.Render3DEvent;
 
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -45,12 +45,12 @@ public class Blink extends Module {
     private float prevServerYRot, prevServerXRot, prevServerYHeadRot;
     private double lastLerpX, lastLerpY, lastLerpZ;
 
-    @SubscribeEvent
+    @EventHandler
     public void onHigherPacketSend(PacketEvent.Send e) {
         if (nullCheck()) return;
         Packet<?> packet = e.getPacket();
         if (packet instanceof ServerboundHelloPacket || packet instanceof ClientIntentionPacket) return;
-        e.setCanceled(true);
+        e.setCancelled(true);
         packets.add(packet);
     }
 
@@ -130,8 +130,8 @@ public class Blink extends Module {
         }
     }
 
-    @SubscribeEvent
-    public void onRender(RenderLevelStageEvent.AfterLevel event) {
+    @EventHandler
+    public void onRender(Render3DEvent event) {
         if (nullCheck()) return;
         if (localPlayer != null && fakePlayer.getValue()) {
             float pt = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
@@ -157,7 +157,7 @@ public class Blink extends Module {
     }
 
 
-    @SubscribeEvent
+    @EventHandler
     public void onMotion(MotionEvent event) {
         if (mc.screen instanceof RecoverWorldDataScreen && this.isEnabled()) {
             this.setEnabled(false);

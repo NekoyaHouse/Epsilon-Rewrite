@@ -1,10 +1,10 @@
 package com.github.epsilon.modules.impl.player;
 
-import com.github.epsilon.events.MotionEvent;
+import com.github.epsilon.events.movement.MotionEvent;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import com.mojang.blaze3d.platform.InputConstants;
-import net.neoforged.bus.api.SubscribeEvent;
+import com.github.epsilon.events.bus.EventHandler;
 
 public class SafeWalk extends Module {
 
@@ -21,7 +21,7 @@ public class SafeWalk extends Module {
                 .hasNext();
     }
 
-    @SubscribeEvent
+    @EventHandler
     public void onMotion(MotionEvent e) {
         mc.options.keyShift.setDown(mc.player.onGround() && isOnBlockEdge(0.3F));
     }

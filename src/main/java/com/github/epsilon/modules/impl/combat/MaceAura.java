@@ -19,8 +19,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.tick.TickEvent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -83,8 +83,8 @@ public class MaceAura extends Module {
         rotationReady = false;
     }
 
-    @SubscribeEvent
-    public void onTick(ClientTickEvent.Pre e) {
+    @EventHandler
+    public void onTick(TickEvent.Pre e) {
         if (nullCheck()) return;
 
         updateTarget();
