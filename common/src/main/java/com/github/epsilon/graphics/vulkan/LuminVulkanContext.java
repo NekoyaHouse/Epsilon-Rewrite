@@ -14,6 +14,12 @@ import java.nio.LongBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
 
+/**
+ * Vulkan 上下文封装。
+ * <p>
+ * 负责从 Blaze3D 后端提取 Vulkan 设备、VMA 分配器、队列与命令池句柄。
+ * 当当前后端不是 Vulkan 时，本上下文会保持未初始化状态。
+ */
 public class LuminVulkanContext {
 
     private @Nullable VkDevice device;
@@ -59,6 +65,12 @@ public class LuminVulkanContext {
         }
     }
 
+    /**
+     * 获取 Vulkan 逻辑设备。
+     *
+     * @return Vulkan 设备句柄包装
+     * @throws IllegalStateException 当当前后端不是 Vulkan 或尚未初始化时抛出
+     */
     public VkDevice device() {
         if (this.device == null) {
             throw new IllegalStateException("Vulkan device is not initialized. Make sure to initialize the Vulkan context properly.");
@@ -66,26 +78,44 @@ public class LuminVulkanContext {
         return this.device;
     }
 
+    /**
+     * 获取 VMA 分配器原生句柄。
+     */
     public long vma() {
         return this.vma;
     }
 
+    /**
+     * 获取用于分配命令缓冲区的命令池句柄。
+     */
     public long cmdPool() {
         return this.cmdPool;
     }
 
+    /**
+     * 判断当前是否处于可用的 Vulkan 后端。
+     */
     public boolean isAvailable() {
         return this.device != null;
     }
 
+    /**
+     * 获取图形队列。
+     */
     public VulkanQueue graphicsQueue() {
         return this.graphicsQueue;
     }
 
+    /**
+     * 获取计算队列。
+     */
     public VulkanQueue computeQueue() {
         return this.computeQueue;
     }
 
+    /**
+     * 获取传输队列。
+     */
     public VulkanQueue transferQueue() {
         return this.transferQueue;
     }

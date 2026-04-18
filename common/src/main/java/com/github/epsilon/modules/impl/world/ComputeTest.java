@@ -9,7 +9,7 @@ import com.github.epsilon.graphics.vulkan.buffer.VulkanStd430Buffer;
 import com.github.epsilon.graphics.vulkan.compute.VulkanComputePipeline;
 import com.github.epsilon.graphics.vulkan.descriptor.DescriptorSetWrite;
 import com.github.epsilon.graphics.vulkan.descriptor.DescriptorLayoutSpec;
-import com.github.epsilon.graphics.vulkan.descriptor.VulkanDescriptorSet;
+import com.github.epsilon.graphics.vulkan.descriptor.VulkanResourceManager;
 import com.github.epsilon.graphics.vulkan.shader.Glsl2SpirVCompiler;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
@@ -38,7 +38,8 @@ public class ComputeTest extends Module {
     private @Nullable VulkanOutputBuffer outputBuffer;
     private @Nullable VulkanStd430Buffer inputBuffer;
     private @Nullable VulkanComputePipeline pipeline;
-    private @Nullable VulkanDescriptorSet descriptorSet;
+    private @Nullable VulkanResourceManager resourceManager;
+    private @Nullable VulkanResourceManager.ManagedDescriptorSet descriptorSet;
 
     private @Nullable VkCommandBuffer cmdBuf;
     private long fence;
@@ -110,8 +111,11 @@ public class ComputeTest extends Module {
                     layoutSpec
             );
 
-            descriptorSet = VulkanDescriptorSet.create(
-                    LuminRenderSystem.vulkanContext.device(),
+            if (resourceManager == null) {
+                resourceManager = new VulkanResourceManager(LuminRenderSystem.vulkanContext.device());
+            }
+
+            descriptorSet = resourceManager.allocateDescriptorSet(
                     pipeline.descriptorSetLayout(),
                     layoutSpec,
                     List.of(
@@ -282,6 +286,11 @@ public class ComputeTest extends Module {
         if (descriptorSet != null) {
             descriptorSet.close();
             descriptorSet = null;
+        }
+
+        if (resourceManager != null) {
+            resourceManager.close();
+            resourceManager = null;
         }
 
         if (pipeline != null) {

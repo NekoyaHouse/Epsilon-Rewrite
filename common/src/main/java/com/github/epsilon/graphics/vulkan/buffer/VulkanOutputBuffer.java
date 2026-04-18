@@ -12,17 +12,25 @@ import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK12.*;
 
 /**
- * GPU output/readback pair for compute pipelines.
+ * 计算输出回读缓冲封装。
+ * <p>
+ * 内部维护 GPU 输出 buffer 与 CPU 可读 readback buffer，
+ * 通过 vkCmdCopyBuffer 将结果复制到映射内存。
  *
- * Callers are responsible for synchronization:
- * - record proper pipeline barriers outside this class
- * - wait for fence on CPU before reading mapped bytes
+ * <p>同步由调用方负责：
+ * <ul>
+ *     <li>命令录制时插入合适的 pipeline barrier</li>
+ *     <li>CPU 读取前等待 fence 完成</li>
+ * </ul>
  */
 public final class VulkanOutputBuffer implements AutoCloseable {
 
     private final VulkanBuffer gpu;
     private final VulkanBuffer readback;
 
+    /**
+     * 创建输出回读缓冲。
+     */
     public VulkanOutputBuffer(long allocator, long sizeBytes, int gpuUsageFlags) {
         this.gpu = VulkanBuffer.create(
                 allocator,
@@ -43,30 +51,51 @@ public final class VulkanOutputBuffer implements AutoCloseable {
         );
     }
 
+    /**
+     * 快速创建 storage buffer 用途的输出回读缓冲。
+     */
     public static VulkanOutputBuffer storageBuffer(long allocator, long sizeBytes) {
         return new VulkanOutputBuffer(allocator, sizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     }
 
+    /**
+     * 返回 GPU 输出 buffer 句柄。
+     */
     public long gpuBuffer() {
         return gpu.handle();
     }
 
+    /**
+     * 返回 readback buffer 句柄。
+     */
     public long readbackBuffer() {
         return readback.handle();
     }
 
+    /**
+     * 返回缓冲总字节数。
+     */
     public long size() {
         return gpu.size();
     }
 
+    /**
+     * 兼容方法：复制全部字节到 readback。
+     */
     public void map(VkCommandBuffer cmdBuf) {
         copyToReadback(cmdBuf, size());
     }
 
+    /**
+     * 复制全部字节到 readback。
+     */
     public void copyToReadback(VkCommandBuffer cmdBuf) {
         copyToReadback(cmdBuf, size());
     }
 
+    /**
+     * 复制指定字节数到 readback。
+     */
     public void copyToReadback(VkCommandBuffer cmdBuf, long byteCount) {
         Objects.requireNonNull(cmdBuf, "cmdBuf");
         validateRange(0, byteCount);
@@ -80,10 +109,16 @@ public final class VulkanOutputBuffer implements AutoCloseable {
         }
     }
 
+    /**
+     * 读取 [0, byteCount) 范围数据。
+     */
     public ByteBuffer readMapped(long byteCount) {
         return readMapped(0, byteCount);
     }
 
+    /**
+     * 读取指定范围数据，返回小端序切片。
+     */
     public ByteBuffer readMapped(long offset, long byteCount) {
         validateRange(offset, byteCount);
 
@@ -103,6 +138,9 @@ public final class VulkanOutputBuffer implements AutoCloseable {
         }
     }
 
+    /**
+     * 销毁 readback 与 GPU buffer。
+     */
     @Override
     public void close() {
         readback.close();

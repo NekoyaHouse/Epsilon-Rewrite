@@ -7,6 +7,9 @@ import java.util.Objects;
 
 import static org.lwjgl.util.shaderc.Shaderc.*;
 
+/**
+ * GLSL -> SPIR-V 编译器封装（基于 shaderc）。
+ */
 public final class Glsl2SpirVCompiler implements AutoCloseable {
 
     private final String glslShaderSource;
@@ -18,10 +21,18 @@ public final class Glsl2SpirVCompiler implements AutoCloseable {
     private final long options;
     private long result;
 
+    /**
+     * 使用默认 compute 类型与 main 入口创建编译器。
+     */
     public Glsl2SpirVCompiler(String glslShaderSource) {
         this(glslShaderSource, shaderc_glsl_compute_shader, "inline.comp", "main");
     }
 
+    /**
+     * 创建编译器。
+     *
+     * @param shaderKind shaderc 的 shader 类型常量
+     */
     public Glsl2SpirVCompiler(String glslShaderSource, int shaderKind, String sourceName, String entryPoint) {
         this.glslShaderSource = Objects.requireNonNull(glslShaderSource, "glslShaderSource");
         this.shaderKind = shaderKind;
@@ -43,6 +54,11 @@ public final class Glsl2SpirVCompiler implements AutoCloseable {
         shaderc_compile_options_set_target_spirv(this.options, shaderc_spirv_version_1_5);
     }
 
+    /**
+     * 执行编译。
+     *
+     * @throws IllegalStateException 当编译失败时抛出并携带错误日志
+     */
     public void compile() {
         if (result != 0L) {
             shaderc_result_release(result);
@@ -69,6 +85,11 @@ public final class Glsl2SpirVCompiler implements AutoCloseable {
         }
     }
 
+    /**
+     * 获取编译结果 SPIR-V 字节码副本。
+     *
+     * @return 可独立持有的 ByteBuffer
+     */
     public ByteBuffer getSpirV() {
         if (result == 0L) {
             throw new IllegalStateException("Shader is not compiled. Call compile() first.");
@@ -85,6 +106,9 @@ public final class Glsl2SpirVCompiler implements AutoCloseable {
     }
 
     @Override
+    /**
+     * 释放 shaderc 编译器相关资源。
+     */
     public void close() {
         if (result != 0L) {
             shaderc_result_release(result);

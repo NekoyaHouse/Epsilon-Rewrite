@@ -8,6 +8,11 @@ import org.lwjgl.vulkan.VkDevice;
 
 import static org.lwjgl.vulkan.VK10.*;
 
+/**
+ * Vulkan DescriptorSetLayout 句柄封装。
+ * <p>
+ * 负责根据 {@link DescriptorLayoutSpec} 创建布局，并在 close 时销毁句柄。
+ */
 public final class DescriptorLayout implements AutoCloseable {
 
     private final VkDevice device;
@@ -19,6 +24,9 @@ public final class DescriptorLayout implements AutoCloseable {
     }
 
     @SuppressWarnings("resource")
+    /**
+     * 根据布局规格创建 DescriptorSetLayout。
+     */
     public static DescriptorLayout create(VkDevice device, DescriptorLayoutSpec spec) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             var bindings = VkDescriptorSetLayoutBinding.calloc(spec.bindings().size(), stack);
@@ -47,11 +55,17 @@ public final class DescriptorLayout implements AutoCloseable {
         }
     }
 
+    /**
+     * 返回底层 VkDescriptorSetLayout 句柄。
+     */
     public long handle() {
         return handle;
     }
 
     @Override
+    /**
+     * 销毁 DescriptorSetLayout 句柄。
+     */
     public void close() {
         vkDestroyDescriptorSetLayout(device, handle, null);
     }
