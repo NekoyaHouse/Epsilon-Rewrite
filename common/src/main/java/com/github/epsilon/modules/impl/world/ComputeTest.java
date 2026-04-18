@@ -308,7 +308,10 @@ public class ComputeTest extends Module {
             inputBuffer = null;
         }
 
-        cmdBuf = null;
+        if (cmdBuf != null) {
+            vkFreeCommandBuffers(LuminRenderSystem.vulkanContext.device(), cmdPool, cmdBuf);
+            cmdBuf = null;
+        }
         initialized = false;
         dispatched = false;
     }
