@@ -1,6 +1,7 @@
 package com.github.epsilon.addon;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class EpsilonAddonSetupEvent {
@@ -14,7 +15,7 @@ public class EpsilonAddonSetupEvent {
     }
 
     public List<EpsilonAddon> getAddons() {
-        return addons;
+        return Collections.unmodifiableList(addons);
     }
 
 }

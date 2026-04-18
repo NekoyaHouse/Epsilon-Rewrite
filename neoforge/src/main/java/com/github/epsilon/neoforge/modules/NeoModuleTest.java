@@ -5,7 +5,7 @@ import com.github.epsilon.modules.Module;
 
 public class NeoModuleTest extends Module {
 
-    public static NeoModuleTest INSTANCE = new NeoModuleTest();
+    public static final NeoModuleTest INSTANCE = new NeoModuleTest();
 
     private NeoModuleTest() {
         super("Neo Module Test", Category.COMBAT);
