@@ -21,14 +21,6 @@ public class MixinPlayer {
         return player.getYRot();
     }
 
-    @Redirect(method = "doSweepAttack", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getYRot()F"))
-    private float modifySweepAttackYaw(Player player) {
-        if (player == Minecraft.getInstance().player) {
-            return RotationManager.INSTANCE.getYaw();
-        }
-        return player.getYRot();
-    }
-
     @Inject(method = "causeExtraKnockback", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;setSprinting(Z)V", shift = At.Shift.AFTER))
     private void hookCauseExtraKnockback(CallbackInfo callbackInfo) {
         if (AutoSprint.INSTANCE.isEnabled() && AutoSprint.INSTANCE.keepSprint.getValue()) {

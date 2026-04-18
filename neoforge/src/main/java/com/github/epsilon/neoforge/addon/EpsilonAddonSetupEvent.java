@@ -1,4 +1,4 @@
-package com.github.epsilon.addon;
+package com.github.epsilon.neoforge.addon;
 
 import java.util.ArrayList;
 

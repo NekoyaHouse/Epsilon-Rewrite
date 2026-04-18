@@ -1,7 +1,10 @@
-package com.github.epsilon;
+package com.github.epsilon.fabric;
 
+import com.github.epsilon.CommonListeners;
+import com.github.epsilon.Epsilon;
 import com.github.epsilon.assets.i18n.LanguageReloadListener;
 import com.github.epsilon.assets.resources.ResourceLocationUtils;
+import com.github.epsilon.fabric.compat.FabricPlatformCompat;
 import com.github.epsilon.graphics.LuminRenderPipelines;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;

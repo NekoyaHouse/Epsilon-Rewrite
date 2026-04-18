@@ -1,4 +1,4 @@
-package com.github.epsilon.addon;
+package com.github.epsilon.neoforge.addon;
 
 import com.github.epsilon.assets.i18n.DefaultTranslateComponent;
 import com.github.epsilon.managers.ModuleManager;

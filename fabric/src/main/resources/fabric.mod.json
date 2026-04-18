@@ -12,11 +12,12 @@
     "environment": "client",
     "entrypoints": {
         "client": [
-            "com.github.epsilon.EpsilonFabric"
+            "com.github.epsilon.fabric.EpsilonFabric"
         ]
     },
     "mixins": [
-        "${mod_id}.mixins.json"
+        "${mod_id}.mixins.json",
+        "${mod_id}.fabric.mixins.json"
     ],
     "depends": {
         "fabricloader": ">=${fabric_loader_version}",
@@ -25,4 +26,3 @@
         "java": ">=${java_version}"
     }
 }
-

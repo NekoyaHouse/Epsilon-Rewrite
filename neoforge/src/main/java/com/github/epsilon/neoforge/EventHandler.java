@@ -1,8 +1,10 @@
-package com.github.epsilon;
+package com.github.epsilon.neoforge;
 
+import com.github.epsilon.Epsilon;
 import com.github.epsilon.assets.i18n.LanguageReloadListener;
 import com.github.epsilon.assets.resources.ResourceLocationUtils;
 import com.github.epsilon.graphics.LuminRenderPipelines;
+import com.github.epsilon.neoforge.compat.NeoForgePlatformCompat;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -14,6 +16,10 @@ public class EventHandler {
 
     @SubscribeEvent
     private static void onRegisterRenderPipelines(RegisterRenderPipelinesEvent event) {
+        // Defensive init for very-early render registration phase.
+        if (Epsilon.platform == null) {
+            Epsilon.platform = new NeoForgePlatformCompat();
+        }
         LuminRenderPipelines.registerAll(event::registerPipeline);
     }
 

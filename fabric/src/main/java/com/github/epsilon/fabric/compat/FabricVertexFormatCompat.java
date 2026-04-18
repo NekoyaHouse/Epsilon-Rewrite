@@ -1,50 +1,12 @@
-package com.github.epsilon;
+package com.github.epsilon.fabric.compat;
 
-import com.mojang.blaze3d.platform.InputConstants;
+import com.github.epsilon.compat.VertexFormatCompat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
-import net.minecraft.client.KeyMapping;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.ItemStack;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-/**
- * Fabric implementation of {@link PlatformCompat}.
- * Uses reflection because NeoForge-added methods don't exist on Fabric.
- */
-public class FabricPlatformCompat implements PlatformCompat {
-
-    // --- KeyMapping.getKey() ---
-
-    private Field keyMappingKeyField;
-
-    @Override
-    public InputConstants.Key getKeyMappingKey(KeyMapping keyMapping) {
-        try {
-            if (keyMappingKeyField == null) {
-                keyMappingKeyField = KeyMapping.class.getDeclaredField("key");
-                keyMappingKeyField.setAccessible(true);
-            }
-            return (InputConstants.Key) keyMappingKeyField.get(keyMapping);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to get key from KeyMapping", e);
-        }
-    }
-
-    // --- ItemStack.getEquipmentSlot() ---
-
-    @Override
-    public EquipmentSlot getEquipmentSlot(ItemStack stack) {
-        try {
-            Method m = ItemStack.class.getMethod("getEquipmentSlot");
-            return (EquipmentSlot) m.invoke(stack);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to get equipment slot from ItemStack", e);
-        }
-    }
-
-    // --- VertexFormatElement.findNextId() & register() ---
+public class FabricVertexFormatCompat implements VertexFormatCompat {
 
     private Field byIdField;
     private Method registerMethod;

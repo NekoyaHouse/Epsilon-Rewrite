@@ -1,8 +1,11 @@
-package com.github.epsilon;
+package com.github.epsilon.neoforge;
 
-import com.github.epsilon.addon.EpsilonAddon;
-import com.github.epsilon.addon.EpsilonAddonSetupEvent;
+import com.github.epsilon.CommonListeners;
+import com.github.epsilon.Epsilon;
+import com.github.epsilon.neoforge.addon.EpsilonAddon;
+import com.github.epsilon.neoforge.addon.EpsilonAddonSetupEvent;
 import com.github.epsilon.events.bus.EpsilonEventBus;
+import com.github.epsilon.neoforge.compat.NeoForgePlatformCompat;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -13,10 +16,19 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 @EventBusSubscriber(modid = Epsilon.MODID, value = Dist.CLIENT)
 public class EpsilonNeo {
 
+    public EpsilonNeo() {
+        // Some NeoForge client events fire before FMLClientSetupEvent.
+        if (Epsilon.platform == null) {
+            Epsilon.platform = new NeoForgePlatformCompat();
+        }
+    }
+
     @SubscribeEvent
     private static void onClientSetup(FMLClientSetupEvent event) {
         Epsilon.VERSION = event.getContainer().getModInfo().getVersion().toString();
-        Epsilon.platform = new NeoForgePlatformCompat();
+        if (Epsilon.platform == null) {
+            Epsilon.platform = new NeoForgePlatformCompat();
+        }
 
         // Common initialization
         Epsilon.init();

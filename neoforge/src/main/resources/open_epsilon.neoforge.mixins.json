@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "com.github.epsilon.neoforge.mixins",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "entity.MixinPlayerNeoForge"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
+
