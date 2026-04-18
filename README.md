@@ -43,4 +43,4 @@ This project is distributed under a multi-license model:
 
 ---
 
-Copyright © 2026 KonekokoHouse.
+Copyright © 2026 slmpc.
