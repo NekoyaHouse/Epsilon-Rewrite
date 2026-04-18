@@ -23,7 +23,7 @@
     "render.MixinCamera",
     "render.MixinEntityRenderer",
     "render.MixinGameRenderer",
-    "render.MixinGui",
+    "render.MixinHud",
     "render.MixinGuiRenderer",
     "render.MixinHumanoidMobRenderer",
     "render.MixinLevelRenderer",

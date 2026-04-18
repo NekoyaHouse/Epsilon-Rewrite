@@ -1,6 +1,7 @@
 package com.github.epsilon.graphics;
 
 import com.github.epsilon.assets.resources.ResourceLocationUtils;
+import com.mojang.blaze3d.GpuFormat;
 import com.mojang.blaze3d.ProjectionType;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
@@ -38,7 +39,7 @@ public class LuminRenderSystem {
     }
 
     public static void applyOrthoProjection() {
-        WindowRenderState windowState = Minecraft.getInstance().gameRenderer.getGameRenderState().windowRenderState;
+        WindowRenderState windowState = Minecraft.getInstance().gameRenderer.gameRenderState().windowRenderState;
 
         guiOrthoProjection
                 .setupOrtho(-1000.0F, 1000.0F,
@@ -56,13 +57,13 @@ public class LuminRenderSystem {
      */
     public static GpuTextureView resolveColorView() {
         if (activeTarget != null) return activeTarget.colorView();
-        return Minecraft.getInstance().getMainRenderTarget().getColorTextureView();
+        return Minecraft.getInstance().gameRenderer.mainRenderTarget().getColorTextureView();
     }
 
     @Nullable
     public static GpuTextureView resolveDepthView() {
         if (activeTarget != null) return activeTarget.depthView();
-        return Minecraft.getInstance().getMainRenderTarget().getDepthTextureView();
+        return Minecraft.getInstance().gameRenderer.mainRenderTarget().getDepthTextureView();
     }
 
     public static QuadRenderingInfo prepareQuadRendering(int vertexCount) {
@@ -79,10 +80,10 @@ public class LuminRenderSystem {
         GpuBuffer ibo = autoIndices.getBuffer(indexCount);
 
         GpuBufferSlice dynamicUniforms = RenderSystem.getDynamicUniforms().writeTransform(
-                RenderSystem.getModelViewMatrix(),
+                RenderSystem.getModelViewMatrixCopy(),
                 new Vector4f(1, 1, 1, 1),
                 new Vector3f(0, 0, 0),
-                TextureTransform.DEFAULT_TEXTURING.getMatrix()
+                TextureTransform.DEFAULT_TEXTURING.createMatrix()
         );
 
         return new QuadRenderingInfo(colorView, depthView, autoIndices, ibo, indexCount, dynamicUniforms);
@@ -124,7 +125,7 @@ public class LuminRenderSystem {
             final var colorTexture = device.createTexture(
                     "lumin-rt-color",
                     GpuTexture.USAGE_TEXTURE_BINDING | GpuTexture.USAGE_RENDER_ATTACHMENT | GpuTexture.USAGE_COPY_DST | GpuTexture.USAGE_COPY_SRC,
-                    TextureFormat.RGBA8,
+                    GpuFormat.RGBA8_UNORM,
                     width, height, 1, 1
             );
             final var colorView = device.createTextureView(colorTexture);
@@ -132,7 +133,7 @@ public class LuminRenderSystem {
             depthTexture = device.createTexture(
                     "lumin-rt-depth",
                     GpuTexture.USAGE_TEXTURE_BINDING | GpuTexture.USAGE_RENDER_ATTACHMENT | GpuTexture.USAGE_COPY_DST | GpuTexture.USAGE_COPY_SRC,
-                    TextureFormat.DEPTH32,
+                    GpuFormat.D32_FLOAT,
                     width, height, 1, 1
             );
             depthView = device.createTextureView(depthTexture);

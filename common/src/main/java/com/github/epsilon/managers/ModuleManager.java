@@ -122,9 +122,9 @@ public class ModuleManager {
     public void onKeyEvent(int keyCode, int action) {
         if (keyCode == ClientSetting.INSTANCE.guiKeybind.getValue()
                 && action == InputConstants.PRESS
-                && Minecraft.getInstance().screen == null
+                && Minecraft.getInstance().gui.screen() == null
         ) {
-            Minecraft.getInstance().setScreen(PanelScreen.INSTANCE);
+            Minecraft.getInstance().gui.setScreen(PanelScreen.INSTANCE);
         }
 
         for (final var module : modules) {
