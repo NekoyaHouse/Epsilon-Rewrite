@@ -105,10 +105,10 @@ public final class Glsl2SpirVCompiler implements AutoCloseable {
         return copy;
     }
 
-    @Override
     /**
      * 释放 shaderc 编译器相关资源。
      */
+    @Override
     public void close() {
         if (result != 0L) {
             shaderc_result_release(result);
