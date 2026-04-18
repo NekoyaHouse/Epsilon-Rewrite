@@ -1,9 +1,26 @@
 package com.github.epsilon.neoforge.addon;
 
+import com.github.epsilon.addon.EpsilonAddon;
+import net.neoforged.bus.api.Event;
+
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * @deprecated Use {@link com.github.epsilon.addon.EpsilonAddonSetupEvent} from common instead.
+ * NeoForge EVENT_BUS event for collecting Epsilon addons.
  */
-@Deprecated
-public class EpsilonAddonSetupEvent extends com.github.epsilon.addon.EpsilonAddonSetupEvent {
+public class EpsilonAddonSetupEvent extends Event {
+
+    private final ArrayList<EpsilonAddon> addons = new ArrayList<>();
+
+    public void registerAddon(EpsilonAddon addon) {
+        if (addon != null) {
+            addons.add(addon);
+        }
+    }
+
+    public List<EpsilonAddon> getAddons() {
+        return addons;
+    }
 
 }

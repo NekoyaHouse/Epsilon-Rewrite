@@ -11,7 +11,11 @@ public final class AddonBootstrap {
     }
 
     public static void setupAddons(EpsilonAddonSetupEvent addonEvent) {
-        for (EpsilonAddon addon : addonEvent.getAddons()) {
+        setupAddons(addonEvent.getAddons());
+    }
+
+    public static void setupAddons(Iterable<EpsilonAddon> addons) {
+        for (EpsilonAddon addon : addons) {
             try {
                 addon.onSetup();
                 Epsilon.LOGGER.info("Loaded Epsilon addon: {}", addon.addonId);

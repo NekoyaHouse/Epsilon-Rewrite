@@ -4,12 +4,14 @@
 
 ## 1. 基础 API
 
-推荐使用 `common` 中的统一 API：
+使用 `common` 中的统一 Addon 基类：
 
 - `com.github.epsilon.addon.EpsilonAddon`
-- `com.github.epsilon.addon.EpsilonAddonSetupEvent`
 
-> `neoforge` 包下的旧类型仍可用，但已标记 `@Deprecated`，新项目建议全部迁移到 `common` API。
+按加载器使用对应的注册入口参数：
+
+- Fabric: `com.github.epsilon.addon.EpsilonAddonSetupEvent`
+- NeoForge: `com.github.epsilon.neoforge.addon.EpsilonAddonSetupEvent`
 
 ## 2. 编写 Addon 类
 
@@ -34,7 +36,7 @@ public class ExampleAddon extends EpsilonAddon {
 }
 ```
 
-## 3. Fabric 接入（自定义 Entrypoint）
+## 3. Fabric 接入 (自定义 Entrypoint)
 
 ### 3.1 实现 Entrypoint 接口
 
@@ -68,26 +70,23 @@ public class ExampleFabricAddonEntrypoint implements FabricEpsilonAddonEntrypoin
 
 Epsilon Fabric 会在客户端初始化时自动读取 `open_epsilon:addon` 并注册 addon。
 
-## 4. NeoForge 接入（事件总线）
+## 4. NeoForge 接入 (Event Bus)
 
-NeoForge 仍通过 Epsilon 事件总线收集 addon：
+NeoForge 使用 `NeoForge.EVENT_BUS` 注册 addon：
 
 ```java
 package your.mod.neoforge;
 
-import com.github.epsilon.addon.EpsilonAddonSetupEvent;
-import com.github.epsilon.events.bus.EpsilonEventBus;
-import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.neoforge.addon.EpsilonAddonSetupEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import your.mod.addon.ExampleAddon;
 
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.GAME)
 public class ExampleNeoHook {
 
-    public ExampleNeoHook() {
-        EpsilonEventBus.INSTANCE.subscribe(this);
-    }
-
-    @EventHandler
-    private void onAddonSetup(EpsilonAddonSetupEvent event) {
+    @SubscribeEvent
+    public static void onAddonSetup(EpsilonAddonSetupEvent event) {
         event.registerAddon(new ExampleAddon());
     }
 }
@@ -109,4 +108,3 @@ Epsilon 已实现两层隔离：
   - `Failed to register addon entrypoint from mod:`
   - `Failed to setup Epsilon addon:`
 - 首次接入时先做一个最小 addon（仅日志输出），确认生命周期后再逐步注册模块。
-
