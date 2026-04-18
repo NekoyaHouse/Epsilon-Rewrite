@@ -29,8 +29,8 @@ public class ComputeTest extends Module {
     public static final ComputeTest INSTANCE = new ComputeTest();
 
     private static final int ELEMENT_COUNT = 128;
-    private static final int BYTES_PER_INT = Integer.BYTES;
-    private static final int BUFFER_SIZE = ELEMENT_COUNT * BYTES_PER_INT;
+    private static final int BYTES_PER_FLOAT = Float.BYTES;
+    private static final int BUFFER_SIZE = ELEMENT_COUNT * BYTES_PER_FLOAT;
 
     private boolean initialized;
     private boolean dispatched;
