@@ -217,7 +217,9 @@ public class ComputeTest extends Module {
                     null
             );
 
-            vkCmdDispatch(cmd, 2, 1, 1);
+            final int computeLocalSizeX = 64;
+            final int groupCountX = (ELEMENT_COUNT + computeLocalSizeX - 1) / computeLocalSizeX;
+            vkCmdDispatch(cmd, groupCountX, 1, 1);
 
             var beforeReadback = VkBufferMemoryBarrier2KHR.calloc(1, stack)
                     .sType(VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR)
