@@ -1,4 +1,4 @@
-package com.github.epsilon.graphics.vulkan;
+package com.github.epsilon.graphics.vulkan.descriptor;
 
 import com.mojang.blaze3d.vulkan.VulkanUtils;
 import org.lwjgl.system.MemoryStack;

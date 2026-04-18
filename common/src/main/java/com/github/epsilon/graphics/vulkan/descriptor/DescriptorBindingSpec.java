@@ -1,4 +1,4 @@
-package com.github.epsilon.graphics.vulkan;
+package com.github.epsilon.graphics.vulkan.descriptor;
 
 import static org.lwjgl.vulkan.VK12.*;
 

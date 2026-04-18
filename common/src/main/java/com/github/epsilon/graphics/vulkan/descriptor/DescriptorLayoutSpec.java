@@ -1,4 +1,4 @@
-package com.github.epsilon.graphics.vulkan;
+package com.github.epsilon.graphics.vulkan.descriptor;
 
 import java.util.ArrayList;
 import java.util.List;
