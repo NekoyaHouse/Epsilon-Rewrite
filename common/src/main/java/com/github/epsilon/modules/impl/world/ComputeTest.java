@@ -13,6 +13,7 @@ import com.github.epsilon.graphics.vulkan.descriptor.VulkanResourceManager;
 import com.github.epsilon.graphics.vulkan.shader.Glsl2SpirVCompiler;
 import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
+import com.mojang.blaze3d.vulkan.VulkanUtils;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
@@ -61,10 +62,6 @@ public class ComputeTest extends Module {
     @Override
     protected void onDisable() {
         dispatched = false;
-        if (initialized) {
-            destroyResources();
-            initialized = false;
-        }
     }
 
     @EventHandler
@@ -157,7 +154,10 @@ public class ComputeTest extends Module {
                     .level(VK_COMMAND_BUFFER_LEVEL_PRIMARY)
                     .commandBufferCount(1);
 
-            vkAllocateCommandBuffers(LuminRenderSystem.vulkanContext.device(), allocInfo, pCmd);
+            VulkanUtils.crashIfFailure(
+                    vkAllocateCommandBuffers(LuminRenderSystem.vulkanContext.device(), allocInfo, pCmd),
+                    "Failed to allocate command buffer"
+            );
             return new VkCommandBuffer(pCmd.get(0), LuminRenderSystem.vulkanContext.device());
         }
     }
@@ -167,7 +167,9 @@ public class ComputeTest extends Module {
             var pFence = stack.mallocLong(1);
             var createInfo = VkFenceCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-            vkCreateFence(LuminRenderSystem.vulkanContext.device(), createInfo, null, pFence);
+            VulkanUtils.crashIfFailure(
+                    vkCreateFence(LuminRenderSystem.vulkanContext.device(), createInfo, null, pFence),
+                    "Failed to create fence");
             return pFence.get(0);
         }
     }
@@ -264,7 +266,7 @@ public class ComputeTest extends Module {
     private void readOutput(VulkanOutputBuffer outputBuffer) {
         ByteBuffer out = outputBuffer.readMapped(BUFFER_SIZE);
         for (int i = 0; i < 8; i++) {
-            float value = out.getFloat(i * BYTES_PER_INT);
+            float value = out.getFloat(i * BYTES_PER_FLOAT);
             System.out.println("[ComputeTest] out[" + i + "] = " + value);
         }
     }
@@ -315,7 +317,7 @@ public class ComputeTest extends Module {
         }
 
         if (cmdBuf != null) {
-            vkFreeCommandBuffers(LuminRenderSystem.vulkanContext.device(), cmdPool, cmdBuf);
+            vkFreeCommandBuffers(LuminRenderSystem.vulkanContext.device(), LuminRenderSystem.vulkanContext.cmdPool(), cmdBuf);
             cmdBuf = null;
         }
         initialized = false;
