@@ -61,6 +61,10 @@ public class ComputeTest extends Module {
     @Override
     protected void onDisable() {
         dispatched = false;
+        if (initialized) {
+            destroyResources();
+            initialized = false;
+        }
     }
 
     @EventHandler
