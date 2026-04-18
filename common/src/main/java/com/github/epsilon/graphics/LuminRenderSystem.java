@@ -36,6 +36,10 @@ public class LuminRenderSystem {
         activeTarget = target;
     }
 
+    public static void destroyVulkanContext() {
+        vulkanContext.destroy();
+    }
+
     @Nullable
     public static LuminRenderTarget getActiveTarget() {
         return activeTarget;

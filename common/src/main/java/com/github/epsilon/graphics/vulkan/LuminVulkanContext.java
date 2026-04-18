@@ -120,4 +120,8 @@ public class LuminVulkanContext {
         return this.transferQueue;
     }
 
+    public void destroy() {
+        vkDestroyCommandPool(device, cmdPool, null);
+    }
+
 }
