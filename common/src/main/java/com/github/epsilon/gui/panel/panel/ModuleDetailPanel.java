@@ -84,7 +84,6 @@ public class ModuleDetailPanel {
         Module module = state.getSelectedModule();
         String detailTitle = module == null ? "No Module" : module.getTranslatedName();
         textRenderer.addText(detailTitle, bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 10.0f, 0.78f, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
-        textRenderer.addText("Settings", bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 21.0f, 0.56f, MD3Theme.TEXT_SECONDARY);
 
         if (module == null) {
             return;
@@ -92,11 +91,6 @@ public class ModuleDetailPanel {
 
         headerBounds = new PanelLayout.Rect(bounds.x() + MD3Theme.PANEL_VIEWPORT_INSET, bounds.y() + 34.0f, bounds.width() - MD3Theme.PANEL_VIEWPORT_INSET * 2.0f, 36.0f);
         roundRectRenderer.addRoundRect(headerBounds.x(), headerBounds.y(), headerBounds.width(), headerBounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.SURFACE_CONTAINER);
-
-        float titleScale = 0.72f;
-        float headerTextX = getHeaderContentInsetX();
-        float titleY = headerBounds.y() + (headerBounds.height() - textRenderer.getHeight(titleScale)) / 2.0f - 1.0f;
-        textRenderer.addText(module.getTranslatedName(), headerTextX, titleY, titleScale, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
 
         drawKeybindControl(module, mouseX, mouseY);
         drawBindModeControl(module, mouseX, mouseY);
@@ -265,14 +259,18 @@ public class ModuleDetailPanel {
     }
 
     private PanelLayout.Rect getBindModeBounds() {
-        return new PanelLayout.Rect(getHeaderControlGroupX() + getKeybindControlSize() + getHeaderControlGap(), getHeaderControlsY(), getBindModeControlWidth(), getHeaderControlHeight());
+        return new PanelLayout.Rect(getHeaderControlGroupLeftX() + getKeybindControlSize() + getHeaderControlGap(), getHeaderControlsY(), getBindModeControlWidth(), getHeaderControlHeight());
     }
 
     private PanelLayout.Rect getKeybindBounds() {
-        return new PanelLayout.Rect(getHeaderControlGroupX(), getHeaderControlsY(), getKeybindControlSize(), getKeybindControlSize());
+        return new PanelLayout.Rect(getHeaderControlGroupLeftX(), getHeaderControlsY(), getKeybindControlSize(), getKeybindControlSize());
     }
 
-    private float getHeaderControlGroupX() {
+    private float getHeaderControlGroupLeftX() {
+        return headerBounds.x() + getHeaderContentInset();
+    }
+
+    private float getHeaderControlGroupRightX() {
         return headerBounds.right() - getHeaderContentInset() - getHeaderControlGroupWidth();
     }
 
@@ -305,7 +303,7 @@ public class ModuleDetailPanel {
     }
 
     private PanelLayout.Rect getHiddenBounds() {
-        return new PanelLayout.Rect(getHeaderControlGroupX() + getKeybindControlSize() + getHeaderControlGap() + getBindModeControlWidth() + getHeaderControlGap(), getHeaderControlsY(), getHiddenControlWidth(), getHeaderControlHeight());
+        return new PanelLayout.Rect(getHeaderControlGroupRightX() + getKeybindControlSize() + getHeaderControlGap() + getBindModeControlWidth() + getHeaderControlGap(), getHeaderControlsY(), getHiddenControlWidth(), getHeaderControlHeight());
     }
 
     private float getHeaderControlGap() {
