@@ -31,6 +31,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -134,6 +135,10 @@ public class CrystalAura extends Module {
 
     private final Supplier<TextRenderer> textRenderer = Suppliers.memoize(() -> TextRenderer.create(8 * 1024));
 
+    public void destroy() {
+        gpuCompute.destroy();
+    }
+
     @Override
     protected void onEnable() {
         placeTimer.reset();
@@ -148,7 +153,6 @@ public class CrystalAura extends Module {
     protected void onDisable() {
         target = null;
         resetRenderState();
-        gpuCompute.destroy();
     }
 
     @EventHandler
@@ -339,13 +343,16 @@ public class CrystalAura extends Module {
         return collectPlaceCandidatesCPU(predictedTargetPos);
     }
 
+    /**
+     * 在 GPU 上收集候选列表，提交批量伤害计算任务
+     */
     private List<PlaceCandidate> collectPlaceCandidatesGPU(Vec3 predictedTargetPos) {
         gpuCompute.ensureInitialized();
         if (!gpuCompute.isInitialized()) {
             return collectPlaceCandidatesCPU(predictedTargetPos);
         }
 
-        // Phase 1: 收集所有几何上可行的放置点（不计算伤害）
+        // 收集所有可行的放置点
         record PreCandidate(BlockPos supportPos, Vec3 crystalPos, Vector2f targetRotation,
                             boolean throughWall, boolean wallBypassAllowed, int taskIdxTarget, int taskIdxSelf) {}
 
@@ -361,17 +368,17 @@ public class CrystalAura extends Module {
         float selfHalfWidth = (float) (Math.min(mc.player.getBbWidth(), 2.0f) / 2.0);
         float selfHeight = (float) Math.min(mc.player.getBbHeight(), 3.0);
 
-        float totalArmorTarget = (float) target.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR);
-        float toughnessTarget = (float) target.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS);
-        float totalArmorSelf = (float) mc.player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR);
-        float toughnessSelf = (float) mc.player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS);
+        float totalArmorTarget = (float) target.getAttributeValue(Attributes.ARMOR);
+        float toughnessTarget = (float) target.getAttributeValue(Attributes.ARMOR_TOUGHNESS);
+        float totalArmorSelf = (float) mc.player.getAttributeValue(Attributes.ARMOR);
+        float toughnessSelf = (float) mc.player.getAttributeValue(Attributes.ARMOR_TOUGHNESS);
 
         float enchantProtTarget = getEnchantProtection(target, armorMode.getValue());
         float enchantProtSelf = getEnchantProtection(mc.player,
                 armorForSelf.getValue() ? armorMode.getValue() : DamageUtils.ArmorEnchantmentMode.None);
         float targetResistanceMul = getResistanceMultiplier(target);
         float selfResistanceMul = getResistanceMultiplier(mc.player);
-        float applyDifficultyTarget = target instanceof net.minecraft.world.entity.player.Player ? 1.0f : 0.0f;
+        float applyDifficultyTarget = target instanceof Player ? 1.0f : 0.0f;
 
         float diff = CrystalDamageCompute.difficultyToFloat(mc.player.level().getDifficulty());
 
@@ -415,10 +422,10 @@ public class CrystalAura extends Module {
 
         if (preCandidates.isEmpty()) return new ArrayList<>();
 
-        // Phase 2: GPU dispatch
+        // GPU dispatch
         gpuCompute.dispatch();
 
-        // Phase 3: 读回结果
+        // 回读结果
         List<PlaceCandidate> candidates = new ArrayList<>();
         for (PreCandidate pc : preCandidates) {
             float targetDmg = pc.taskIdxTarget >= 0 ? gpuCompute.readResult(pc.taskIdxTarget) : 0f;
@@ -430,7 +437,7 @@ public class CrystalAura extends Module {
     }
 
     /**
-     * 获取实体的附魔保护等级总和（用于 GPU 传参）。
+     * 获取实体的附魔保护等级总和
      */
     private static float getEnchantProtection(LivingEntity entity, DamageUtils.ArmorEnchantmentMode mode) {
         return switch (mode) {
@@ -459,6 +466,9 @@ public class CrystalAura extends Module {
         return remaining / 25.0f;
     }
 
+    /**
+     * 在 CPU 上收集候选列表，计算伤害
+     */
     private List<PlaceCandidate> collectPlaceCandidatesCPU(Vec3 predictedTargetPos) {
         List<PlaceCandidate> candidates = new ArrayList<>();
 
