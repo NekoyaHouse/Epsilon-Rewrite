@@ -9,9 +9,6 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import java.util.Arrays;
 
 /**
- * 地形体素化工具 —— 将玩家周围的方块存在信息编码为紧凑的位图，
- * 供 GPU Compute Shader 做爆炸射线遮挡查询。
- *
  * <h3>数据布局（std430 SSBO）</h3>
  * <pre>
  *   Header (16 bytes):
@@ -30,32 +27,22 @@ import java.util.Arrays;
  * Header: 4 × int = 16 bytes（Std430Writer 的 putInt 按 4 字节对齐，连续写无间隙）。
  * Body:   BITMAP_UINT_COUNT × 4 bytes = 32768 bytes。
  * 合计:   {@link #BUFFER_SIZE} = 32784 bytes。
- * <p>
- * {@link #writeTo(Std430Writer)} 写入恰好 {@link #BUFFER_SIZE} 字节。
  */
 public class TerrainVoxelization {
 
     private static final Minecraft mc = Minecraft.getInstance();
 
-    /** 单轴体素数量（必须为 32 的倍数） */
     public static final int GRID_SIZE = 64;
 
-    /** 体素总数 */
     public static final int TOTAL_VOXELS = GRID_SIZE * GRID_SIZE * GRID_SIZE;
 
-    /** 位图 uint 数量 */
     public static final int BITMAP_UINT_COUNT = TOTAL_VOXELS / 32;
 
-    /** Header: 4 × int = 16 bytes */
     public static final int HEADER_BYTES = 4 * Integer.BYTES;
 
-    /** Body: BITMAP_UINT_COUNT × 4 bytes */
     public static final int BODY_BYTES = BITMAP_UINT_COUNT * Integer.BYTES;
 
-    /** SSBO 总大小（writeTo 写入的精确字节数） */
     public static final int BUFFER_SIZE = HEADER_BYTES + BODY_BYTES;
-
-    // ── 状态 ──
 
     private int originX, originY, originZ;
     private final int[] voxelBits = new int[BITMAP_UINT_COUNT];
@@ -118,8 +105,6 @@ public class TerrainVoxelization {
         return (z * GRID_SIZE + y) * GRID_SIZE + x;
     }
 
-    // ─── 数据写入 ────────────────────────────────────────────────────────────
-
     /**
      * 将体素数据写入 {@link Std430Writer}。
      * <p>
@@ -142,7 +127,7 @@ public class TerrainVoxelization {
     }
 
     /**
-     * 标记需要在下一帧进行完整重建。
+     * 标记需要在下一次进行完整重建。
      */
     public void invalidate() {
         needsFullRebuild = true;

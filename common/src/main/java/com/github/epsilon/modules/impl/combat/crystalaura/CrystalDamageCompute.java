@@ -48,8 +48,6 @@ public class CrystalDamageCompute {
     /** Result buffer 总大小 */
     private static final long RESULT_BUFFER_SIZE = (long) MAX_TASKS * Float.BYTES;
 
-    // ── Vulkan 资源 ──
-
     private boolean initialized;
     private @Nullable VulkanStd430Buffer voxelBuffer;
     private @Nullable VulkanStd430Buffer taskBuffer;
