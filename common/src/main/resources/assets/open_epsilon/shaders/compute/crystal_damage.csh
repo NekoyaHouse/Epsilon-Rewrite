@@ -3,7 +3,7 @@
 /*
  * gl_WorkGroupID.x   = taskId（每个 workgroup 处理一个任务）
  * gl_LocalInvocationID.x = rayId（每个线程追踪一条射线）
- * local_size_x = 64，其中前 TOTAL_SAMPLES 条线程活跃
+ * local_size_x = 64，线程按步长 64 处理动态数量的采样点
  * 通过 shared memory 做加权归约，thread 0 计算最终伤害并写出
  */
 
@@ -37,11 +37,7 @@ layout(std430, set = 0, binding = 2) writeonly buffer ResultBuffer {
 const float EPSILON = 1e-6;
 const int   RAY_STEPS = 64;
 
-// 注意力采样网格 (每轴)
-const int SAMPLE_X = 3;
-const int SAMPLE_Y = 5;
-const int SAMPLE_Z = 3;
-const int TOTAL_SAMPLES = SAMPLE_X * SAMPLE_Y * SAMPLE_Z; // = 45
+const float HUGE_T = 1e20;
 
 shared float s_weightedHit[64];
 shared float s_weight[64];
@@ -52,9 +48,12 @@ float sampleVoxel(ivec3 worldPos) {
     int   size   = grid.header.w;
     ivec3 local  = worldPos - origin;
 
-    bvec3 inBounds = greaterThanEqual(local, ivec3(0));
-    bvec3 ltSize   = lessThan(local, ivec3(size));
-    float valid = float(all(inBounds) && all(ltSize));
+    vec3 localF = vec3(local);
+    float maxCoord = float(size - 1);
+    float valid =
+        step(0.0, localF.x) * step(localF.x, maxCoord) *
+        step(0.0, localF.y) * step(localF.y, maxCoord) *
+        step(0.0, localF.z) * step(localF.z, maxCoord);
 
     ivec3 safe = clamp(local, ivec3(0), ivec3(size - 1));
     int flatIdx = (safe.z * size + safe.y) * size + safe.x;
@@ -69,32 +68,30 @@ float sampleVoxel(ivec3 worldPos) {
 float traceRay(vec3 origin, vec3 target) {
     vec3 dir = target - origin;
     float maxDist = length(dir);
-    if (maxDist <= EPSILON) return 1.0;
+    float rayActive = step(EPSILON, maxDist);
+    float invMaxDist = 1.0 / max(maxDist, EPSILON);
 
-    vec3 d = dir / maxDist;
+    vec3 d = dir * invMaxDist;
 
     ivec3 pos = ivec3(floor(origin));
-    ivec3 stepDir = ivec3(
-        d.x > 0.0 ? 1 : (d.x < 0.0 ? -1 : 0),
-        d.y > 0.0 ? 1 : (d.y < 0.0 ? -1 : 0),
-        d.z > 0.0 ? 1 : (d.z < 0.0 ? -1 : 0)
-    );
+    ivec3 stepDir = ivec3(sign(d));
+    vec3 stepDirF = vec3(stepDir);
 
-    vec3 tDelta = vec3(
-        d.x != 0.0 ? abs(1.0 / d.x) : 1e20,
-        d.y != 0.0 ? abs(1.0 / d.y) : 1e20,
-        d.z != 0.0 ? abs(1.0 / d.z) : 1e20
-    );
+    vec3 absD = abs(d);
+    vec3 axisActive = step(vec3(EPSILON), absD);
+    vec3 tDelta = mix(vec3(HUGE_T), 1.0 / max(absD, vec3(EPSILON)), axisActive);
 
     vec3 fracOrigin = origin - floor(origin);
-    vec3 tMax = vec3(
-        stepDir.x > 0 ? (1.0 - fracOrigin.x) * tDelta.x : (stepDir.x < 0 ? fracOrigin.x * tDelta.x : 1e20),
-        stepDir.y > 0 ? (1.0 - fracOrigin.y) * tDelta.y : (stepDir.y < 0 ? fracOrigin.y * tDelta.y : 1e20),
-        stepDir.z > 0 ? (1.0 - fracOrigin.z) * tDelta.z : (stepDir.z < 0 ? fracOrigin.z * tDelta.z : 1e20)
-    );
+    vec3 stepPosMask = step(vec3(0.5), stepDirF);
+    vec3 stepNegMask = step(vec3(0.5), -stepDirF);
+    vec3 noStepMask  = vec3(1.0) - stepPosMask - stepNegMask;
+    vec3 tMax = (
+        (vec3(1.0) - fracOrigin) * stepPosMask +
+        fracOrigin * stepNegMask
+    ) * tDelta + noStepMask * vec3(HUGE_T);
 
     float blocked = 0.0;
-    float active_ = 1.0;
+    float active_ = rayActive;
 
     for (int i = 0; i < RAY_STEPS; i++) {
         // 固定优先级 X -> Y -> Z，避免边界条件下的随机抖动。
@@ -114,13 +111,8 @@ float traceRay(vec3 origin, vec3 target) {
         active_ *= (1.0 - blocked) * within;
     }
 
-    return 1.0 - blocked;
-}
-
-// 等权采样
-float attentionWeight(vec3 uvw) {
-    // 为了与 CPU 逻辑对齐，曝光率使用等权采样。
-    return 1.0;
+    // 与 mc.level.clip(ClipContext) 语义对齐：未命中阻挡方块视作可见。
+    return (1.0 - blocked) * rayActive + (1.0 - rayActive);
 }
 
 float applyArmor(float damage, float armor, float toughness) {
@@ -167,36 +159,48 @@ void main() {
     vec3 bbMin = targetPos - vec3(halfWidth, 0.0, halfWidth);
     vec3 bbMax = targetPos + vec3(halfWidth, height, halfWidth);
     vec3 bbSize = bbMax - bbMin;
-    vec3 offset = (vec3(1.0) - floor((bbSize * 2.0 + vec3(1.0)) / vec3(1.0))
-                   / (bbSize * 2.0 + vec3(1.0))) * 0.5;
-    vec3 stepSize = vec3(1.0) / (bbSize * 2.0 + vec3(1.0));
-    offset = (vec3(1.0) - floor(vec3(1.0) / stepSize) * stepSize) * 0.5;
-    offset.y = 0.0;
+    vec3 invSteps = bbSize * 2.0 + vec3(1.0);
+    vec3 stepSize = vec3(1.0) / invSteps;
 
-    // ── 每个线程追踪一条射线（超出采样数的线程按 0 权重参与） ──
-    float rayActive = float(rayId < uint(TOTAL_SAMPLES));
-    uint sampleId = min(rayId, uint(TOTAL_SAMPLES - 1));
-
-    uint iz = sampleId / uint(SAMPLE_X * SAMPLE_Y);
-    uint rem = sampleId % uint(SAMPLE_X * SAMPLE_Y);
-    uint iy = rem / uint(SAMPLE_X);
-    uint ix = rem % uint(SAMPLE_X);
-
-    float u = float(ix) / float(SAMPLE_X - 1);
-    float v = float(iy) / float(SAMPLE_Y - 1);
-    float w = float(iz) / float(SAMPLE_Z - 1);
-
-    vec3 samplePos = vec3(
-        mix(bbMin.x, bbMax.x, u) + offset.x,
-        mix(bbMin.y, bbMax.y, v),
-        mix(bbMin.z, bbMax.z, w) + offset.z
+    // 与 DamageUtils.getSeenPercent 对齐：x/z 偏移，y 不偏移。
+    vec3 offset = vec3(
+        (1.0 - floor(1.0 / stepSize.x) * stepSize.x) * 0.5,
+        0.0,
+        (1.0 - floor(1.0 / stepSize.z) * stepSize.z) * 0.5
     );
 
-    float att = attentionWeight(vec3(u, v, w));
-    float vis = traceRay(samplePos, crystalPos);
+    int nx = int(floor(1.0 / stepSize.x)) + 1;
+    int ny = int(floor(1.0 / stepSize.y)) + 1;
+    int nz = int(floor(1.0 / stepSize.z)) + 1;
+    uint totalSamples = uint(nx * ny * nz);
+    float validSteps = step(0.0, stepSize.x) * step(0.0, stepSize.y) * step(0.0, stepSize.z);
 
-    s_weightedHit[rayId] = vis * att * rayActive;
-    s_weight[rayId]      = att * rayActive;
+    // 每个线程按步长 64 处理多个样本，支持动态采样数。
+    for (uint sampleId = rayId; sampleId < totalSamples; sampleId += gl_WorkGroupSize.x) {
+        int sid = int(sampleId);
+        int nxy = nx * ny;
+        int iz = sid / nxy;
+        int rem = sid - iz * nxy;
+        int iy = rem / nx;
+        int ix = rem - iy * nx;
+
+        float xx = float(ix) * stepSize.x;
+        float yy = float(iy) * stepSize.y;
+        float zz = float(iz) * stepSize.z;
+
+        vec3 samplePos = vec3(
+            mix(bbMin.x, bbMax.x, xx) + offset.x,
+            mix(bbMin.y, bbMax.y, yy),
+            mix(bbMin.z, bbMax.z, zz) + offset.z
+        );
+
+        float vis = traceRay(samplePos, crystalPos);
+        s_weightedHit[rayId] += vis;
+        s_weight[rayId] += 1.0;
+    }
+
+    s_weightedHit[rayId] *= validSteps;
+    s_weight[rayId]      *= validSteps;
 
     barrier();
 
@@ -204,7 +208,7 @@ void main() {
     if (rayId == 0u) {
         float totalWeightedHit = 0.0;
         float totalWeight      = 0.0;
-        for (int i = 0; i < TOTAL_SAMPLES; i++) {
+        for (int i = 0; i < int(gl_WorkGroupSize.x); i++) {
             totalWeightedHit += s_weightedHit[i];
             totalWeight      += s_weight[i];
         }
