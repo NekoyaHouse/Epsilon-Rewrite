@@ -2,9 +2,7 @@
 
 /*
  * gl_WorkGroupID.x   = taskId（每个 workgroup 处理一个任务）
- * gl_LocalInvocationID.x = rayId（每个线程追踪一条射线）
- * local_size_x = 64，线程按步长 64 处理动态数量的采样点
- * 通过 shared memory 做加权归约，thread 0 计算最终伤害并写出
+ * gl_LocalInvocationID.x = rayId（每个线程最多追踪一条射线）
  */
 
 layout(local_size_x = 64) in;
@@ -175,29 +173,29 @@ void main() {
     uint totalSamples = uint(nx * ny * nz);
     float validSteps = step(0.0, stepSize.x) * step(0.0, stepSize.y) * step(0.0, stepSize.z);
 
-    // 每个线程按步长 64 处理多个样本，支持动态采样数。
-    for (uint sampleId = rayId; sampleId < totalSamples; sampleId += gl_WorkGroupSize.x) {
-        int sid = int(sampleId);
-        int nxy = nx * ny;
-        int iz = sid / nxy;
-        int rem = sid - iz * nxy;
-        int iy = rem / nx;
-        int ix = rem - iy * nx;
+    float sampleActive = step(float(rayId), float(totalSamples - 1u));
 
-        float xx = float(ix) * stepSize.x;
-        float yy = float(iy) * stepSize.y;
-        float zz = float(iz) * stepSize.z;
+    uint sampleId = min(rayId, totalSamples - 1u);
+    int sid = int(sampleId);
+    int nxy = nx * ny;
+    int iz = sid / nxy;
+    int rem = sid - iz * nxy;
+    int iy = rem / nx;
+    int ix = rem - iy * nx;
 
-        vec3 samplePos = vec3(
-            mix(bbMin.x, bbMax.x, xx) + offset.x,
-            mix(bbMin.y, bbMax.y, yy),
-            mix(bbMin.z, bbMax.z, zz) + offset.z
-        );
+    float xx = float(ix) * stepSize.x;
+    float yy = float(iy) * stepSize.y;
+    float zz = float(iz) * stepSize.z;
 
-        float vis = traceRay(samplePos, crystalPos);
-        s_weightedHit[rayId] += vis;
-        s_weight[rayId] += 1.0;
-    }
+    vec3 samplePos = vec3(
+        mix(bbMin.x, bbMax.x, xx) + offset.x,
+        mix(bbMin.y, bbMax.y, yy),
+        mix(bbMin.z, bbMax.z, zz) + offset.z
+    );
+
+    float vis = traceRay(samplePos, crystalPos);
+    s_weightedHit[rayId] = vis * sampleActive;
+    s_weight[rayId] = sampleActive;
 
     s_weightedHit[rayId] *= validSteps;
     s_weight[rayId]      *= validSteps;
