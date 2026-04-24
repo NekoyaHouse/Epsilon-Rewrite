@@ -66,34 +66,23 @@ float sampleVoxel(ivec3 worldPos) {
 float traceRay(vec3 origin, vec3 target) {
     vec3 baseDir = target - origin;
     float rawDist = length(baseDir);
-    if (rawDist <= EPSILON) {
-        return 1.0;
-    }
+    float rayActive = step(EPSILON, rawDist);
 
-    vec3 dir = baseDir / rawDist;
+    vec3 dir = baseDir / max(rawDist, EPSILON);
     vec3 startPos = origin + dir * TRACE_EPSILON;
     vec3 endPos = target - dir * TRACE_EPSILON;
-    float maxDist = distance(startPos, endPos);
+    float maxDist = max(distance(startPos, endPos), 0.0);
 
-    if (maxDist <= EPSILON) {
-        return 1.0;
-    }
-
-    float traveled = RAYMARCH_STEP_SIZE * 0.5;
+    float blocked = 0.0;
     for (int i = 0; i < MAX_RAYMARCH_STEPS; i++) {
-        if (traveled > maxDist) {
-            break;
-        }
-
+        float traveled = (float(i) + 0.5) * RAYMARCH_STEP_SIZE;
+        float marchMask = step(traveled, maxDist) * (1.0 - blocked) * rayActive;
         vec3 samplePos = startPos + dir * traveled;
-        if (sampleVoxel(ivec3(floor(samplePos))) > 0.5) {
-            return 0.0;
-        }
-
-        traveled += RAYMARCH_STEP_SIZE;
+        float solid = sampleVoxel(ivec3(floor(samplePos)));
+        blocked = mix(blocked, 1.0, clamp(solid * marchMask, 0.0, 1.0));
     }
 
-    return 1.0;
+    return mix(1.0, 1.0 - blocked, rayActive);
 }
 
 float applyArmor(float damage, float armor, float toughness) {
