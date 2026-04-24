@@ -1029,7 +1029,7 @@ public class CrystalAura extends Module {
 
         float guiScale = mc.getWindow().getGuiScale();
 
-        if (projected.z < 0.0f || projected.z > 1.0f) return null;
+        if (projected.z < 0.5f || projected.z > 1.0f) return null;
 
         float screenWidth = mc.getWindow().getGuiScaledWidth();
         float screenHeight = mc.getWindow().getGuiScaledHeight();
