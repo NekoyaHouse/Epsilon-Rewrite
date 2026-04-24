@@ -1,5 +1,6 @@
-package com.github.epsilon.modules.impl.combat;
+package com.github.epsilon.modules.impl.combat.crystalaura;
 
+import com.github.epsilon.Epsilon;
 import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.managers.RenderManager;
 import com.github.epsilon.managers.RotationManager;
@@ -8,6 +9,7 @@ import com.github.epsilon.modules.Category;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.settings.impl.*;
 import com.github.epsilon.utils.combat.DamageUtils;
+import com.github.epsilon.utils.player.EnchantmentUtils;
 import com.github.epsilon.utils.player.FindItemResult;
 import com.github.epsilon.utils.player.InvUtils;
 import com.github.epsilon.utils.render.Render3DUtils;
@@ -26,9 +28,11 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -43,6 +47,7 @@ import org.joml.Vector3f;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -55,6 +60,8 @@ public class CrystalAura extends Module {
     }
 
     // General
+    private final EnumSetting<ComputeMode> computeMode = enumSetting("Compute Mode", ComputeMode.CPU);
+    private final BoolSetting gpuDebugCompare = boolSetting("GPU Debug Compare", false, () -> computeMode.is(ComputeMode.GPU));
     private final DoubleSetting targetRange = doubleSetting("Target Range", 6.0, 0.0, 12.0, 0.5);
     private final BoolSetting targetPlayers = boolSetting("Players", true);
     private final BoolSetting targetMobs = boolSetting("Mobs", false);
@@ -116,6 +123,13 @@ public class CrystalAura extends Module {
     private LivingEntity target;
     private final TimerUtils placeTimer = new TimerUtils();
     private final TimerUtils breakTimer = new TimerUtils();
+    private final CrystalDamageCompute gpuCompute = new CrystalDamageCompute();
+
+    private static final float GPU_DEBUG_DAMAGE_THRESHOLD = 0.05f;
+    private static final float GPU_DEBUG_TWO_DAMAGE_EPSILON = 0.01f;
+    private static final int GPU_DEBUG_MAX_DETAILS = 8;
+    private static final long GPU_DEBUG_LOG_INTERVAL_MS = 500L;
+    private long lastGpuDebugLogTime;
 
     private BlockPos renderBlockPos;
     private Vec3 renderPrevPos;
@@ -130,11 +144,18 @@ public class CrystalAura extends Module {
 
     private final Supplier<TextRenderer> textRenderer = Suppliers.memoize(() -> TextRenderer.create(8 * 1024));
 
+    public void destroy() {
+        gpuCompute.destroy();
+    }
+
     @Override
     protected void onEnable() {
         placeTimer.reset();
         breakTimer.reset();
         resetRenderState();
+        if (computeMode.is(ComputeMode.GPU)) {
+            gpuCompute.ensureInitialized();
+        }
     }
 
     @Override
@@ -325,6 +346,297 @@ public class CrystalAura extends Module {
      * @return 可行的位置
      */
     private List<PlaceCandidate> collectPlaceCandidates(Vec3 predictedTargetPos) {
+        if (computeMode.is(ComputeMode.GPU)) {
+            return collectPlaceCandidatesGPU(predictedTargetPos);
+        }
+        return collectPlaceCandidatesCPU(predictedTargetPos);
+    }
+
+    /**
+     * 在 GPU 上收集候选列表，提交批量伤害计算任务
+     */
+    private List<PlaceCandidate> collectPlaceCandidatesGPU(Vec3 predictedTargetPos) {
+        gpuCompute.ensureInitialized();
+        if (!gpuCompute.isInitialized()) {
+            return collectPlaceCandidatesCPU(predictedTargetPos);
+        }
+
+        List<GpuPreCandidate> preCandidates = new ArrayList<>();
+        BlockPos center = BlockPos.containing(predictedTargetPos);
+        int range = 5;
+        double placeRangeSq = placeRange.getValue() * placeRange.getValue();
+        double wallRangeSq = placeWallRange.getValue() * placeWallRange.getValue();
+        Vec3 playerEye = mc.player.getEyePosition();
+
+        float targetHalfWidth = (float) (Math.min(target.getBbWidth(), 2.0f) / 2.0);
+        float targetHeight = (float) Math.min(target.getBbHeight(), 3.0);
+        float selfHalfWidth = (float) (Math.min(mc.player.getBbWidth(), 2.0f) / 2.0);
+        float selfHeight = (float) Math.min(mc.player.getBbHeight(), 3.0);
+
+        float totalArmorTarget = (float) target.getAttributeValue(Attributes.ARMOR);
+        float toughnessTarget = (float) target.getAttributeValue(Attributes.ARMOR_TOUGHNESS);
+        float totalArmorSelf = (float) mc.player.getAttributeValue(Attributes.ARMOR);
+        float toughnessSelf = (float) mc.player.getAttributeValue(Attributes.ARMOR_TOUGHNESS);
+
+        float enchantProtTarget = getEnchantProtection(target, armorMode.getValue());
+        float enchantProtSelf = getEnchantProtection(mc.player,
+                armorForSelf.getValue() ? armorMode.getValue() : DamageUtils.ArmorEnchantmentMode.None);
+        float targetResistanceMul = getResistanceMultiplier(target);
+        float selfResistanceMul = getResistanceMultiplier(mc.player);
+        float applyDifficultyTarget = target instanceof Player ? 1.0f : 0.0f;
+
+        float diff = CrystalDamageCompute.difficultyToFloat(mc.player.level().getDifficulty());
+
+        gpuCompute.beginFrame();
+
+        for (int x = -range; x <= range; x++) {
+            for (int y = -range; y <= range; y++) {
+                for (int z = -range; z <= range; z++) {
+                    BlockPos supportPos = center.offset(x, y, z);
+                    BlockState supportState = mc.level.getBlockState(supportPos);
+                    if (!supportState.is(Blocks.OBSIDIAN) && !supportState.is(Blocks.BEDROCK)) continue;
+                    BlockPos crystalBlockPos = supportPos.above();
+                    if (!mc.level.getBlockState(crystalBlockPos).isAir()) continue;
+                    if (!mc.level.getBlockState(crystalBlockPos.above()).isAir()) continue;
+                    AABB crystalBB = new AABB(crystalBlockPos);
+                    if (!mc.level.getEntities(null, crystalBB).isEmpty()) continue;
+                    Vec3 supportCenter = Vec3.atCenterOf(supportPos);
+                    double distanceSq = playerEye.distanceToSqr(supportCenter);
+                    if (distanceSq > placeRangeSq) continue;
+
+                    Vec3 crystalPos = new Vec3(supportPos.getX() + 0.5, supportPos.getY() + 1.0, supportPos.getZ() + 0.5);
+                    Vector2f targetRotation = RotationUtils.calculate(supportPos, Direction.UP);
+                    boolean visible = RaytraceUtils.overBlock(targetRotation, supportPos, Direction.UP, false, placeRange.getValue());
+                    boolean wallBypassAllowed = !visible && distanceSq <= wallRangeSq;
+                    if (!visible && !wallBypassAllowed) continue;
+
+                    int idxTarget = gpuCompute.addTask(crystalPos, DamageUtils.CRYSTAL_EXPLOSION_RADIUS,
+                            predictedTargetPos, targetHalfWidth, targetHeight,
+                            totalArmorTarget, toughnessTarget, enchantProtTarget, diff,
+                            targetResistanceMul, applyDifficultyTarget);
+                    int idxSelf = gpuCompute.addTask(crystalPos, DamageUtils.CRYSTAL_EXPLOSION_RADIUS,
+                            mc.player.position(), selfHalfWidth, selfHeight,
+                            totalArmorSelf, toughnessSelf, enchantProtSelf, diff,
+                            selfResistanceMul, 1.0f);
+
+                    preCandidates.add(new GpuPreCandidate(supportPos, crystalPos, targetRotation,
+                            !visible, wallBypassAllowed, idxTarget, idxSelf));
+                }
+            }
+        }
+
+        if (preCandidates.isEmpty()) return new ArrayList<>();
+
+        // GPU dispatch
+        gpuCompute.dispatch();
+
+        boolean debugEnabled = gpuDebugCompare.getValue();
+        boolean logNow = debugEnabled && shouldEmitGpuDebugLog();
+        DamageUtils.ArmorEnchantmentMode selfArmorMode = armorForSelf.getValue()
+                ? armorMode.getValue()
+                : DamageUtils.ArmorEnchantmentMode.None;
+
+        int mismatchCount = 0;
+        int overflowCount = 0;
+        int sameLevelMismatchCount = 0;
+        int sameLevelTargetNearTwoCount = 0;
+        int sameLevelSelfNearTwoCount = 0;
+        List<GpuDebugEntry> debugEntries = logNow ? new ArrayList<>() : null;
+
+        List<PlaceCandidate> candidates = new ArrayList<>();
+        for (GpuPreCandidate pc : preCandidates) {
+            float targetDmg = pc.taskIdxTarget >= 0 ? gpuCompute.readResult(pc.taskIdxTarget) : 0f;
+            float selfDmg = pc.taskIdxSelf >= 0 ? gpuCompute.readResult(pc.taskIdxSelf) : 0f;
+            candidates.add(new PlaceCandidate(pc.supportPos, pc.crystalPos, targetDmg, selfDmg,
+                    pc.targetRotation, pc.throughWall, pc.wallBypassAllowed));
+
+            if (!debugEnabled) continue;
+
+            float cpuTargetDmg = DamageUtils.crystalDamage(target, pc.crystalPos, predictedTargetPos, armorMode.getValue());
+            float cpuSelfDmg = DamageUtils.selfCrystalDamage(pc.crystalPos, selfArmorMode);
+            float targetDelta = Math.abs(cpuTargetDmg - targetDmg);
+            float selfDelta = Math.abs(cpuSelfDmg - selfDmg);
+            boolean overflow = pc.taskIdxTarget < 0 || pc.taskIdxSelf < 0;
+            boolean mismatch = overflow
+                    || targetDelta > GPU_DEBUG_DAMAGE_THRESHOLD
+                    || selfDelta > GPU_DEBUG_DAMAGE_THRESHOLD;
+            boolean sameLevel = Math.abs(pc.crystalPos.y - predictedTargetPos.y) <= 1.0e-4;
+
+            if (overflow) overflowCount++;
+            if (mismatch) {
+                mismatchCount++;
+                if (sameLevel) sameLevelMismatchCount++;
+            }
+            if (sameLevel && Math.abs(targetDmg - 2.0f) <= GPU_DEBUG_TWO_DAMAGE_EPSILON) sameLevelTargetNearTwoCount++;
+            if (sameLevel && Math.abs(selfDmg - 2.0f) <= GPU_DEBUG_TWO_DAMAGE_EPSILON) sameLevelSelfNearTwoCount++;
+
+            if (logNow && mismatch) {
+                debugEntries.add(new GpuDebugEntry(
+                        pc.supportPos,
+                        pc.crystalPos,
+                        targetDmg,
+                        cpuTargetDmg,
+                        selfDmg,
+                        cpuSelfDmg,
+                        targetDelta,
+                        selfDelta,
+                        pc.throughWall,
+                        pc.wallBypassAllowed,
+                        pc.taskIdxTarget,
+                        pc.taskIdxSelf,
+                        sameLevel
+                ));
+            }
+        }
+
+        if (logNow) {
+            emitGpuDebugLog(
+                    predictedTargetPos,
+                    preCandidates,
+                    debugEntries,
+                    mismatchCount,
+                    overflowCount,
+                    sameLevelMismatchCount,
+                    sameLevelTargetNearTwoCount,
+                    sameLevelSelfNearTwoCount,
+                    totalArmorTarget,
+                    toughnessTarget,
+                    enchantProtTarget,
+                    targetResistanceMul,
+                    totalArmorSelf,
+                    toughnessSelf,
+                    enchantProtSelf,
+                    selfResistanceMul,
+                    diff,
+                    applyDifficultyTarget,
+                    selfArmorMode
+            );
+        }
+        return candidates;
+    }
+
+    /**
+     * 获取实体的附魔保护等级总和
+     */
+    private static float getEnchantProtection(LivingEntity entity, DamageUtils.ArmorEnchantmentMode mode) {
+        return switch (mode) {
+            case None -> {
+                float total = 0f;
+                for (var slot : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
+                    var stack = entity.getItemBySlot(slot);
+                    if (stack.isEmpty()) continue;
+                    total += EnchantmentUtils.getEnchantmentLevel(stack, net.minecraft.world.item.enchantment.Enchantments.PROTECTION) * 1.0f;
+                    total += EnchantmentUtils.getEnchantmentLevel(stack, net.minecraft.world.item.enchantment.Enchantments.BLAST_PROTECTION) * 2.0f;
+                }
+                yield total;
+            }
+            case PPPP -> 4 * 1.0f * 4;
+            case PPBP -> 4 * 1.0f * 3 + 4 * 2.0f;
+        };
+    }
+
+    private static float getResistanceMultiplier(LivingEntity entity) {
+        if (!entity.hasEffect(MobEffects.RESISTANCE)) {
+            return 1.0f;
+        }
+        int amplifier = entity.getEffect(MobEffects.RESISTANCE).getAmplifier();
+        int reduction = (amplifier + 1) * 5;
+        int remaining = Math.max(0, 25 - reduction);
+        return remaining / 25.0f;
+    }
+
+    private boolean shouldEmitGpuDebugLog() {
+        long now = System.currentTimeMillis();
+        if (now - lastGpuDebugLogTime < GPU_DEBUG_LOG_INTERVAL_MS) {
+            return false;
+        }
+        lastGpuDebugLogTime = now;
+        return true;
+    }
+
+    private void emitGpuDebugLog(Vec3 predictedTargetPos,
+                                 List<GpuPreCandidate> preCandidates,
+                                 List<GpuDebugEntry> debugEntries,
+                                 int mismatchCount,
+                                 int overflowCount,
+                                 int sameLevelMismatchCount,
+                                 int sameLevelTargetNearTwoCount,
+                                 int sameLevelSelfNearTwoCount,
+                                 float totalArmorTarget,
+                                 float toughnessTarget,
+                                 float enchantProtTarget,
+                                 float targetResistanceMul,
+                                 float totalArmorSelf,
+                                 float toughnessSelf,
+                                 float enchantProtSelf,
+                                 float selfResistanceMul,
+                                 float diff,
+                                 float applyDifficultyTarget,
+                                 DamageUtils.ArmorEnchantmentMode selfArmorMode) {
+        int dispatchedTaskCount = gpuCompute.getTaskCount();
+        Epsilon.LOGGER.info(
+                "[CrystalAura][GPU-DEBUG] candidates={} dispatchedTasks={} mismatches={} overflows={} sameLevelMismatch={} sameLevelTarget~2={} sameLevelSelf~2={} targetPos=({}, {}, {}) playerPos=({}, {}, {}) computeMode={} armorMode={} selfArmorMode={} targetArmor={} targetTough={} targetProt={} targetResMul={} selfArmor={} selfTough={} selfProt={} selfResMul={} diff={} applyDifficultyTarget={}",
+                preCandidates.size(),
+                dispatchedTaskCount,
+                mismatchCount,
+                overflowCount,
+                sameLevelMismatchCount,
+                sameLevelTargetNearTwoCount,
+                sameLevelSelfNearTwoCount,
+                fmt(predictedTargetPos.x), fmt(predictedTargetPos.y), fmt(predictedTargetPos.z),
+                fmt(mc.player.getX()), fmt(mc.player.getY()), fmt(mc.player.getZ()),
+                computeMode.getValue(),
+                armorMode.getValue(),
+                selfArmorMode,
+                fmt(totalArmorTarget),
+                fmt(toughnessTarget),
+                fmt(enchantProtTarget),
+                fmt(targetResistanceMul),
+                fmt(totalArmorSelf),
+                fmt(toughnessSelf),
+                fmt(enchantProtSelf),
+                fmt(selfResistanceMul),
+                fmt(diff),
+                fmt(applyDifficultyTarget)
+        );
+
+        if (debugEntries == null || debugEntries.isEmpty()) {
+            return;
+        }
+
+        debugEntries.sort(Comparator.comparingDouble(GpuDebugEntry::maxDelta).reversed());
+        int limit = Math.min(debugEntries.size(), GPU_DEBUG_MAX_DETAILS);
+        for (int i = 0; i < limit; i++) {
+            GpuDebugEntry entry = debugEntries.get(i);
+            Epsilon.LOGGER.info(
+                    "[CrystalAura][GPU-DEBUG][{}] support={} crystal=({}, {}, {}) sameLevel={} throughWall={} wallBypass={} idxT={} idxS={} gpuTarget={} cpuTarget={} dT={} gpuSelf={} cpuSelf={} dS={} maxD={}",
+                    i,
+                    entry.supportPos,
+                    fmt(entry.crystalPos.x), fmt(entry.crystalPos.y), fmt(entry.crystalPos.z),
+                    entry.sameLevel,
+                    entry.throughWall,
+                    entry.wallBypassAllowed,
+                    entry.taskIdxTarget,
+                    entry.taskIdxSelf,
+                    fmt(entry.gpuTargetDmg),
+                    fmt(entry.cpuTargetDmg),
+                    fmt(entry.targetDelta),
+                    fmt(entry.gpuSelfDmg),
+                    fmt(entry.cpuSelfDmg),
+                    fmt(entry.selfDelta),
+                    fmt(entry.maxDelta())
+            );
+        }
+    }
+
+    private static String fmt(double value) {
+        return String.format(Locale.ROOT, "%.3f", value);
+    }
+
+    /**
+     * 在 CPU 上收集候选列表，计算伤害
+     */
+    private List<PlaceCandidate> collectPlaceCandidatesCPU(Vec3 predictedTargetPos) {
         List<PlaceCandidate> candidates = new ArrayList<>();
 
         BlockPos center = BlockPos.containing(predictedTargetPos);
@@ -728,6 +1040,37 @@ public class CrystalAura extends Module {
         return new Vector2f(centerX, centerY);
     }
 
+    private record GpuPreCandidate(
+            BlockPos supportPos,
+            Vec3 crystalPos,
+            Vector2f targetRotation,
+            boolean throughWall,
+            boolean wallBypassAllowed,
+            int taskIdxTarget,
+            int taskIdxSelf
+    ) {
+    }
+
+    private record GpuDebugEntry(
+            BlockPos supportPos,
+            Vec3 crystalPos,
+            float gpuTargetDmg,
+            float cpuTargetDmg,
+            float gpuSelfDmg,
+            float cpuSelfDmg,
+            float targetDelta,
+            float selfDelta,
+            boolean throughWall,
+            boolean wallBypassAllowed,
+            int taskIdxTarget,
+            int taskIdxSelf,
+            boolean sameLevel
+    ) {
+        private float maxDelta() {
+            return Math.max(targetDelta, selfDelta);
+        }
+    }
+
     private record PlaceCandidate(
             BlockPos supportPos,
             Vec3 crystalPos,
@@ -846,6 +1189,11 @@ public class CrystalAura extends Module {
         };
 
         abstract float score(float selfDmg, float targetDmg);
+    }
+
+    private enum ComputeMode {
+        CPU,
+        GPU
     }
 
 }
