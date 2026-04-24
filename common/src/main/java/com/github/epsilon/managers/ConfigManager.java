@@ -15,18 +15,40 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.FileVisitResult;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
+import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 public class ConfigManager {
 
-    private static final int CONFIG_VERSION = 2;
+    private static final int CONFIG_VERSION = 3;
+    private static final String DEFAULT_CONFIG_NAME = "default";
+    private static final String CONFIGS_FOLDER = "configs";
+    private static final String IMPORTS_FOLDER = "imports";
+    private static final String EXPORTS_FOLDER = "exports";
+    private static final String FRIENDS_FILE_NAME = "friends.json";
+    private static final String ACTIVE_CONFIG_FILE_NAME = "active-config.txt";
+    private static final String EXPORT_METADATA_FILE_NAME = "config-info.json";
+    private static final Pattern INVALID_CONFIG_NAME_PATTERN = Pattern.compile("[\\\\/:*?\"<>|\\p{Cntrl}]");
 
     /**
      * Root directory: epsilon-config/
      */
     private static final Path configDir = Paths.get("epsilon-config");
-
-    private static final Path friendFile = configDir.resolve("friends.json");
+    private static final Path configsDir = configDir.resolve(CONFIGS_FOLDER);
+    private static final Path importsDir = configDir.resolve(IMPORTS_FOLDER);
+    private static final Path exportsDir = configDir.resolve(EXPORTS_FOLDER);
+    private static final Path activeConfigFile = configDir.resolve(ACTIVE_CONFIG_FILE_NAME);
+    private static final Path legacyFriendFile = configDir.resolve(FRIENDS_FILE_NAME);
 
     // INSTANCE must be declared AFTER all static fields it depends on
     public static final ConfigManager INSTANCE = new ConfigManager();
@@ -36,18 +58,18 @@ public class ConfigManager {
             .disableHtmlEscaping()
             .create();
 
-
-    private final LegacyConfigMigrator legacyMigrator = new LegacyConfigMigrator(configDir, gson);
+    private String activeConfigName = DEFAULT_CONFIG_NAME;
 
     private ConfigManager() {
     }
 
     public void initConfig() {
         try {
-            Files.createDirectories(configDir);
-            legacyMigrator.migrateIfNeeded(ModuleManager.INSTANCE.getModules());
-            applyToModules(ModuleManager.INSTANCE.getModules());
-            loadFriends();
+            ensureRootDirectories();
+            migrateLegacyLayoutsIfNeeded(ModuleManager.INSTANCE.getModules());
+            activeConfigName = resolveStoredActiveConfigName();
+            ensureConfigExists(activeConfigName);
+            loadActiveConfigSnapshot();
         } catch (Exception e) {
             Epsilon.LOGGER.error("初始化配置失败", e);
         }
@@ -60,38 +82,198 @@ public class ConfigManager {
         return configDir;
     }
 
+    public synchronized Path getConfigsDir() {
+        return configsDir;
+    }
+
+    public synchronized Path getImportDir() {
+        return importsDir;
+    }
+
+    public synchronized Path getExportDir() {
+        return exportsDir;
+    }
+
+    public synchronized Path getActiveConfigStorageDir() {
+        return getConfigStorageDir(activeConfigName);
+    }
+
+    public synchronized String getActiveConfigName() {
+        return activeConfigName;
+    }
+
+    public synchronized List<String> listConfigs() {
+        try {
+            return listConfigsInternal(true);
+        } catch (IOException e) {
+            Epsilon.LOGGER.error("列出配置失败", e);
+            return List.of(activeConfigName);
+        }
+    }
+
     public synchronized void reload() {
-        applyToModules(ModuleManager.INSTANCE.getModules());
-        loadFriends();
+        try {
+            loadActiveConfigSnapshot();
+        } catch (Exception e) {
+            Epsilon.LOGGER.error("重载配置失败", e);
+        }
     }
 
     public synchronized void applyToModules(List<Module> modules) {
         if (modules == null) return;
         for (Module module : modules) {
-            if (module != null) applyModuleFromDisk(module);
+            if (module != null) applyModuleFromDisk(module, getActiveConfigStorageDir());
         }
     }
 
     public synchronized void saveNow() {
-        List<Module> modules = ModuleManager.INSTANCE.getModules();
-        if (modules != null) {
-            for (Module module : modules) {
-                if (module != null) saveModuleToDisk(module);
+        try {
+            saveActiveConfigSnapshot();
+        } catch (Exception e) {
+            Epsilon.LOGGER.error("保存配置失败", e);
+        }
+    }
+
+    public synchronized String saveAsConfig(String rawName) throws IOException {
+        String configName = normalizeAndValidateConfigName(rawName);
+        ensureRootDirectories();
+        saveActiveConfigSnapshot();
+
+        Path sourceDir = getActiveConfigStorageDir();
+        Path targetDir = getConfigStorageDir(configName);
+        if (!sourceDir.equals(targetDir)) {
+            deleteDirectory(targetDir);
+            copyDirectory(sourceDir, targetDir, false);
+        }
+
+        activeConfigName = configName;
+        writeActiveConfigName(configName);
+        loadActiveConfigSnapshot();
+        return configName;
+    }
+
+    public synchronized void switchConfig(String rawName) throws IOException {
+        String configName = normalizeAndValidateConfigName(rawName);
+        ensureRootDirectories();
+        if (Objects.equals(configName, activeConfigName)) {
+            loadActiveConfigSnapshot();
+            return;
+        }
+
+        saveActiveConfigSnapshot();
+        ensureConfigExists(configName);
+        activeConfigName = configName;
+        writeActiveConfigName(configName);
+        loadActiveConfigSnapshot();
+    }
+
+    public synchronized boolean deleteConfig(String rawName) throws IOException {
+        String configName = normalizeAndValidateConfigName(rawName);
+        Path targetDir = getConfigStorageDir(configName);
+        if (!Files.exists(targetDir)) {
+            return false;
+        }
+
+        List<String> configs = listConfigsInternal(true);
+        if (configs.size() <= 1 && configs.contains(configName)) {
+            return false;
+        }
+
+        if (Objects.equals(activeConfigName, configName)) {
+            String fallback = configs.stream()
+                    .filter(name -> !Objects.equals(name, configName))
+                    .findFirst()
+                    .orElse(DEFAULT_CONFIG_NAME);
+            activeConfigName = fallback;
+            ensureConfigExists(fallback);
+            writeActiveConfigName(fallback);
+            loadActiveConfigSnapshot();
+        }
+
+        deleteDirectory(targetDir);
+        return true;
+    }
+
+    public synchronized Path exportActiveConfigToZip(String rawPath) throws IOException {
+        return exportConfigToZip(activeConfigName, rawPath);
+    }
+
+    public synchronized Path exportConfigToZip(String rawName, String rawPath) throws IOException {
+        String configName = normalizeAndValidateConfigName(rawName);
+        ensureRootDirectories();
+        if (Objects.equals(configName, activeConfigName)) {
+            saveActiveConfigSnapshot();
+        }
+
+        Path sourceDir = getConfigStorageDir(configName);
+        if (!Files.exists(sourceDir)) {
+            throw new IOException("配置不存在: " + configName);
+        }
+
+        Path zipPath = resolveExportZipPath(rawPath, configName);
+        Files.createDirectories(zipPath.getParent());
+
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(Files.newOutputStream(zipPath,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING,
+                StandardOpenOption.WRITE))) {
+            String rootPrefix = configName + "/";
+            writeStringZipEntry(zipOutputStream, rootPrefix + EXPORT_METADATA_FILE_NAME, gson.toJson(buildExportMetadata(configName)));
+
+            try (Stream<Path> stream = Files.walk(sourceDir)) {
+                for (Path file : stream.filter(Files::isRegularFile).toList()) {
+                    String relative = sourceDir.relativize(file).toString().replace('\\', '/');
+                    writeFileZipEntry(zipOutputStream, rootPrefix + relative, file);
+                }
             }
         }
-        saveFriends();
+
+        return zipPath;
+    }
+
+    public synchronized String importConfigFromZip(String rawPath) throws IOException {
+        Path zipPath = resolveImportZipPath(rawPath);
+        return importConfigFromZip(zipPath, true);
+    }
+
+    public synchronized String importConfigFromZip(Path zipPath, boolean switchToImported) throws IOException {
+        ensureRootDirectories();
+        if (zipPath == null || !Files.exists(zipPath) || !Files.isRegularFile(zipPath)) {
+            throw new IOException("Zip 文件不存在: " + zipPath);
+        }
+
+        Path tempDir = Files.createTempDirectory(configDir, "config-import-");
+        try {
+            unzipSecurely(zipPath, tempDir);
+            Path configRoot = detectConfigRoot(tempDir);
+            String importedName = buildImportedConfigName(configRoot, zipPath);
+            Path targetDir = getConfigStorageDir(importedName);
+
+            deleteDirectory(targetDir);
+            copyDirectory(configRoot, targetDir, true);
+
+            if (switchToImported) {
+                activeConfigName = importedName;
+                writeActiveConfigName(importedName);
+                loadActiveConfigSnapshot();
+            }
+            return importedName;
+        } finally {
+            deleteDirectory(tempDir);
+        }
     }
 
     // -------------------------------------------------------------------------
     // Per-module file helpers
     // -------------------------------------------------------------------------
 
-    private Path getModuleFile(Module module) {
-        return legacyMigrator.getModuleFile(module);
+    private Path getModuleFile(Path configStorageDir, Module module) {
+        String addonId = module.getAddonId() != null ? module.getAddonId() : "unknown";
+        return configStorageDir.resolve(addonId).resolve(module.getName() + ".json");
     }
 
-    private void applyModuleFromDisk(Module module) {
-        Path file = getModuleFile(module);
+    private void applyModuleFromDisk(Module module, Path configStorageDir) {
+        Path file = getModuleFile(configStorageDir, module);
         if (!Files.exists(file)) return;
         try {
             String json = Files.readString(file, StandardCharsets.UTF_8);
@@ -155,8 +337,8 @@ public class ConfigManager {
         }
     }
 
-    private void saveModuleToDisk(Module module) {
-        Path file = getModuleFile(module);
+    private void saveModuleToDisk(Module module, Path configStorageDir) throws IOException {
+        Path file = getModuleFile(configStorageDir, module);
         try {
             Files.createDirectories(file.getParent());
             String json = gson.toJson(buildModuleObject(module));
@@ -166,6 +348,7 @@ public class ConfigManager {
                     StandardOpenOption.WRITE);
         } catch (IOException e) {
             Epsilon.LOGGER.error("写入模块配置失败: {}", file, e);
+            throw e;
         }
     }
 
@@ -203,7 +386,8 @@ public class ConfigManager {
     // Friends
     // -------------------------------------------------------------------------
 
-    private synchronized void saveFriends() {
+    private synchronized void saveFriends(Path configStorageDir) throws IOException {
+        Path friendFile = configStorageDir.resolve(FRIENDS_FILE_NAME);
         JsonArray array = new JsonArray();
         for (String name : FriendManager.INSTANCE.getFriends()) {
             array.add(name);
@@ -216,10 +400,12 @@ public class ConfigManager {
                     StandardOpenOption.WRITE);
         } catch (IOException e) {
             Epsilon.LOGGER.error("写入好友文件失败: {}", friendFile, e);
+            throw e;
         }
     }
 
-    private synchronized void loadFriends() {
+    private synchronized void loadFriends(Path configStorageDir) {
+        Path friendFile = configStorageDir.resolve(FRIENDS_FILE_NAME);
         FriendManager.INSTANCE.clearFriends();
         if (!Files.exists(friendFile)) return;
         try {
@@ -307,5 +493,296 @@ public class ConfigManager {
         } catch (Exception ignored) {
             return null;
         }
+    }
+
+    private void ensureRootDirectories() throws IOException {
+        Files.createDirectories(configDir);
+        Files.createDirectories(configsDir);
+        Files.createDirectories(importsDir);
+        Files.createDirectories(exportsDir);
+    }
+
+    private void ensureConfigExists(String configName) throws IOException {
+        Files.createDirectories(getConfigStorageDir(configName));
+    }
+
+    private Path getConfigStorageDir(String configName) {
+        return configsDir.resolve(configName);
+    }
+
+    private void resetModulesToDefaults(List<Module> modules) {
+        if (modules == null) {
+            return;
+        }
+        for (Module module : modules) {
+            if (module != null) {
+                module.reset();
+            }
+        }
+    }
+
+    private void loadActiveConfigSnapshot() throws IOException {
+        ensureRootDirectories();
+        ensureConfigExists(activeConfigName);
+        writeActiveConfigName(activeConfigName);
+        List<Module> modules = ModuleManager.INSTANCE.getModules();
+        resetModulesToDefaults(modules);
+        applyToModules(modules);
+        loadFriends(getActiveConfigStorageDir());
+    }
+
+    private void saveActiveConfigSnapshot() throws IOException {
+        ensureRootDirectories();
+        ensureConfigExists(activeConfigName);
+        writeActiveConfigName(activeConfigName);
+        List<Module> modules = ModuleManager.INSTANCE.getModules();
+        if (modules != null) {
+            for (Module module : modules) {
+                if (module != null) {
+                    saveModuleToDisk(module, getActiveConfigStorageDir());
+                }
+            }
+        }
+        saveFriends(getActiveConfigStorageDir());
+    }
+
+    private void migrateLegacyLayoutsIfNeeded(List<Module> modules) throws IOException {
+        Path defaultConfigDir = getConfigStorageDir(DEFAULT_CONFIG_NAME);
+        Files.createDirectories(defaultConfigDir);
+        new LegacyConfigMigrator(configDir, defaultConfigDir, gson).migrateIfNeeded(modules);
+        migrateLegacyFriendsIfNeeded(defaultConfigDir);
+    }
+
+    private void migrateLegacyFriendsIfNeeded(Path defaultConfigDir) throws IOException {
+        if (!Files.exists(legacyFriendFile)) {
+            return;
+        }
+        Path targetFriendFile = defaultConfigDir.resolve(FRIENDS_FILE_NAME);
+        if (!Files.exists(targetFriendFile)) {
+            Files.createDirectories(targetFriendFile.getParent());
+            Files.copy(legacyFriendFile, targetFriendFile, StandardCopyOption.REPLACE_EXISTING);
+        }
+        Path backupFile = getAvailableBackupPath(legacyFriendFile);
+        Files.move(legacyFriendFile, backupFile, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    private String resolveStoredActiveConfigName() throws IOException {
+        if (Files.exists(activeConfigFile)) {
+            String stored = Files.readString(activeConfigFile, StandardCharsets.UTF_8).trim();
+            if (!stored.isEmpty() && isValidConfigName(stored)) {
+                return stored;
+            }
+        }
+        List<String> existingConfigs = listConfigsInternal(true);
+        return existingConfigs.isEmpty() ? DEFAULT_CONFIG_NAME : existingConfigs.getFirst();
+    }
+
+    private void writeActiveConfigName(String configName) throws IOException {
+        Files.writeString(activeConfigFile, configName, StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING,
+                StandardOpenOption.WRITE);
+    }
+
+    private List<String> listConfigsInternal(boolean createDefaultIfMissing) throws IOException {
+        ensureRootDirectories();
+        List<String> configs;
+        try (Stream<Path> stream = Files.list(configsDir)) {
+            configs = stream
+                    .filter(Files::isDirectory)
+                    .map(path -> path.getFileName().toString())
+                    .sorted(String.CASE_INSENSITIVE_ORDER)
+                    .toList();
+        }
+        if (configs.isEmpty() && createDefaultIfMissing) {
+            ensureConfigExists(DEFAULT_CONFIG_NAME);
+            return List.of(DEFAULT_CONFIG_NAME);
+        }
+        return configs;
+    }
+
+    private String normalizeAndValidateConfigName(String rawName) {
+        String configName = rawName == null ? "" : rawName.trim();
+        if (!isValidConfigName(configName)) {
+            throw new IllegalArgumentException("配置名称不合法");
+        }
+        return configName;
+    }
+
+    private boolean isValidConfigName(String configName) {
+        return configName != null
+                && !configName.isBlank()
+                && !configName.equals(".")
+                && !configName.equals("..")
+                && !configName.contains("..")
+                && !INVALID_CONFIG_NAME_PATTERN.matcher(configName).find();
+    }
+
+    private Path resolveExportZipPath(String rawPath, String configName) {
+        String normalized = rawPath == null ? "" : rawPath.trim();
+        String fileName = normalized.isEmpty()
+                ? configName + ".zip"
+                : Paths.get(normalized).getFileName() == null
+                ? configName + ".zip"
+                : Paths.get(normalized).getFileName().toString();
+        if (!fileName.toLowerCase().endsWith(".zip")) {
+            fileName = fileName + ".zip";
+        }
+        return exportsDir.resolve(fileName).normalize();
+    }
+
+    private Path resolveImportZipPath(String rawPath) {
+        String normalized = rawPath == null ? "" : rawPath.trim();
+        if (normalized.isEmpty()) {
+            throw new IllegalArgumentException("请输入要导入的 zip 文件");
+        }
+        Path path = Paths.get(normalized);
+        if (!path.isAbsolute()) {
+            path = importsDir.resolve(path);
+        }
+        return path.normalize();
+    }
+
+    private JsonObject buildExportMetadata(String configName) {
+        JsonObject object = new JsonObject();
+        object.addProperty("version", CONFIG_VERSION);
+        object.addProperty("configName", configName);
+        object.addProperty("exportedAt", Instant.now().toString());
+        return object;
+    }
+
+    private void writeStringZipEntry(ZipOutputStream zipOutputStream, String entryName, String contents) throws IOException {
+        zipOutputStream.putNextEntry(new ZipEntry(entryName));
+        zipOutputStream.write(contents.getBytes(StandardCharsets.UTF_8));
+        zipOutputStream.closeEntry();
+    }
+
+    private void writeFileZipEntry(ZipOutputStream zipOutputStream, String entryName, Path file) throws IOException {
+        zipOutputStream.putNextEntry(new ZipEntry(entryName));
+        zipOutputStream.write(Files.readAllBytes(file));
+        zipOutputStream.closeEntry();
+    }
+
+    private void unzipSecurely(Path zipPath, Path targetDir) throws IOException {
+        try (ZipInputStream zipInputStream = new ZipInputStream(Files.newInputStream(zipPath))) {
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                Path outputPath = targetDir.resolve(entry.getName()).normalize();
+                if (!outputPath.startsWith(targetDir)) {
+                    throw new IOException("非法 zip 条目: " + entry.getName());
+                }
+                if (entry.isDirectory()) {
+                    Files.createDirectories(outputPath);
+                } else {
+                    Files.createDirectories(outputPath.getParent());
+                    Files.copy(zipInputStream, outputPath, StandardCopyOption.REPLACE_EXISTING);
+                }
+                zipInputStream.closeEntry();
+            }
+        }
+    }
+
+    private Path detectConfigRoot(Path extractedRoot) throws IOException {
+        try (Stream<Path> stream = Files.list(extractedRoot)) {
+            List<Path> children = stream.toList();
+            if (children.size() == 1 && Files.isDirectory(children.getFirst())) {
+                return children.getFirst();
+            }
+        }
+        return extractedRoot;
+    }
+
+    private String buildImportedConfigName(Path configRoot, Path zipPath) throws IOException {
+        String baseName = fileNameWithoutExtension(zipPath.getFileName() == null ? zipPath.toString() : zipPath.getFileName().toString());
+        Path metadataFile = configRoot.resolve(EXPORT_METADATA_FILE_NAME);
+        String requestedName = baseName;
+        if (Files.exists(metadataFile)) {
+            try {
+                JsonElement parsed = JsonParser.parseString(Files.readString(metadataFile, StandardCharsets.UTF_8));
+                if (parsed.isJsonObject()) {
+                    JsonElement nameElement = parsed.getAsJsonObject().get("configName");
+                    if (nameElement != null && nameElement.isJsonPrimitive()) {
+                        requestedName = nameElement.getAsString();
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        String candidate = isValidConfigName(requestedName) ? requestedName : baseName;
+        String uniqueName = candidate;
+        int index = 1;
+        while (Files.exists(getConfigStorageDir(uniqueName))) {
+            uniqueName = candidate + "-imported" + (index > 1 ? "-" + index : "");
+            index++;
+        }
+        return uniqueName;
+    }
+
+    private String fileNameWithoutExtension(String fileName) {
+        int index = fileName.lastIndexOf('.');
+        return index > 0 ? fileName.substring(0, index) : fileName;
+    }
+
+    private void copyDirectory(Path sourceDir, Path targetDir, boolean skipExportMetadata) throws IOException {
+        if (!Files.exists(sourceDir)) {
+            Files.createDirectories(targetDir);
+            return;
+        }
+        Files.walkFileTree(sourceDir, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                Path relative = sourceDir.relativize(dir);
+                Files.createDirectories(targetDir.resolve(relative));
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (skipExportMetadata && EXPORT_METADATA_FILE_NAME.equals(file.getFileName().toString())) {
+                    return FileVisitResult.CONTINUE;
+                }
+                Path relative = sourceDir.relativize(file);
+                Files.copy(file, targetDir.resolve(relative), StandardCopyOption.REPLACE_EXISTING);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
+
+    private void deleteDirectory(Path directory) throws IOException {
+        if (directory == null || !Files.exists(directory)) {
+            return;
+        }
+        Files.walkFileTree(directory, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.deleteIfExists(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                Files.deleteIfExists(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
+
+    private Path getAvailableBackupPath(Path originalFile) throws IOException {
+        Path parent = originalFile.getParent();
+        String baseName = originalFile.getFileName().toString() + ".bak";
+        Path backupFile = parent.resolve(baseName);
+        if (!Files.exists(backupFile)) {
+            return backupFile;
+        }
+
+        int index = 1;
+        Path candidate;
+        do {
+            candidate = parent.resolve(baseName + "." + index);
+            index++;
+        } while (Files.exists(candidate));
+
+        return candidate;
     }
 }

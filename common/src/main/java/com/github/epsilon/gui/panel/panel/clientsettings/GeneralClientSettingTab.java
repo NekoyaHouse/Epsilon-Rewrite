@@ -1,0 +1,246 @@
+package com.github.epsilon.gui.panel.panel.clientsettings;
+
+import com.github.epsilon.graphics.renderers.RectRenderer;
+import com.github.epsilon.graphics.renderers.RoundRectRenderer;
+import com.github.epsilon.graphics.renderers.TextRenderer;
+import com.github.epsilon.gui.panel.MD3Theme;
+import com.github.epsilon.gui.panel.PanelLayout;
+import com.github.epsilon.gui.panel.PanelState;
+import com.github.epsilon.gui.panel.adapter.SettingListController;
+import com.github.epsilon.gui.panel.component.setting.KeybindSettingRow;
+import com.github.epsilon.gui.panel.popup.PanelPopupHost;
+import com.github.epsilon.gui.panel.util.PanelContentBuffer;
+import com.github.epsilon.gui.panel.util.PanelContentInvalidationState;
+import com.github.epsilon.gui.panel.util.ScrollBarDragState;
+import com.github.epsilon.gui.panel.util.ScrollBarUtil;
+import com.github.epsilon.modules.impl.ClientSetting;
+import com.github.epsilon.settings.Setting;
+import com.github.epsilon.settings.impl.KeybindSetting;
+import com.github.epsilon.utils.render.animation.Animation;
+import com.github.epsilon.utils.render.animation.Easing;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+public final class GeneralClientSettingTab implements ClientSettingTabView {
+
+    private final PanelState state;
+    private final SettingListController settingListController;
+    private final PanelContentBuffer contentBuffer = new PanelContentBuffer();
+    private final PanelContentInvalidationState contentState = new PanelContentInvalidationState();
+    private final Map<Setting<?>, Animation> hoverAnimations = new HashMap<>();
+    private final ScrollBarDragState scrollBarDrag = new ScrollBarDragState();
+
+    private PanelLayout.Rect bounds;
+    private int guiHeight;
+    private float lastScroll = Float.NaN;
+    private List<String> lastVisibleSettings = List.of();
+    private String lastListeningKey = "";
+
+    public GeneralClientSettingTab(PanelState state, PanelPopupHost popupHost) {
+        this.state = state;
+        this.settingListController = new SettingListController(popupHost);
+    }
+
+    @Override
+    public void render(GuiGraphicsExtractor guiGraphics, PanelLayout.Rect bounds, int mouseX, int mouseY, float partialTick) {
+        this.bounds = bounds;
+        this.guiHeight = guiGraphics.guiHeight();
+
+        List<Setting<?>> settings = ClientSetting.INSTANCE.getSettings().stream()
+                .filter(Setting::isAvailable)
+                .toList();
+        float contentHeight = settings.size() * (28.0f + MD3Theme.ROW_GAP);
+        state.setMaxClientSettingScroll(contentHeight - bounds.height());
+        float maxScroll = Math.max(0.0f, contentHeight - bounds.height());
+        boolean hasScrollBar = maxScroll > 0.0f;
+        float rowWidth = hasScrollBar ? bounds.width() - ScrollBarUtil.TOTAL_WIDTH : bounds.width();
+
+        if (shouldRebuildContent(bounds, mouseX, mouseY, settings, guiGraphics.guiHeight())) {
+            contentBuffer.clear();
+            contentState.beginRebuild();
+
+            settingListController.layoutRows(settings, bounds, state.getClientSettingScroll(), rowWidth, (setting, row, rowBounds) -> {
+                if (row instanceof KeybindSettingRow keybindRow) {
+                    keybindRow.setListening(state.getListeningKeybindSetting() == keybindRow.getSetting());
+                }
+                Animation hoverAnimation = hoverAnimations.computeIfAbsent(setting, ignored -> {
+                    Animation animation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
+                    animation.setStartValue(0.0f);
+                    return animation;
+                });
+                hoverAnimation.run(rowBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
+                row.render(guiGraphics, contentBuffer.roundRectRenderer(), contentBuffer.rectRenderer(), contentBuffer.textRenderer(), rowBounds, hoverAnimation.getValue(), mouseX, mouseY, partialTick);
+                contentState.noteAnimation(!hoverAnimation.isFinished() || row.hasActiveAnimation());
+            });
+
+            rememberSnapshot(bounds, mouseX, mouseY, settings, guiGraphics.guiHeight());
+        }
+
+        contentBuffer.queueViewport(bounds, guiHeight, state.getClientSettingScroll(), maxScroll, contentHeight);
+    }
+
+    @Override
+    public void flushContent() {
+        contentBuffer.flush();
+    }
+
+    @Override
+    public void markDirty() {
+        contentState.markDirty();
+    }
+
+    @Override
+    public boolean hasActiveAnimations() {
+        return contentState.hasActiveAnimations();
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {
+        if (bounds == null || event.button() != 0) {
+            return false;
+        }
+
+        float maxScroll = state.getMaxClientSettingScroll();
+        if (scrollBarDrag.mouseClicked(event.x(), event.y(), bounds, state.getClientSettingScroll(), maxScroll)) {
+            float newScroll = scrollBarDrag.mouseDragged(event.y(), bounds, maxScroll);
+            if (newScroll >= 0.0f) {
+                state.setClientSettingScroll(newScroll);
+            }
+            markDirty();
+            return true;
+        }
+
+        if (settingListController.mouseClicked(event, isDoubleClick, bounds, (row, rowBounds, clickEvent, doubleClick) -> {
+            if (row instanceof KeybindSettingRow keybindRow && row.mouseClicked(rowBounds, clickEvent, doubleClick)) {
+                state.setListeningKeybindSetting(keybindRow.getSetting());
+                return true;
+            }
+            return false;
+        })) {
+            markDirty();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (scrollBarDrag.mouseReleased()) {
+            markDirty();
+            return true;
+        }
+        if (settingListController.mouseReleased(event)) {
+            markDirty();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double mouseX, double mouseY) {
+        if (scrollBarDrag.isDragging()) {
+            float newScroll = scrollBarDrag.mouseDragged(event.y(), bounds, state.getMaxClientSettingScroll());
+            if (newScroll >= 0.0f) {
+                state.setClientSettingScroll(newScroll);
+            }
+            markDirty();
+            return true;
+        }
+        if (settingListController.mouseDragged(event, mouseX, mouseY)) {
+            markDirty();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (bounds != null && bounds.contains(mouseX, mouseY)) {
+            state.scrollClientSetting(-scrollY * 20.0f);
+            markDirty();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean keyPressed(KeyEvent event) {
+        KeybindSetting listening = state.getListeningKeybindSetting();
+        if (listening != null) {
+            if (event.key() == 256) {
+                state.setListeningKeybindSetting(null);
+                markDirty();
+                return true;
+            }
+            if (event.key() == 259 || event.key() == 261) {
+                listening.setValue(-1);
+                state.setListeningKeybindSetting(null);
+                markDirty();
+                return true;
+            }
+            listening.setValue(event.key());
+            state.setListeningKeybindSetting(null);
+            markDirty();
+            return true;
+        }
+        if (settingListController.keyPressed(event)) {
+            markDirty();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean charTyped(CharacterEvent event) {
+        if (settingListController.charTyped(event)) {
+            markDirty();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean consumesHover(int mouseX, int mouseY) {
+        return settingListController.isPopupHovered(mouseX, mouseY);
+    }
+
+    @Override
+    public void onDeactivated() {
+        scrollBarDrag.reset();
+        settingListController.clearFocus();
+        if (state.getListeningKeybindSetting() != null) {
+            state.setListeningKeybindSetting(null);
+        }
+        markDirty();
+    }
+
+    private boolean shouldRebuildContent(PanelLayout.Rect bounds, int mouseX, int mouseY, List<Setting<?>> settings, int currentGuiHeight) {
+        if (contentState.needsRebuild(bounds, mouseX, mouseY, currentGuiHeight)) {
+            return true;
+        }
+        if (Float.compare(lastScroll, state.getClientSettingScroll()) != 0) {
+            return true;
+        }
+        String listeningKey = state.getListeningKeybindSetting() == null ? "" : state.getListeningKeybindSetting().getName();
+        if (!Objects.equals(lastListeningKey, listeningKey)) {
+            return true;
+        }
+        List<String> visibleSettings = settings.stream().map(Setting::getName).toList();
+        return !Objects.equals(lastVisibleSettings, visibleSettings);
+    }
+
+    private void rememberSnapshot(PanelLayout.Rect bounds, int mouseX, int mouseY, List<Setting<?>> settings, int currentGuiHeight) {
+        contentState.rememberSnapshot(bounds, mouseX, mouseY, currentGuiHeight);
+        lastScroll = state.getClientSettingScroll();
+        lastListeningKey = state.getListeningKeybindSetting() == null ? "" : state.getListeningKeybindSetting().getName();
+        lastVisibleSettings = settings.stream().map(Setting::getName).toList();
+    }
+}
+

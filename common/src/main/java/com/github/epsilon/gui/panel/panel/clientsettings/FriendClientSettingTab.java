@@ -1,0 +1,359 @@
+package com.github.epsilon.gui.panel.panel.clientsettings;
+
+import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
+import com.github.epsilon.assets.i18n.TranslateComponent;
+import com.github.epsilon.graphics.renderers.RectRenderer;
+import com.github.epsilon.graphics.renderers.RoundRectRenderer;
+import com.github.epsilon.graphics.renderers.TextRenderer;
+import com.github.epsilon.gui.panel.MD3Theme;
+import com.github.epsilon.gui.panel.PanelLayout;
+import com.github.epsilon.gui.panel.PanelState;
+import com.github.epsilon.gui.panel.util.PanelContentBuffer;
+import com.github.epsilon.gui.panel.util.PanelContentInvalidationState;
+import com.github.epsilon.gui.panel.util.ScrollBarDragState;
+import com.github.epsilon.gui.panel.util.ScrollBarUtil;
+import com.github.epsilon.managers.ConfigManager;
+import com.github.epsilon.managers.FriendManager;
+import com.github.epsilon.utils.render.animation.Animation;
+import com.github.epsilon.utils.render.animation.Easing;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import org.lwjgl.glfw.GLFW;
+
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+public final class FriendClientSettingTab implements ClientSettingTabView {
+
+    private static final TranslateComponent noFriendsComponent = EpsilonTranslateComponent.create("gui", "friend.empty");
+    private static final TranslateComponent addFriendPlaceholderComponent = EpsilonTranslateComponent.create("gui", "friend.input.placeholder");
+    private static final float FRIEND_ROW_HEIGHT = 30.0f;
+    private static final float FRIEND_INPUT_HEIGHT = 28.0f;
+    private static final float FRIEND_INPUT_BOTTOM_MARGIN = 4.0f;
+    private static final float FRIEND_INPUT_FIELD_SCALE = 0.8f;
+    private static final int MAX_FRIEND_NAME_LENGTH = 32;
+
+    private final PanelState state;
+    private final RoundRectRenderer roundRectRenderer;
+    private final RectRenderer rectRenderer;
+    private final TextRenderer textRenderer;
+    private final PanelContentBuffer contentBuffer = new PanelContentBuffer();
+    private final PanelContentInvalidationState contentState = new PanelContentInvalidationState();
+    private final Map<String, Animation> rowHoverAnimations = new HashMap<>();
+    private final Map<String, Animation> removeHoverAnimations = new HashMap<>();
+    private final ScrollBarDragState scrollBarDrag = new ScrollBarDragState();
+    private final List<FriendRowEntry> rowEntries = new ArrayList<>();
+    private final ClientSettingTextField inputField = new ClientSettingTextField(MAX_FRIEND_NAME_LENGTH);
+
+    private PanelLayout.Rect bounds;
+    private int guiHeight;
+    private float lastScroll = Float.NaN;
+    private List<String> lastFriendList = List.of();
+
+    public FriendClientSettingTab(PanelState state, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer) {
+        this.state = state;
+        this.roundRectRenderer = roundRectRenderer;
+        this.rectRenderer = rectRenderer;
+        this.textRenderer = textRenderer;
+    }
+
+    @Override
+    public void render(GuiGraphicsExtractor guiGraphics, PanelLayout.Rect bounds, int mouseX, int mouseY, float partialTick) {
+        this.bounds = bounds;
+        this.guiHeight = guiGraphics.guiHeight();
+
+        PanelLayout.Rect inputBounds = getInputBounds(bounds);
+        inputField.render(inputBounds, mouseX, mouseY, roundRectRenderer, rectRenderer, textRenderer,
+                addFriendPlaceholderComponent.getTranslatedName(), FRIEND_INPUT_FIELD_SCALE, "↵");
+
+        PanelLayout.Rect listViewport = getListViewport(bounds);
+        List<String> friends = FriendManager.INSTANCE.getFriends().stream().sorted(String.CASE_INSENSITIVE_ORDER).toList();
+        float contentHeight = friends.size() * (FRIEND_ROW_HEIGHT + MD3Theme.ROW_GAP);
+        state.setMaxFriendScroll(contentHeight - listViewport.height());
+        float maxScroll = Math.max(0.0f, contentHeight - listViewport.height());
+        boolean hasScrollBar = maxScroll > 0.0f;
+        float rowWidth = hasScrollBar ? listViewport.width() - ScrollBarUtil.TOTAL_WIDTH : listViewport.width();
+
+        if (shouldRebuild(listViewport, mouseX, mouseY, friends, guiGraphics.guiHeight())) {
+            contentBuffer.clear();
+            contentState.beginRebuild();
+            rowEntries.clear();
+            rowHoverAnimations.keySet().removeIf(name -> !friends.contains(name));
+            removeHoverAnimations.keySet().removeIf(name -> !friends.contains(name));
+
+            float rowY = listViewport.y() - state.getFriendScroll();
+            for (String friendName : friends) {
+                PanelLayout.Rect rowBounds = new PanelLayout.Rect(listViewport.x(), rowY, rowWidth, FRIEND_ROW_HEIGHT);
+                PanelLayout.Rect removeBounds = getRemoveButtonBounds(rowBounds);
+                rowEntries.add(new FriendRowEntry(friendName, rowBounds, removeBounds));
+
+                Animation hoverAnimation = rowHoverAnimations.computeIfAbsent(friendName, ignored -> {
+                    Animation animation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
+                    animation.setStartValue(0.0f);
+                    return animation;
+                });
+                Animation removeAnimation = removeHoverAnimations.computeIfAbsent(friendName, ignored -> {
+                    Animation animation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
+                    animation.setStartValue(0.0f);
+                    return animation;
+                });
+                hoverAnimation.run(rowBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
+                removeAnimation.run(removeBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
+                contentState.noteAnimation(!hoverAnimation.isFinished() || !removeAnimation.isFinished());
+
+                renderFriendRow(friendName, rowBounds, removeBounds, hoverAnimation.getValue(), removeAnimation.getValue());
+                rowY += FRIEND_ROW_HEIGHT + MD3Theme.ROW_GAP;
+            }
+
+            if (friends.isEmpty()) {
+                float hintScale = 0.58f;
+                String hint = noFriendsComponent.getTranslatedName();
+                float hintWidth = contentBuffer.textRenderer().getWidth(hint, hintScale);
+                float hintX = listViewport.x() + (listViewport.width() - hintWidth) / 2.0f;
+                float hintY = listViewport.y() + listViewport.height() / 2.0f - contentBuffer.textRenderer().getHeight(hintScale) / 2.0f;
+                contentBuffer.textRenderer().addText(hint, hintX, hintY, hintScale, MD3Theme.TEXT_MUTED);
+            }
+
+            rememberSnapshot(listViewport, mouseX, mouseY, friends, guiGraphics.guiHeight());
+        }
+
+        contentBuffer.queueViewport(listViewport, guiHeight, state.getFriendScroll(), maxScroll, contentHeight);
+    }
+
+    @Override
+    public void flushContent() {
+        contentBuffer.flush();
+    }
+
+    @Override
+    public void markDirty() {
+        contentState.markDirty();
+    }
+
+    @Override
+    public boolean hasActiveAnimations() {
+        boolean hoveringRows = rowHoverAnimations.values().stream().anyMatch(animation -> !animation.isFinished())
+                || removeHoverAnimations.values().stream().anyMatch(animation -> !animation.isFinished());
+        return contentState.hasActiveAnimations() || hoveringRows || inputField.hasActiveAnimations();
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {
+        if (bounds == null || event.button() != 0) {
+            return false;
+        }
+
+        PanelLayout.Rect listViewport = getListViewport(bounds);
+        float maxScroll = state.getMaxFriendScroll();
+        if (scrollBarDrag.mouseClicked(event.x(), event.y(), listViewport, state.getFriendScroll(), maxScroll)) {
+            float newScroll = scrollBarDrag.mouseDragged(event.y(), listViewport, maxScroll);
+            if (newScroll >= 0.0f) {
+                state.setFriendScroll(newScroll);
+            }
+            markDirty();
+            return true;
+        }
+
+        PanelLayout.Rect inputBounds = getInputBounds(bounds);
+        if (inputField.focusIfContains(inputBounds, event.x(), event.y())) {
+            markDirty();
+            return true;
+        }
+        inputField.blur();
+
+        for (FriendRowEntry entry : rowEntries) {
+            if (entry.removeBounds().contains(event.x(), event.y())) {
+                FriendManager.INSTANCE.removeFriend(entry.name());
+                ConfigManager.INSTANCE.saveNow();
+                markDirty();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (scrollBarDrag.mouseReleased()) {
+            markDirty();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double mouseX, double mouseY) {
+        if (!scrollBarDrag.isDragging()) {
+            return false;
+        }
+        PanelLayout.Rect listViewport = getListViewport(bounds);
+        float newScroll = scrollBarDrag.mouseDragged(event.y(), listViewport, state.getMaxFriendScroll());
+        if (newScroll >= 0.0f) {
+            state.setFriendScroll(newScroll);
+        }
+        markDirty();
+        return true;
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (bounds == null) {
+            return false;
+        }
+        PanelLayout.Rect listViewport = getListViewport(bounds);
+        if (listViewport.contains(mouseX, mouseY)) {
+            state.scrollFriend(-scrollY * 20.0f);
+            markDirty();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean keyPressed(KeyEvent event) {
+        if (!inputField.isFocused()) {
+            return false;
+        }
+
+        return switch (event.key()) {
+            case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> {
+                addFriendFromInput();
+                yield true;
+            }
+            case GLFW.GLFW_KEY_ESCAPE -> {
+                inputField.blur();
+                markDirty();
+                yield true;
+            }
+            default -> {
+                if (inputField.keyPressed(event)) {
+                    markDirty();
+                    yield true;
+                }
+                yield false;
+            }
+        };
+    }
+
+    @Override
+    public boolean charTyped(CharacterEvent event) {
+        if (inputField.charTyped(event)) {
+            markDirty();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void onDeactivated() {
+        scrollBarDrag.reset();
+        inputField.blur();
+        markDirty();
+    }
+
+    private void addFriendFromInput() {
+        String name = inputField.getText().trim();
+        if (!name.isEmpty() && !FriendManager.INSTANCE.isFriend(name)) {
+            FriendManager.INSTANCE.addFriend(name);
+            ConfigManager.INSTANCE.saveNow();
+        }
+        inputField.clear();
+        markDirty();
+    }
+
+    private void renderFriendRow(String name, PanelLayout.Rect bounds, PanelLayout.Rect removeBounds, float hoverProgress, float removeHoverProgress) {
+        RoundRectRenderer roundRectRenderer = contentBuffer.roundRectRenderer();
+        TextRenderer textRenderer = contentBuffer.textRenderer();
+
+        roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS,
+                MD3Theme.lerp(MD3Theme.SURFACE_CONTAINER, MD3Theme.SURFACE_CONTAINER_HIGH, hoverProgress));
+
+        float avatarSize = 20.0f;
+        float avatarX = bounds.x() + MD3Theme.ROW_CONTENT_INSET + 2.0f;
+        float avatarY = bounds.y() + (bounds.height() - avatarSize) / 2.0f;
+        roundRectRenderer.addRoundRect(avatarX, avatarY, avatarSize, avatarSize, avatarSize / 2.0f, MD3Theme.SECONDARY_CONTAINER);
+        String initial = name.isEmpty() ? "?" : name.substring(0, 1).toUpperCase();
+        float initialScale = 0.54f;
+        float initialWidth = textRenderer.getWidth(initial, initialScale);
+        float initialHeight = textRenderer.getHeight(initialScale);
+        textRenderer.addText(initial,
+                avatarX + (avatarSize - initialWidth) / 2.0f,
+                avatarY + (avatarSize - initialHeight) / 2.0f - 1.0f,
+                initialScale,
+                MD3Theme.ON_SECONDARY_CONTAINER);
+
+        float nameScale = 0.66f;
+        float nameX = avatarX + avatarSize + 8.0f;
+        float nameY = bounds.y() + (bounds.height() - textRenderer.getHeight(nameScale)) / 2.0f - 1.0f;
+        textRenderer.addText(name, nameX, nameY, nameScale, MD3Theme.TEXT_PRIMARY);
+
+        roundRectRenderer.addRoundRect(removeBounds.x(), removeBounds.y(), removeBounds.width(), removeBounds.height(),
+                removeBounds.height() / 2.0f,
+                MD3Theme.lerp(MD3Theme.withAlpha(MD3Theme.ERROR, 0), MD3Theme.withAlpha(MD3Theme.ERROR, 32), removeHoverProgress));
+        String removeIcon = "✕";
+        float removeScale = 0.50f;
+        float removeTextWidth = textRenderer.getWidth(removeIcon, removeScale);
+        float removeTextHeight = textRenderer.getHeight(removeScale);
+        Color removeColor = MD3Theme.lerp(MD3Theme.TEXT_MUTED, MD3Theme.ERROR, removeHoverProgress);
+        textRenderer.addText(removeIcon,
+                removeBounds.x() + (removeBounds.width() - removeTextWidth) / 2.0f,
+                removeBounds.y() + (removeBounds.height() - removeTextHeight) / 2.0f - 1.0f,
+                removeScale,
+                removeColor);
+    }
+
+    private PanelLayout.Rect getListViewport(PanelLayout.Rect bounds) {
+        return new PanelLayout.Rect(
+                bounds.x(),
+                bounds.y(),
+                bounds.width(),
+                bounds.height() - FRIEND_INPUT_HEIGHT - FRIEND_INPUT_BOTTOM_MARGIN * 2.0f
+        );
+    }
+
+    private PanelLayout.Rect getInputBounds(PanelLayout.Rect bounds) {
+        return new PanelLayout.Rect(
+                bounds.x() + 2.0f,
+                bounds.bottom() - FRIEND_INPUT_HEIGHT - FRIEND_INPUT_BOTTOM_MARGIN,
+                bounds.width() - 4.0f,
+                FRIEND_INPUT_HEIGHT
+        );
+    }
+
+    private PanelLayout.Rect getRemoveButtonBounds(PanelLayout.Rect rowBounds) {
+        float buttonSize = 20.0f;
+        return new PanelLayout.Rect(
+                rowBounds.right() - MD3Theme.ROW_TRAILING_INSET - buttonSize,
+                rowBounds.y() + (rowBounds.height() - buttonSize) / 2.0f,
+                buttonSize,
+                buttonSize
+        );
+    }
+
+    private boolean shouldRebuild(PanelLayout.Rect listViewport, int mouseX, int mouseY, List<String> friends, int guiHeight) {
+        if (contentState.needsRebuild(listViewport, mouseX, mouseY, guiHeight)) {
+            return true;
+        }
+        if (Float.compare(lastScroll, state.getFriendScroll()) != 0) {
+            return true;
+        }
+        return !Objects.equals(lastFriendList, friends);
+    }
+
+    private void rememberSnapshot(PanelLayout.Rect listViewport, int mouseX, int mouseY, List<String> friends, int guiHeight) {
+        contentState.rememberSnapshot(listViewport, mouseX, mouseY, guiHeight);
+        lastScroll = state.getFriendScroll();
+        lastFriendList = new ArrayList<>(friends);
+    }
+
+    private record FriendRowEntry(String name, PanelLayout.Rect rowBounds, PanelLayout.Rect removeBounds) {
+    }
+}
+

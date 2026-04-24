@@ -251,12 +251,12 @@ public class PanelScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyEvent event) {
-        if (event.key() == 256) {
-            onClose();
-            return true;
-        }
         if (inputRouter.routeKeyPressed(event, popupHost, moduleDetailPanel, moduleListPanel, clientSettingPanel, state.isClientSettingMode())) {
             dirtyState.markAllDirty();
+            return true;
+        }
+        if (event.key() == 256) {
+            onClose();
             return true;
         }
         return super.keyPressed(event);
