@@ -40,7 +40,7 @@ CrystalAura 新增 **GPU Compute Mode**，利用 Vulkan Compute Shader 并行计
 | `VulkanComputeUtils.java` | 通用 Vulkan Compute 同步工具：上传→barrier→dispatch→barrier→readback→fence 全流程 |
 | `TerrainVoxelization.java` | 地形体素化：将玩家周围 64³ 方块编码为位图 SSBO（精确 32784 字节） |
 | `CrystalDamageCompute.java` | GPU 伤害计算器：数据填充 + 调用 `VulkanComputeUtils` + 结果解释 |
-| `crystal_damage.csh` | GLSL 450 Compute Shader：确定性 DDA 射线行进 + 爆炸伤害公式 |
+| `crystal_damage.csh` | GLSL 450 Compute Shader：固定步长 raymarch 射线步进 + 爆炸伤害公式 |
 | `CrystalAura.java` | 新增 `ComputeMode` 设置 (CPU/GPU)，GPU 模式下批量提交任务 |
 | `ComputeTest.java` | 已重构为使用 `VulkanComputeUtils` |
 
@@ -51,7 +51,7 @@ CrystalAura 新增 **GPU Compute Mode**，利用 Vulkan Compute Shader 并行计
 参考 VXGI 的 Voxelization，但：
 - **不存储球谐 (SH)** —— 爆炸射线只需判断是否遮挡
 - **仅存储 1 bit / 体素** —— 实心=1，空气=0
-- **滚动窗口** —— 以玩家为中心，移动时增量更新
+- **滚动窗口** —— 以玩家为中心，移动时按轴增量更新（仅重建新切片/行/列，典型情况节省约 95% 的 getBlockState 调用）
 
 ### 数据布局 (std430)
 
@@ -87,7 +87,7 @@ vkCmdDispatch(taskCount, 1, 1)
 ```
 
 **单 pass + shared memory 归约**：
-1. 每个线程独立完成一条射线的 DDA 体素行进
+1. 每个线程独立完成一条射线的固定步长 raymarch 体素步进
 2. 将 `(visibility × weight, weight)` 写入 shared memory
 3. `barrier()` 同步后，thread 0 归约所有射线结果
 4. thread 0 计算最终伤害（距离衰减 → 难度 → 护甲 → 附魔）并写出
@@ -100,38 +100,13 @@ vkCmdDispatch(taskCount, 1, 1)
 ### 设计原则
 
 1. **最小化分支** —— 用 `step()`, `mix()`, `clamp()` 替代 `if-else`
-2. **注意力加权采样** —— 对目标 AABB 的采样点分配高斯注意力权重，中心射线权重高、边缘衰减
+2. **等权重采样** —— 对目标 AABB 内所有活跃采样点分配相同权重（weight = 1），与 `DamageUtils.getSeenPercent` 对齐
 3. **无 bounce** —— 爆炸射线仅需从采样点到爆炸中心的直线遮挡判断
-
-### 注意力机制
-
-```glsl
-float attentionWeight(vec3 uvw) {
-    vec3 centered = uvw - vec3(0.5);
-    float distSq = dot(centered, centered);
-    return exp(-distSq / 0.125);  // σ² = 0.125
-}
-```
-
-采样点在 AABB 中心 → 权重 ≈ 1.0，角点 → 权重 ≈ 0.22。
-这使得曝光率计算更关注目标躯干中心，符合实际游戏中爆炸伤害的有效覆盖区域。
-
-### DDA 射线行进
-
-```glsl
-float traceRay(vec3 origin, vec3 target) {
-    // 标准 3D-DDA，每步选择 tMax 最小的轴前进
-    // 命中实心体素 → visibility *= 0
-    // 使用乘法累积代替 break 以减少分支
-}
-```
-
-最大步数 64，足够覆盖 12 格爆炸半径内的射线。
 
 ### 伤害计算管线
 
 ```
-距离衰减 → 注意力加权曝光率 → 基础伤害
+距离衰减 → 曝光率 → 基础伤害
   → 难度缩放 (step-based, 无分支)
   → 护甲减伤 (CombatRules)
   → 附魔减伤
@@ -140,6 +115,16 @@ float traceRay(vec3 origin, vec3 target) {
 
 所有公式均严格复现 DamageUtils.java 中的原版计算逻辑。
 
+### Raymarch 射线步进
+
+```glsl
+float traceRay(vec3 origin, vec3 target) {
+    // 固定步长 raymarch（RAYMARCH_STEP_SIZE = 0.25，MAX_RAYMARCH_STEPS = 96）
+    // 累积遮挡（blocked）代替 break 以减少分支，对 GPU 较友好
+    // 注意：非标准 3D-DDA 的体素边界推进，精度受步长大小影响
+}
+```
+
 ## 任务缓冲布局
 
 ```
@@ -147,11 +132,12 @@ Header (16 bytes):
   uint taskCount
   uint _pad[3]
 
-Per-Task (64 bytes, 4×vec4):
+Per-Task (80 bytes, 5×vec4):
   vec4 crystalPos   — xyz=爆炸中心, w=半径(6.0)
   vec4 targetPos    — xyz=目标脚底
   vec4 targetSize   — x=半宽, y=身高
   vec4 params       — x=护甲, y=韧性, z=附魔保护, w=难度
+  vec4 extra        — x=resistanceMultiplier, y=applyDifficulty(0/1)
 ```
 
 最大 512 个任务，每个放置点需要 2 个任务（目标伤害 + 自伤），

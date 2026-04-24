@@ -75,8 +75,7 @@ public final class VulkanComputeUtils implements AutoCloseable {
                 input.map(cmdBuf);
             }
 
-            int barrierCount = inputs.length + 1; // +1 for output WAR hazard
-            var barriers = VkBufferMemoryBarrier2KHR.calloc(barrierCount, stack);
+            var barriers = VkBufferMemoryBarrier2KHR.calloc(inputs.length, stack);
 
             for (int i = 0; i < inputs.length; i++) {
                 barriers.get(i)
@@ -91,18 +90,6 @@ public final class VulkanComputeUtils implements AutoCloseable {
                         .offset(0)
                         .size(inputs[i].size());
             }
-
-            barriers.get(inputs.length)
-                    .sType(VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR)
-                    .srcStageMask(VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR)
-                    .srcAccessMask(VK_ACCESS_2_TRANSFER_READ_BIT_KHR)
-                    .dstStageMask(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR)
-                    .dstAccessMask(VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT_KHR)
-                    .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                    .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                    .buffer(output.gpuBuffer())
-                    .offset(0)
-                    .size(output.size());
 
             var preComputeDep = VkDependencyInfoKHR.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR)
