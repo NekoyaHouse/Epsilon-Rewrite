@@ -86,7 +86,6 @@ public class TerrainVoxelization {
                     int wx = originX + lx;
                     mutable.set(wx, wy, wz);
 
-                    // 用实际坐标查询碰撞体积，而非 BlockPos.ZERO
                     BlockState state = mc.level.getBlockState(mutable);
                     if (!state.isAir()
                             && !state.getCollisionShape(mc.level, mutable, CollisionContext.empty()).isEmpty()) {

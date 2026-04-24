@@ -33,9 +33,9 @@ layout(std430, set = 0, binding = 2) writeonly buffer ResultBuffer {
 } resultBuf;
 
 const float EPSILON = 1e-6;
-const int   RAY_STEPS = 64;
-
-const float HUGE_T = 1e20;
+const float TRACE_EPSILON = 1e-4;
+const float RAYMARCH_STEP_SIZE = 0.25;
+const int   MAX_RAYMARCH_STEPS = 96;
 
 shared float s_weightedHit[64];
 shared float s_weight[64];
@@ -61,56 +61,39 @@ float sampleVoxel(ivec3 worldPos) {
     return valid * bit;
 }
 
-// DDA 射线行进
+// 基础 raymarching 射线步进
 
 float traceRay(vec3 origin, vec3 target) {
-    vec3 dir = target - origin;
-    float maxDist = length(dir);
-    float rayActive = step(EPSILON, maxDist);
-    float invMaxDist = 1.0 / max(maxDist, EPSILON);
-
-    vec3 d = dir * invMaxDist;
-
-    ivec3 pos = ivec3(floor(origin));
-    ivec3 stepDir = ivec3(sign(d));
-    vec3 stepDirF = vec3(stepDir);
-
-    vec3 absD = abs(d);
-    vec3 axisActive = step(vec3(EPSILON), absD);
-    vec3 tDelta = mix(vec3(HUGE_T), 1.0 / max(absD, vec3(EPSILON)), axisActive);
-
-    vec3 fracOrigin = origin - floor(origin);
-    vec3 stepPosMask = step(vec3(0.5), stepDirF);
-    vec3 stepNegMask = step(vec3(0.5), -stepDirF);
-    vec3 noStepMask  = vec3(1.0) - stepPosMask - stepNegMask;
-    vec3 tMax = (
-        (vec3(1.0) - fracOrigin) * stepPosMask +
-        fracOrigin * stepNegMask
-    ) * tDelta + noStepMask * vec3(HUGE_T);
-
-    float blocked = 0.0;
-    float active_ = rayActive;
-
-    for (int i = 0; i < RAY_STEPS; i++) {
-        // 固定优先级 X -> Y -> Z，避免边界条件下的随机抖动。
-        float chooseX = float(tMax.x <= tMax.y && tMax.x <= tMax.z);
-        float chooseY = float(chooseX < 0.5 && tMax.y <= tMax.z);
-        float chooseZ = 1.0 - chooseX - chooseY;
-
-        float traveled = tMax.x * chooseX + tMax.y * chooseY + tMax.z * chooseZ;
-
-        pos += ivec3(vec3(chooseX, chooseY, chooseZ) * vec3(stepDir));
-        tMax += vec3(chooseX, chooseY, chooseZ) * tDelta;
-
-        float within = step(traveled, maxDist) * active_;
-        float solid = sampleVoxel(pos);
-        blocked = max(blocked, solid * within);
-
-        active_ *= (1.0 - blocked) * within;
+    vec3 baseDir = target - origin;
+    float rawDist = length(baseDir);
+    if (rawDist <= EPSILON) {
+        return 1.0;
     }
 
-    // 与 mc.level.clip(ClipContext) 语义对齐：未命中阻挡方块视作可见。
-    return (1.0 - blocked) * rayActive + (1.0 - rayActive);
+    vec3 dir = baseDir / rawDist;
+    vec3 startPos = origin + dir * TRACE_EPSILON;
+    vec3 endPos = target - dir * TRACE_EPSILON;
+    float maxDist = distance(startPos, endPos);
+
+    if (maxDist <= EPSILON) {
+        return 1.0;
+    }
+
+    float traveled = RAYMARCH_STEP_SIZE * 0.5;
+    for (int i = 0; i < MAX_RAYMARCH_STEPS; i++) {
+        if (traveled > maxDist) {
+            break;
+        }
+
+        vec3 samplePos = startPos + dir * traveled;
+        if (sampleVoxel(ivec3(floor(samplePos))) > 0.5) {
+            return 0.0;
+        }
+
+        traveled += RAYMARCH_STEP_SIZE;
+    }
+
+    return 1.0;
 }
 
 float applyArmor(float damage, float armor, float toughness) {
