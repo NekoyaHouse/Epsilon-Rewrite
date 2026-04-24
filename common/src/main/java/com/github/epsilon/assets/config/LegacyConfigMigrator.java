@@ -19,25 +19,27 @@ import java.util.Objects;
  * to the per-module / per-addon file layout introduced in config version 2.
  *
  * <p>Old layout: {@code epsilon-config/config.json} (all modules in one file)</p>
- * <p>New layout: {@code epsilon-config/{addonId}/{moduleName}.json}</p>
+ * <p>New layout: {@code epsilon-config/configs/{configName}/{addonId}/{moduleName}.json}</p>
  */
 public class LegacyConfigMigrator {
 
-    private final Path configDir;
+    private final Path legacyRootDir;
+    private final Path targetConfigDir;
     private final Gson gson;
 
-    public LegacyConfigMigrator(Path configDir, Gson gson) {
-        this.configDir = configDir;
+    public LegacyConfigMigrator(Path legacyRootDir, Path targetConfigDir, Gson gson) {
+        this.legacyRootDir = legacyRootDir;
+        this.targetConfigDir = targetConfigDir;
         this.gson = gson;
     }
 
     /**
      * Returns the per-module config file path for the new layout:
-     * {@code {configDir}/{addonId}/{moduleName}.json}
+     * {@code {targetConfigDir}/{addonId}/{moduleName}.json}
      */
     public Path getModuleFile(Module module) {
         String addonId = module.getAddonId() != null ? module.getAddonId() : "unknown";
-        return configDir.resolve(addonId).resolve(module.getName() + ".json");
+        return targetConfigDir.resolve(addonId).resolve(module.getName() + ".json");
     }
 
     /**
@@ -56,7 +58,7 @@ public class LegacyConfigMigrator {
      * @param modules the full module list (obtained from ModuleManager)
      */
     public void migrateIfNeeded(List<Module> modules) {
-        Path legacyConfigFile = configDir.resolve("config.json");
+        Path legacyConfigFile = legacyRootDir.resolve("config.json");
         if (!Files.exists(legacyConfigFile)) return;
         if (modules == null) return;
 
@@ -99,7 +101,7 @@ public class LegacyConfigMigrator {
     }
 
     private Path getAvailableBackupPath() {
-        Path backupFile = configDir.resolve("config.json.bak");
+        Path backupFile = legacyRootDir.resolve("config.json.bak");
         if (!Files.exists(backupFile)) {
             return backupFile;
         }
@@ -107,7 +109,7 @@ public class LegacyConfigMigrator {
         int index = 1;
         Path candidate;
         do {
-            candidate = configDir.resolve("config.json.bak." + index);
+            candidate = legacyRootDir.resolve("config.json.bak." + index);
             index++;
         } while (Files.exists(candidate));
 

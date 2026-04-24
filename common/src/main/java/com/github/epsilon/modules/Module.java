@@ -108,8 +108,9 @@ public class Module {
 
     public void reset() {
         setEnabled(false);
+        keyBind = -1;
         bindMode = BindMode.Toggle;
-        hidden = false;
+        hidden = true;
         for (Setting<?> setting : settings) {
             setting.reset();
         }

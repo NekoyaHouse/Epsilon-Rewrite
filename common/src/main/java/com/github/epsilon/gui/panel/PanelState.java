@@ -25,7 +25,8 @@ public class PanelState {
 
     public enum ClientSettingTab {
         GENERAL,
-        FRIEND
+        FRIEND,
+        CONFIG
     }
 
     private Category selectedCategory = Category.COMBAT;
@@ -47,6 +48,8 @@ public class PanelState {
     private float maxClientSettingScroll;
     private float friendScroll;
     private float maxFriendScroll;
+    private float configScroll;
+    private float maxConfigScroll;
 
     public PanelState() {
         ensureValidSelection();
@@ -213,6 +216,7 @@ public class PanelState {
                 listeningKeybindSetting = null;
                 clientSettingScroll = 0.0f;
                 friendScroll = 0.0f;
+                configScroll = 0.0f;
                 clientSettingTab = ClientSettingTab.GENERAL;
             }
         }
@@ -254,8 +258,6 @@ public class PanelState {
     public void setClientSettingTab(ClientSettingTab tab) {
         if (this.clientSettingTab != tab) {
             this.clientSettingTab = tab;
-            friendScroll = 0.0f;
-            clientSettingScroll = 0.0f;
         }
     }
 
@@ -278,6 +280,27 @@ public class PanelState {
     public void setMaxFriendScroll(float maxFriendScroll) {
         this.maxFriendScroll = Math.max(0.0f, maxFriendScroll);
         friendScroll = clampScroll(friendScroll, this.maxFriendScroll);
+    }
+
+    public float getConfigScroll() {
+        return configScroll;
+    }
+
+    public void scrollConfig(double amount) {
+        configScroll = clampScroll(configScroll + (float) amount, maxConfigScroll);
+    }
+
+    public float getMaxConfigScroll() {
+        return maxConfigScroll;
+    }
+
+    public void setConfigScroll(float scroll) {
+        this.configScroll = clampScroll(scroll, maxConfigScroll);
+    }
+
+    public void setMaxConfigScroll(float maxConfigScroll) {
+        this.maxConfigScroll = Math.max(0.0f, maxConfigScroll);
+        configScroll = clampScroll(configScroll, this.maxConfigScroll);
     }
 
     private float clampScroll(float scroll, float maxScroll) {

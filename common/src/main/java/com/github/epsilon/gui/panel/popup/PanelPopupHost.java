@@ -9,6 +9,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 public class PanelPopupHost {
 
     private Popup activePopup;
+    private PanelLayout.Rect overlayBounds;
 
     public void open(Popup popup) {
         this.activePopup = popup;
@@ -20,6 +21,24 @@ public class PanelPopupHost {
 
     public Popup getActivePopup() {
         return activePopup;
+    }
+
+    public void setOverlayBounds(PanelLayout.Rect overlayBounds) {
+        this.overlayBounds = overlayBounds;
+    }
+
+    public PanelLayout.Rect getCenteredBounds(float width, float height) {
+        PanelLayout.Rect baseBounds = overlayBounds != null
+                ? overlayBounds
+                : new PanelLayout.Rect(0.0f, 0.0f, width, height);
+        float popupWidth = Math.min(width, baseBounds.width());
+        float popupHeight = Math.min(height, baseBounds.height());
+        return new PanelLayout.Rect(
+                baseBounds.x() + (baseBounds.width() - popupWidth) / 2.0f,
+                baseBounds.y() + (baseBounds.height() - popupHeight) / 2.0f,
+                popupWidth,
+                popupHeight
+        );
     }
 
     public void render(GuiGraphicsExtractor GuiGraphicsExtractor, int mouseX, int mouseY, float partialTick) {
