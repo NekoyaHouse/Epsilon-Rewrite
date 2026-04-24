@@ -61,7 +61,6 @@ public final class ConfirmActionPopup implements PanelPopupHost.Popup {
         openAnimation.run(1.0f);
         float progress = openAnimation.getValue();
         animatedY = bounds.y() - (1.0f - progress) * 6.0f;
-        int alpha = (int) (245 * progress);
         updateLayout(animatedY);
 
         confirmHoverAnimation.run(confirmButtonBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
@@ -70,7 +69,7 @@ public final class ConfirmActionPopup implements PanelPopupHost.Popup {
         shadowRenderer.addShadow(bounds.x(), animatedY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS,
                 POPUP_SHADOW_RADIUS, MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)));
         roundRectRenderer.addRoundRect(bounds.x(), animatedY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS,
-                MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, alpha));
+                MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, 255));
 
         float titleScale = 0.66f;
         float messageScale = 0.56f;
@@ -82,8 +81,8 @@ public final class ConfirmActionPopup implements PanelPopupHost.Popup {
             textRenderer.addText(detail, textX, animatedY + 37.0f, detailScale, MD3Theme.PRIMARY, StaticFontLoader.DUCKSANS);
         }
 
-        renderButton(cancelButtonBounds, cancelLabel, false, cancelHoverAnimation.getValue(), alpha);
-        renderButton(confirmButtonBounds, confirmLabel, true, confirmHoverAnimation.getValue(), alpha);
+        renderButton(cancelButtonBounds, cancelLabel, false, cancelHoverAnimation.getValue());
+        renderButton(confirmButtonBounds, confirmLabel, true, confirmHoverAnimation.getValue());
 
         RenderManager.INSTANCE.applyRender(() -> {
             shadowRenderer.drawAndClear();
@@ -115,13 +114,13 @@ public final class ConfirmActionPopup implements PanelPopupHost.Popup {
         return closeAfterClick;
     }
 
-    private void renderButton(PanelLayout.Rect buttonBounds, String label, boolean destructive, float hover, int alpha) {
+    private void renderButton(PanelLayout.Rect buttonBounds, String label, boolean destructive, float hover) {
         Color baseColor = destructive ? MD3Theme.ERROR : MD3Theme.SURFACE_CONTAINER_HIGH;
         Color hoverColor = destructive ? MD3Theme.withAlpha(MD3Theme.ERROR, 220) : MD3Theme.SURFACE_CONTAINER_HIGHEST;
         Color textColor = destructive ? MD3Theme.ON_PRIMARY : MD3Theme.TEXT_PRIMARY;
         roundRectRenderer.addRoundRect(buttonBounds.x(), buttonBounds.y(), buttonBounds.width(), buttonBounds.height(),
                 buttonBounds.height() / 2.0f,
-                MD3Theme.withAlpha(MD3Theme.lerp(baseColor, hoverColor, hover * 0.35f), alpha));
+                MD3Theme.withAlpha(MD3Theme.lerp(baseColor, hoverColor, hover * 0.35f), 255));
 
         float labelScale = 0.56f;
         float labelWidth = textRenderer.getWidth(label, labelScale);

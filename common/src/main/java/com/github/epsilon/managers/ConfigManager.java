@@ -642,6 +642,10 @@ public class ConfigManager {
             throw new IllegalArgumentException("请输入要导入的 zip 文件");
         }
         Path path = Paths.get(normalized);
+        String fileName = path.getFileName() == null ? "" : path.getFileName().toString();
+        if (!fileName.isEmpty() && !fileName.toLowerCase().endsWith(".zip")) {
+            path = path.resolveSibling(fileName + ".zip");
+        }
         if (!path.isAbsolute()) {
             path = importsDir.resolve(path);
         }

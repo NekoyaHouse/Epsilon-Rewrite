@@ -73,12 +73,11 @@ public class EnumSelectPopup implements PanelPopupHost.Popup {
         openAnimation.run(1.0f);
         float progress = openAnimation.getValue();
         float popupY = bounds.y() - (1.0f - progress) * 6.0f;
-        int alpha = (int) (245 * progress);
 
         // Background & shadow (no scissor)
         shadowRenderer.addShadow(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, POPUP_SHADOW_RADIUS, MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)));
-        roundRectRenderer.addRoundRect(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, alpha));
-        roundRectRenderer.addRoundRect(anchorBounds.x(), anchorBounds.y(), anchorBounds.width(), anchorBounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SECONDARY_CONTAINER, (int) (130 * progress)));
+        roundRectRenderer.addRoundRect(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, 255));
+        roundRectRenderer.addRoundRect(anchorBounds.x(), anchorBounds.y(), anchorBounds.width(), anchorBounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SECONDARY_CONTAINER, 255));
 
         // Scrollbar (rendered with background, before items — no overlap since items are narrower)
         if (scrollable) {
@@ -108,11 +107,11 @@ public class EnumSelectPopup implements PanelPopupHost.Popup {
             Color selectedBackground = MD3Theme.SECONDARY_CONTAINER;
             Color background = selected ? selectedBackground : (hovered ? hoverBackground : baseBackground);
             Color textColor = selected ? MD3Theme.ON_SECONDARY_CONTAINER : (hovered ? MD3Theme.withAlpha(MD3Theme.TEXT_PRIMARY, 255) : MD3Theme.TEXT_SECONDARY);
-            itemRoundRectRenderer.addRoundRect(itemBounds.x(), itemY, itemBounds.width(), itemBounds.height(), 8.0f, MD3Theme.withAlpha(background, alpha));
+            itemRoundRectRenderer.addRoundRect(itemBounds.x(), itemY, itemBounds.width(), itemBounds.height(), 8.0f, background);
             if (selected) {
-                itemTextRenderer.addText("V", itemBounds.x() + 8.0f, itemY + 6.5f, 0.72f, MD3Theme.withAlpha(MD3Theme.ON_SECONDARY_CONTAINER, alpha), StaticFontLoader.ICONS);
+                itemTextRenderer.addText("V", itemBounds.x() + 8.0f, itemY + 6.5f, 0.72f, MD3Theme.ON_SECONDARY_CONTAINER, StaticFontLoader.ICONS);
             }
-            itemTextRenderer.addText(setting.getTranslatedValueByIndex(i), itemBounds.x() + (selected ? 22.0f : 10.0f), itemY + 7.0f, 0.62f, MD3Theme.withAlpha(textColor, alpha), StaticFontLoader.DUCKSANS);
+            itemTextRenderer.addText(setting.getTranslatedValueByIndex(i), itemBounds.x() + (selected ? 22.0f : 10.0f), itemY + 7.0f, 0.62f, textColor, StaticFontLoader.DUCKSANS);
         }
 
         // Apply scissor on item renderers if scrollable

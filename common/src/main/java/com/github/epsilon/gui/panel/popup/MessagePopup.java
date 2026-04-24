@@ -50,14 +50,13 @@ public final class MessagePopup implements PanelPopupHost.Popup {
         openAnimation.run(1.0f);
         float progress = openAnimation.getValue();
         float popupY = bounds.y() - (1.0f - progress) * 6.0f;
-        int alpha = (int) (245 * progress);
         updateLayout(popupY);
         buttonHoverAnimation.run(buttonBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
 
         shadowRenderer.addShadow(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS,
                 POPUP_SHADOW_RADIUS, MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)));
         roundRectRenderer.addRoundRect(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS,
-                MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, alpha));
+                MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, 255));
 
         float titleScale = 0.66f;
         float messageScale = 0.56f;

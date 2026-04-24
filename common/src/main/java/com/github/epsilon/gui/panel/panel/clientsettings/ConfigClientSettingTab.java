@@ -37,6 +37,7 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
 
     private static final TranslateComponent inputPlaceholderComponent = EpsilonTranslateComponent.create("gui", "config.input.placeholder");
     private static final TranslateComponent currentComponent = EpsilonTranslateComponent.create("gui", "config.current");
+    private static final TranslateComponent switchHintComponent = EpsilonTranslateComponent.create("gui", "config.switch_hint");
     private static final TranslateComponent emptyComponent = EpsilonTranslateComponent.create("gui", "config.empty");
     private static final TranslateComponent saveAsComponent = EpsilonTranslateComponent.create("gui", "config.action.saveas");
     private static final TranslateComponent reloadComponent = EpsilonTranslateComponent.create("gui", "config.action.reload");
@@ -55,6 +56,8 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
     private static final TranslateComponent switchErrorComponent = EpsilonTranslateComponent.create("gui", "config.error.switch");
     private static final TranslateComponent deleteErrorComponent = EpsilonTranslateComponent.create("gui", "config.error.delete");
     private static final TranslateComponent deleteLastErrorComponent = EpsilonTranslateComponent.create("gui", "config.error.delete_last");
+    private static final TranslateComponent exportSuccessTitleComponent = EpsilonTranslateComponent.create("gui", "config.export.success.title");
+    private static final TranslateComponent exportSuccessMessageComponent = EpsilonTranslateComponent.create("gui", "config.export.success.message");
     private static final float ROW_HEIGHT = 36.0f;
     private static final float FIELD_HEIGHT = 28.0f;
     private static final float BUTTON_HEIGHT = 26.0f;
@@ -359,7 +362,7 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
         rowTextRenderer.addText(trimToWidth(configName, nameScale, rowBounds.width() - 72.0f), textX, nameY, nameScale,
                 active ? MD3Theme.ON_PRIMARY_CONTAINER : MD3Theme.TEXT_PRIMARY);
 
-        String subtitle = active ? currentComponent.getTranslatedName() : "Click to switch";
+        String subtitle = active ? currentComponent.getTranslatedName() : switchHintComponent.getTranslatedName();
         Color subtitleColor = active ? MD3Theme.ON_PRIMARY_CONTAINER : MD3Theme.TEXT_MUTED;
         rowTextRenderer.addText(subtitle, textX, nameY + 12.0f, subScale, subtitleColor);
 
@@ -428,8 +431,7 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
     private void tryExport() {
         try {
             Path exported = ConfigManager.INSTANCE.exportActiveConfigToZip(inputField.getText());
-            inputField.setText(exported.getFileName() == null ? exported.toString() : exported.getFileName().toString());
-            inputField.setCursorToEnd();
+            openExportSuccessPopup(exported);
         } catch (Exception exception) {
             Epsilon.LOGGER.error("导出配置失败", exception);
             openErrorPopup(exportErrorComponent.getTranslatedName(), exception);
@@ -447,7 +449,6 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
             inputField.setCursorToEnd();
             state.setConfigScroll(0.0f);
         } catch (Exception exception) {
-            Epsilon.LOGGER.error("导入配置失败", exception);
             openErrorPopup(importErrorComponent.getTranslatedName(), exception);
         }
     }
@@ -510,6 +511,23 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
                 popupHost.getCenteredBounds(popupWidth, popupHeight),
                 errorTitleComponent.getTranslatedName(),
                 actionMessage,
+                trimToWidth(detail, 0.52f, popupWidth - 24.0f),
+                errorOkComponent.getTranslatedName()
+        ));
+    }
+
+    private void openExportSuccessPopup(Path exported) {
+        float popupWidth = 220.0f;
+        float popupHeight = 84.0f;
+        String detail = "";
+        if (exported != null) {
+            Path fileName = exported.getFileName();
+            detail = fileName != null ? fileName.toString() : exported.toString();
+        }
+        popupHost.open(new MessagePopup(
+                popupHost.getCenteredBounds(popupWidth, popupHeight),
+                exportSuccessTitleComponent.getTranslatedName(),
+                exportSuccessMessageComponent.getTranslatedName(),
                 trimToWidth(detail, 0.52f, popupWidth - 24.0f),
                 errorOkComponent.getTranslatedName()
         ));
