@@ -119,6 +119,7 @@ public class PanelScreen extends Screen {
         MD3Theme.syncFromSettings();
         float railWidth = categoryRailPanel.getAnimatedWidth();
         PanelLayout.Layout layout = PanelLayout.compute(width, height, railWidth);
+        popupHost.setOverlayBounds(layout.panel());
 
         drawChrome(layout);
         categoryRailPanel.render(guiGraphics, layout.rail(), mouseX, mouseY, partialTick);
@@ -148,7 +149,7 @@ public class PanelScreen extends Screen {
     }
 
     private void drawChrome(PanelLayout.Layout layout) {
-        shadowRenderer.addShadow(layout.panel().x(), layout.panel().y(), layout.panel().width(), layout.panel().height(), MD3Theme.PANEL_RADIUS, 18.0f, MD3Theme.SHADOW);
+        shadowRenderer.addShadow(layout.panel().x(), layout.panel().y(), layout.panel().width(), layout.panel().height(), MD3Theme.PANEL_RADIUS, 18.0f, MD3Theme.withAlpha(MD3Theme.SHADOW, MD3Theme.PANEL_SHADOW_ALPHA));
         roundRectRenderer.addRoundRect(layout.panel().x(), layout.panel().y(), layout.panel().width(), layout.panel().height(), MD3Theme.PANEL_RADIUS, MD3Theme.SURFACE);
 
         roundRectRenderer.addRoundRect(layout.rail().x(), layout.rail().y(), layout.rail().width(), layout.rail().height(), MD3Theme.SECTION_RADIUS, MD3Theme.SURFACE_DIM);

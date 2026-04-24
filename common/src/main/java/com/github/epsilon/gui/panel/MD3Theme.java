@@ -7,7 +7,7 @@ import java.awt.*;
 
 public final class MD3Theme {
 
-    public static Color SHADOW = new Color(0, 0, 0, 82);
+    public static Color SHADOW = new Color(0, 0, 0, 56);
 
     public static Color SURFACE = new Color(20, 18, 24, 238);
     public static Color SURFACE_DIM = new Color(15, 13, 19, 232);
@@ -49,6 +49,8 @@ public final class MD3Theme {
     public static final int SECTION_RADIUS = 13;
     public static final int CARD_RADIUS = 9;
     public static final int CHIP_RADIUS = 999;
+    public static final int PANEL_SHADOW_ALPHA = 44;
+    public static final int POPUP_SHADOW_ALPHA = 68;
 
     public static final float OUTER_PADDING = 5.0f;
     public static final float SECTION_GAP = 3.0f;
@@ -196,7 +198,7 @@ public final class MD3Theme {
             Color textSecondaryColor = color("#CAC4D0", 255);
             Color textMutedColor = color("#938F99", 255);
             return new ThemePalette(
-                    new Color(0, 0, 0, 82),
+                    new Color(0, 0, 0, 56),
                     surfaceColor,
                     surfaceDimColor,
                     lowColor,
@@ -240,7 +242,7 @@ public final class MD3Theme {
             Color textSecondaryColor = color("#49454F", 255);
             Color textMutedColor = color("#79747E", 255);
             return new ThemePalette(
-                    new Color(0, 0, 0, 56),
+                    new Color(0, 0, 0, 36),
                     surfaceColor,
                     surfaceDimColor,
                     lowColor,

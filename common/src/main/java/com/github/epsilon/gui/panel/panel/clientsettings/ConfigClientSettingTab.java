@@ -10,6 +10,7 @@ import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
 import com.github.epsilon.gui.panel.PanelState;
 import com.github.epsilon.gui.panel.popup.ConfirmActionPopup;
+import com.github.epsilon.gui.panel.popup.MessagePopup;
 import com.github.epsilon.gui.panel.popup.PanelPopupHost;
 import com.github.epsilon.gui.panel.util.PanelContentBuffer;
 import com.github.epsilon.gui.panel.util.PanelContentInvalidationState;
@@ -34,8 +35,7 @@ import java.util.Objects;
 
 public final class ConfigClientSettingTab implements ClientSettingTabView {
 
-    private static final TranslateComponent configNamePlaceholderComponent = EpsilonTranslateComponent.create("gui", "config.name.placeholder");
-    private static final TranslateComponent zipPlaceholderComponent = EpsilonTranslateComponent.create("gui", "config.zip.placeholder");
+    private static final TranslateComponent inputPlaceholderComponent = EpsilonTranslateComponent.create("gui", "config.input.placeholder");
     private static final TranslateComponent currentComponent = EpsilonTranslateComponent.create("gui", "config.current");
     private static final TranslateComponent emptyComponent = EpsilonTranslateComponent.create("gui", "config.empty");
     private static final TranslateComponent saveAsComponent = EpsilonTranslateComponent.create("gui", "config.action.saveas");
@@ -46,13 +46,21 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
     private static final TranslateComponent deleteConfirmMessageComponent = EpsilonTranslateComponent.create("gui", "config.delete.confirm.message");
     private static final TranslateComponent deleteConfirmConfirmComponent = EpsilonTranslateComponent.create("gui", "config.delete.confirm.confirm");
     private static final TranslateComponent deleteConfirmCancelComponent = EpsilonTranslateComponent.create("gui", "config.delete.confirm.cancel");
+    private static final TranslateComponent errorTitleComponent = EpsilonTranslateComponent.create("gui", "config.error.title");
+    private static final TranslateComponent errorOkComponent = EpsilonTranslateComponent.create("gui", "config.error.ok");
+    private static final TranslateComponent saveErrorComponent = EpsilonTranslateComponent.create("gui", "config.error.save");
+    private static final TranslateComponent reloadErrorComponent = EpsilonTranslateComponent.create("gui", "config.error.reload");
+    private static final TranslateComponent exportErrorComponent = EpsilonTranslateComponent.create("gui", "config.error.export");
+    private static final TranslateComponent importErrorComponent = EpsilonTranslateComponent.create("gui", "config.error.import");
+    private static final TranslateComponent switchErrorComponent = EpsilonTranslateComponent.create("gui", "config.error.switch");
+    private static final TranslateComponent deleteErrorComponent = EpsilonTranslateComponent.create("gui", "config.error.delete");
+    private static final TranslateComponent deleteLastErrorComponent = EpsilonTranslateComponent.create("gui", "config.error.delete_last");
     private static final float ROW_HEIGHT = 36.0f;
     private static final float FIELD_HEIGHT = 28.0f;
     private static final float BUTTON_HEIGHT = 26.0f;
     private static final float SECTION_GAP = 6.0f;
     private static final float FIELD_SCALE = 0.78f;
-    private static final int MAX_CONFIG_NAME_LENGTH = 48;
-    private static final int MAX_ZIP_PATH_LENGTH = 200;
+    private static final int MAX_INPUT_LENGTH = 200;
 
     private final PanelState state;
     private final PanelPopupHost popupHost;
@@ -62,8 +70,7 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
     private final PanelContentBuffer contentBuffer = new PanelContentBuffer();
     private final PanelContentInvalidationState contentState = new PanelContentInvalidationState();
     private final ScrollBarDragState scrollBarDrag = new ScrollBarDragState();
-    private final ClientSettingTextField nameField = new ClientSettingTextField(MAX_CONFIG_NAME_LENGTH);
-    private final ClientSettingTextField zipField = new ClientSettingTextField(MAX_ZIP_PATH_LENGTH);
+    private final ClientSettingTextField inputField = new ClientSettingTextField(MAX_INPUT_LENGTH);
     private final Map<String, Animation> rowHoverAnimations = new HashMap<>();
     private final Map<String, Animation> deleteHoverAnimations = new HashMap<>();
     private final Map<String, Animation> buttonHoverAnimations = new HashMap<>();
@@ -156,8 +163,7 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
         return contentState.hasActiveAnimations()
                 || rowAnimations
                 || buttonAnimations
-                || nameField.hasActiveAnimations()
-                || zipField.hasActiveAnimations();
+                || inputField.hasActiveAnimations();
     }
 
     @Override
@@ -183,23 +189,14 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
         }
 
         PanelLayout.Rect inputSection = getInputSectionBounds(bounds);
-        PanelLayout.Rect nameBounds = getNameFieldBounds(inputSection);
-        PanelLayout.Rect zipBounds = getZipFieldBounds(inputSection);
-        if (nameBounds.contains(event.x(), event.y())) {
-            zipField.blur();
-            nameField.focusIfContains(nameBounds, event.x(), event.y());
-            markDirty();
-            return true;
-        }
-        if (zipBounds.contains(event.x(), event.y())) {
-            nameField.blur();
-            zipField.focusIfContains(zipBounds, event.x(), event.y());
+        PanelLayout.Rect inputBounds = getInputFieldBounds(inputSection);
+        if (inputBounds.contains(event.x(), event.y())) {
+            inputField.focusIfContains(inputBounds, event.x(), event.y());
             markDirty();
             return true;
         }
 
-        nameField.blur();
-        zipField.blur();
+        inputField.blur();
 
         for (ActionButton button : getActionButtons(inputSection)) {
             if (button.bounds().contains(event.x(), event.y())) {
@@ -264,25 +261,12 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
 
     @Override
     public boolean keyPressed(KeyEvent event) {
-        if (event.key() == GLFW.GLFW_KEY_ESCAPE && (nameField.isFocused() || zipField.isFocused())) {
-            nameField.blur();
-            zipField.blur();
+        if (event.key() == GLFW.GLFW_KEY_ESCAPE && inputField.isFocused()) {
+            inputField.blur();
             markDirty();
             return true;
         }
-        if (event.key() == GLFW.GLFW_KEY_ENTER || event.key() == GLFW.GLFW_KEY_KP_ENTER) {
-            if (nameField.isFocused()) {
-                handleAction(ActionButtonType.SAVE_AS);
-                markDirty();
-                return true;
-            }
-            if (zipField.isFocused()) {
-                handleAction(ActionButtonType.IMPORT);
-                markDirty();
-                return true;
-            }
-        }
-        if (nameField.keyPressed(event) || zipField.keyPressed(event)) {
+        if (inputField.keyPressed(event)) {
             markDirty();
             return true;
         }
@@ -291,7 +275,7 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
 
     @Override
     public boolean charTyped(CharacterEvent event) {
-        if (nameField.charTyped(event) || zipField.charTyped(event)) {
+        if (inputField.charTyped(event)) {
             markDirty();
             return true;
         }
@@ -300,9 +284,9 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
 
     @Override
     public void onActivated() {
-        if (nameField.getText().isBlank()) {
-            nameField.setText(ConfigManager.INSTANCE.getActiveConfigName());
-            nameField.setCursorToEnd();
+        if (inputField.getText().isBlank()) {
+            inputField.setText(ConfigManager.INSTANCE.getActiveConfigName());
+            inputField.setCursorToEnd();
         }
         markDirty();
     }
@@ -310,16 +294,13 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
     @Override
     public void onDeactivated() {
         scrollBarDrag.reset();
-        nameField.blur();
-        zipField.blur();
+        inputField.blur();
         markDirty();
     }
 
     private void renderInputs(PanelLayout.Rect inputBounds, int mouseX, int mouseY) {
-        nameField.render(getNameFieldBounds(inputBounds), mouseX, mouseY, roundRectRenderer, rectRenderer, textRenderer,
-                configNamePlaceholderComponent.getTranslatedName(), FIELD_SCALE, null);
-        zipField.render(getZipFieldBounds(inputBounds), mouseX, mouseY, roundRectRenderer, rectRenderer, textRenderer,
-                zipPlaceholderComponent.getTranslatedName(), FIELD_SCALE, "↵");
+        inputField.render(getInputFieldBounds(inputBounds), mouseX, mouseY, roundRectRenderer, rectRenderer, textRenderer,
+                inputPlaceholderComponent.getTranslatedName(), FIELD_SCALE, null);
 
         for (ActionButton button : getActionButtons(inputBounds)) {
             renderActionButton(button, mouseX, mouseY);
@@ -412,52 +393,62 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
     private void handleAction(ActionButtonType action) {
         switch (action) {
             case SAVE_AS -> trySaveAs();
-            case RELOAD -> {
-                ConfigManager.INSTANCE.reload();
-                markDirty();
-            }
+            case RELOAD -> tryReload();
             case EXPORT -> tryExport();
             case IMPORT -> tryImport();
         }
     }
 
     private void trySaveAs() {
-        String targetName = nameField.getText().trim();
+        String targetName = inputField.getText().trim();
         if (targetName.isEmpty()) {
             return;
         }
         try {
             String savedName = ConfigManager.INSTANCE.saveAsConfig(targetName);
-            nameField.setText(savedName);
-            nameField.setCursorToEnd();
+            inputField.setText(savedName);
+            inputField.setCursorToEnd();
             state.setConfigScroll(0.0f);
         } catch (Exception exception) {
             Epsilon.LOGGER.error("保存配置失败", exception);
+            openErrorPopup(saveErrorComponent.getTranslatedName(), exception);
+        }
+    }
+
+    private void tryReload() {
+        try {
+            ConfigManager.INSTANCE.reloadOrThrow();
+            markDirty();
+        } catch (Exception exception) {
+            Epsilon.LOGGER.error("重载配置失败", exception);
+            openErrorPopup(reloadErrorComponent.getTranslatedName(), exception);
         }
     }
 
     private void tryExport() {
         try {
-            Path exported = ConfigManager.INSTANCE.exportActiveConfigToZip(zipField.getText());
-            zipField.setText(exported.toString());
-            zipField.setCursorToEnd();
+            Path exported = ConfigManager.INSTANCE.exportActiveConfigToZip(inputField.getText());
+            inputField.setText(exported.getFileName() == null ? exported.toString() : exported.getFileName().toString());
+            inputField.setCursorToEnd();
         } catch (Exception exception) {
             Epsilon.LOGGER.error("导出配置失败", exception);
+            openErrorPopup(exportErrorComponent.getTranslatedName(), exception);
         }
     }
 
     private void tryImport() {
-        String zipPath = zipField.getText().trim();
+        String zipPath = inputField.getText().trim();
         if (zipPath.isEmpty()) {
             return;
         }
         try {
             String importedName = ConfigManager.INSTANCE.importConfigFromZip(zipPath);
-            nameField.setText(importedName);
-            nameField.setCursorToEnd();
+            inputField.setText(importedName);
+            inputField.setCursorToEnd();
             state.setConfigScroll(0.0f);
         } catch (Exception exception) {
             Epsilon.LOGGER.error("导入配置失败", exception);
+            openErrorPopup(importErrorComponent.getTranslatedName(), exception);
         }
     }
 
@@ -467,39 +458,33 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
         }
         try {
             ConfigManager.INSTANCE.switchConfig(configName);
-            nameField.setText(configName);
-            nameField.setCursorToEnd();
+            inputField.setText(configName);
+            inputField.setCursorToEnd();
         } catch (Exception exception) {
             Epsilon.LOGGER.error("切换配置失败", exception);
+            openErrorPopup(switchErrorComponent.getTranslatedName(), exception);
         }
     }
 
     private void tryDeleteConfig(String configName) {
         try {
             if (!ConfigManager.INSTANCE.deleteConfig(configName)) {
+                openErrorPopup(deleteErrorComponent.getTranslatedName(), deleteLastErrorComponent.getTranslatedName());
                 return;
             }
-            if (Objects.equals(nameField.getText().trim(), configName)) {
-                nameField.setText(ConfigManager.INSTANCE.getActiveConfigName());
-                nameField.setCursorToEnd();
+            if (Objects.equals(inputField.getText().trim(), configName)) {
+                inputField.setText(ConfigManager.INSTANCE.getActiveConfigName());
+                inputField.setCursorToEnd();
             }
         } catch (Exception exception) {
             Epsilon.LOGGER.error("删除配置失败", exception);
+            openErrorPopup(deleteErrorComponent.getTranslatedName(), exception);
         }
     }
 
     private void openDeleteConfirmation(String configName) {
-        if (bounds == null) {
-            return;
-        }
         float popupWidth = 198.0f;
-        float popupHeight = 82.0f;
-        PanelLayout.Rect popupBounds = new PanelLayout.Rect(
-                bounds.x() + (bounds.width() - popupWidth) / 2.0f,
-                bounds.y() + (bounds.height() - popupHeight) / 2.0f,
-                popupWidth,
-                popupHeight
-        );
+        PanelLayout.Rect popupBounds = popupHost.getCenteredBounds(popupWidth, 82.0f);
         popupHost.open(new ConfirmActionPopup(
                 popupBounds,
                 deleteConfirmTitleComponent.getTranslatedName(),
@@ -512,6 +497,27 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
                     markDirty();
                 }
         ));
+    }
+
+    private void openErrorPopup(String actionMessage, Exception exception) {
+        openErrorPopup(actionMessage, buildErrorDetail(exception));
+    }
+
+    private void openErrorPopup(String actionMessage, String detail) {
+        float popupWidth = 220.0f;
+        float popupHeight = 84.0f;
+        popupHost.open(new MessagePopup(
+                popupHost.getCenteredBounds(popupWidth, popupHeight),
+                errorTitleComponent.getTranslatedName(),
+                actionMessage,
+                trimToWidth(detail, 0.52f, popupWidth - 24.0f),
+                errorOkComponent.getTranslatedName()
+        ));
+    }
+
+    private String buildErrorDetail(Exception exception) {
+        String message = exception.getMessage();
+        return message == null || message.isBlank() ? exception.getClass().getSimpleName() : message;
     }
 
     private boolean shouldRebuild(PanelLayout.Rect listViewport, int mouseX, int mouseY, List<String> configs, String activeConfig, int currentGuiHeight) {
@@ -535,7 +541,7 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
     }
 
     private PanelLayout.Rect getInputSectionBounds(PanelLayout.Rect bounds) {
-        float inputHeight = FIELD_HEIGHT * 2.0f + BUTTON_HEIGHT + 3.0f * SECTION_GAP;
+        float inputHeight = FIELD_HEIGHT + BUTTON_HEIGHT + SECTION_GAP * 2.0f;
         return new PanelLayout.Rect(bounds.x(), bounds.bottom() - inputHeight, bounds.width(), inputHeight);
     }
 
@@ -546,16 +552,12 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
         return new PanelLayout.Rect(bounds.x(), y, bounds.width(), Math.max(0.0f, bottom - y));
     }
 
-    private PanelLayout.Rect getNameFieldBounds(PanelLayout.Rect inputBounds) {
+    private PanelLayout.Rect getInputFieldBounds(PanelLayout.Rect inputBounds) {
         return new PanelLayout.Rect(inputBounds.x(), inputBounds.y(), inputBounds.width(), FIELD_HEIGHT);
     }
 
-    private PanelLayout.Rect getZipFieldBounds(PanelLayout.Rect inputBounds) {
-        return new PanelLayout.Rect(inputBounds.x(), inputBounds.y() + FIELD_HEIGHT + SECTION_GAP, inputBounds.width(), FIELD_HEIGHT);
-    }
-
     private List<ActionButton> getActionButtons(PanelLayout.Rect inputBounds) {
-        float y = getZipFieldBounds(inputBounds).bottom() + SECTION_GAP;
+        float y = getInputFieldBounds(inputBounds).bottom() + SECTION_GAP;
         float gap = 4.0f;
         float width = (inputBounds.width() - gap * 3.0f) / 4.0f;
         return List.of(

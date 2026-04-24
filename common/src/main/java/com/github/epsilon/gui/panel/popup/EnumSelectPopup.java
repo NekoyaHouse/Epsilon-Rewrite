@@ -76,7 +76,7 @@ public class EnumSelectPopup implements PanelPopupHost.Popup {
         int alpha = (int) (245 * progress);
 
         // Background & shadow (no scissor)
-        shadowRenderer.addShadow(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, POPUP_SHADOW_RADIUS, MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (120 * progress)));
+        shadowRenderer.addShadow(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, POPUP_SHADOW_RADIUS, MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)));
         roundRectRenderer.addRoundRect(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, alpha));
         roundRectRenderer.addRoundRect(anchorBounds.x(), anchorBounds.y(), anchorBounds.width(), anchorBounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SECONDARY_CONTAINER, (int) (130 * progress)));
 

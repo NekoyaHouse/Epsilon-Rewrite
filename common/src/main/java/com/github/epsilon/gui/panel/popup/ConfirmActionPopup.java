@@ -68,7 +68,7 @@ public final class ConfirmActionPopup implements PanelPopupHost.Popup {
         cancelHoverAnimation.run(cancelButtonBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
 
         shadowRenderer.addShadow(bounds.x(), animatedY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS,
-                POPUP_SHADOW_RADIUS, MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (132 * progress)));
+                POPUP_SHADOW_RADIUS, MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)));
         roundRectRenderer.addRoundRect(bounds.x(), animatedY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS,
                 MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, alpha));
 

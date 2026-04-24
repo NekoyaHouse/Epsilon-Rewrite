@@ -113,10 +113,14 @@ public class ConfigManager {
 
     public synchronized void reload() {
         try {
-            loadActiveConfigSnapshot();
+            reloadOrThrow();
         } catch (Exception e) {
             Epsilon.LOGGER.error("重载配置失败", e);
         }
+    }
+
+    public synchronized void reloadOrThrow() throws IOException {
+        loadActiveConfigSnapshot();
     }
 
     public synchronized void applyToModules(List<Module> modules) {
@@ -620,11 +624,12 @@ public class ConfigManager {
 
     private Path resolveExportZipPath(String rawPath, String configName) {
         String normalized = rawPath == null ? "" : rawPath.trim();
+        Path path = Paths.get(normalized);
         String fileName = normalized.isEmpty()
                 ? configName + ".zip"
-                : Paths.get(normalized).getFileName() == null
+                : (path.getFileName() == null
                 ? configName + ".zip"
-                : Paths.get(normalized).getFileName().toString();
+                : path.getFileName().toString());
         if (!fileName.toLowerCase().endsWith(".zip")) {
             fileName = fileName + ".zip";
         }

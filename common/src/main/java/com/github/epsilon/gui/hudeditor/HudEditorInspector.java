@@ -79,7 +79,7 @@ final class HudEditorInspector {
         float buttonY = bounds.y() + (HEADER_HEIGHT - COLLAPSE_BUTTON_SIZE) * 0.5f;
         this.collapseButtonBounds = new PanelLayout.Rect(buttonX, buttonY, COLLAPSE_BUTTON_SIZE, COLLAPSE_BUTTON_SIZE);
 
-        shadowRenderer.addShadow(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.SECTION_RADIUS, 16.0f, MD3Theme.SHADOW);
+        shadowRenderer.addShadow(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.SECTION_RADIUS, 16.0f, MD3Theme.withAlpha(MD3Theme.SHADOW, MD3Theme.PANEL_SHADOW_ALPHA));
         roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.SECTION_RADIUS, MD3Theme.SURFACE_DIM);
         roundRectRenderer.addRoundRect(bounds.x() + 1.0f, bounds.y() + 1.0f, bounds.width() - 2.0f, bounds.height() - 2.0f, MD3Theme.SECTION_RADIUS - 1.0f, MD3Theme.SURFACE_CONTAINER_LOW);
 
