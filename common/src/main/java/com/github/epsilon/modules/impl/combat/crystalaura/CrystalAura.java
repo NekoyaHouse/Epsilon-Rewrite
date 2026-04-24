@@ -20,8 +20,11 @@ import com.github.epsilon.utils.rotation.RotationUtils;
 import com.github.epsilon.utils.timer.TimerUtils;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+import com.github.epsilon.events.network.PacketEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
 import net.minecraft.network.protocol.game.ServerboundSwingPacket;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -40,8 +43,10 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import com.github.epsilon.events.bus.EventHandler;
+import com.github.epsilon.events.world.DestroyBlockEvent;
 import com.github.epsilon.events.tick.TickEvent;
 import com.github.epsilon.events.render.Render3DEvent;
+import com.github.epsilon.events.world.WorldEvent;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 
@@ -162,6 +167,24 @@ public class CrystalAura extends Module {
     protected void onDisable() {
         target = null;
         resetRenderState();
+    }
+
+    @EventHandler
+    private void onWorldChange(WorldEvent event) {
+        invalidateTerrainVoxelization();
+    }
+
+    @EventHandler
+    private void onDestroyBlock(DestroyBlockEvent event) {
+        invalidateTerrainVoxelization();
+    }
+
+    @EventHandler
+    private void onPacketReceive(PacketEvent.Receive event) {
+        if (event.getPacket() instanceof ClientboundBlockUpdatePacket
+                || event.getPacket() instanceof ClientboundSectionBlocksUpdatePacket) {
+            invalidateTerrainVoxelization();
+        }
     }
 
     @EventHandler
@@ -1120,6 +1143,10 @@ public class CrystalAura extends Module {
         renderHasTarget = true;
         renderDamage = damage;
         renderSelfDamage = selfDmg;
+    }
+
+    private void invalidateTerrainVoxelization() {
+        gpuCompute.invalidateTerrain();
     }
 
     private void deactivateRenderTarget() {
