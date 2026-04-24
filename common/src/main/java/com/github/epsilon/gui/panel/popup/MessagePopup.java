@@ -20,9 +20,9 @@ public final class MessagePopup implements PanelPopupHost.Popup {
     private final String detail;
     private final String buttonLabel;
 
-    private final RoundRectRenderer roundRectRenderer = new RoundRectRenderer();
-    private final ShadowRenderer shadowRenderer = new ShadowRenderer();
-    private final TextRenderer textRenderer = new TextRenderer();
+    private final RoundRectRenderer roundRectRenderer = RoundRectRenderer.create();
+    private final ShadowRenderer shadowRenderer = ShadowRenderer.create();
+    private final TextRenderer textRenderer = TextRenderer.create();
     private final Animation openAnimation = new Animation(Easing.EASE_OUT_CUBIC, 160L);
     private final Animation buttonHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
 

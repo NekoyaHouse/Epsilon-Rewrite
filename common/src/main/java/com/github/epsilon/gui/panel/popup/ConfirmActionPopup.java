@@ -24,9 +24,9 @@ public final class ConfirmActionPopup implements PanelPopupHost.Popup {
     private final String cancelLabel;
     private final Runnable onConfirm;
 
-    private final RoundRectRenderer roundRectRenderer = new RoundRectRenderer();
-    private final ShadowRenderer shadowRenderer = new ShadowRenderer();
-    private final TextRenderer textRenderer = new TextRenderer();
+    private final RoundRectRenderer roundRectRenderer = RoundRectRenderer.create();
+    private final ShadowRenderer shadowRenderer = ShadowRenderer.create();
+    private final TextRenderer textRenderer = TextRenderer.create();
     private final Animation openAnimation = new Animation(Easing.EASE_OUT_CUBIC, 160L);
     private final Animation confirmHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
     private final Animation cancelHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
