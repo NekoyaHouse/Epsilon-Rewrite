@@ -62,6 +62,11 @@ public final class MD3Theme {
     public static final float ROW_TRAILING_INSET = 5.0f;
     public static final float RAIL_COLLAPSED_WIDTH = 42.0f;
     public static final float RAIL_EXPANDED_WIDTH = 120.0f;
+    public static final float CONTROL_HEIGHT = 18.0f;
+    public static final float CONTROL_RADIUS = 7.0f;
+    public static final float COMPACT_CHIP_HEIGHT = 16.0f;
+    public static final float SWITCH_WIDTH = 30.0f;
+    public static final float SWITCH_HEIGHT = 16.0f;
 
     private MD3Theme() {
     }
@@ -121,6 +126,54 @@ public final class MD3Theme {
 
     public static boolean isLightTheme() {
         return ClientSetting.INSTANCE.getThemeMode() == ClientSetting.ThemeMode.Light;
+    }
+
+    public static Color stateLayer(Color color, float progress, int maxAlpha) {
+        return withAlpha(color, (int) (Mth.clamp(progress, 0.0f, 1.0f) * Mth.clamp(maxAlpha, 0, 255)));
+    }
+
+    public static Color rowSurface(float hoverProgress) {
+        return lerp(SURFACE_CONTAINER, SURFACE_CONTAINER_HIGH, hoverProgress);
+    }
+
+    public static Color filledFieldSurface(boolean focused, float hoverProgress) {
+        if (focused) {
+            float focusMix = isLightTheme() ? 0.58f : 0.42f;
+            return lerp(SURFACE_CONTAINER_HIGH, PRIMARY_CONTAINER, focusMix);
+        }
+        Color base = isLightTheme() ? SURFACE_CONTAINER : SURFACE_CONTAINER_LOW;
+        return lerp(base, SURFACE_CONTAINER_HIGHEST, Mth.clamp(hoverProgress * 0.85f, 0.0f, 1.0f));
+    }
+
+    public static Color filledFieldContent(boolean focused) {
+        return focused ? TEXT_PRIMARY : TEXT_PRIMARY;
+    }
+
+    public static Color filledFieldCaret(boolean focused) {
+        return focused ? PRIMARY : TEXT_PRIMARY;
+    }
+
+    public static Color filledFieldIndicator(boolean focused, float hoverProgress) {
+        if (focused) {
+            return PRIMARY;
+        }
+        return lerp(withAlpha(OUTLINE, 96), withAlpha(TEXT_PRIMARY, 136), Mth.clamp(hoverProgress * 0.55f, 0.0f, 1.0f));
+    }
+
+    public static Color segmentedControlSurface() {
+        return isLightTheme() ? SURFACE : SURFACE_CONTAINER_HIGH;
+    }
+
+    public static Color segmentedControlIndicator() {
+        return SECONDARY_CONTAINER;
+    }
+
+    public static Color segmentedControlActiveLabel() {
+        return ON_SECONDARY_CONTAINER;
+    }
+
+    public static Color segmentedControlInactiveLabel() {
+        return isLightTheme() ? TEXT_SECONDARY : TEXT_MUTED;
     }
 
     private record ThemePalette(

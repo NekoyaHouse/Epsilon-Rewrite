@@ -12,6 +12,7 @@ import com.github.epsilon.gui.panel.PanelLayout;
 import com.github.epsilon.gui.panel.PanelState;
 import com.github.epsilon.gui.panel.adapter.ModuleViewModel;
 import com.github.epsilon.gui.panel.component.ModuleRow;
+import com.github.epsilon.gui.panel.component.PanelElements;
 import com.github.epsilon.gui.panel.util.*;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.utils.render.animation.Animation;
@@ -299,10 +300,7 @@ public class ModuleListPanel {
         searchFocusAnimation.run(searchFocused ? 1.0f : 0.0f);
         float hoverProgress = searchHoverAnimation.getValue();
         float focusProgress = searchFocusAnimation.getValue();
-        roundRectRenderer.addRoundRect(searchBounds.x(), searchBounds.y(), searchBounds.width(), searchBounds.height(), 9.0f, MD3Theme.lerp(MD3Theme.SURFACE_CONTAINER, MD3Theme.SURFACE_CONTAINER_HIGH, hoverProgress));
-        if (focusProgress > 0.01f) {
-            roundRectRenderer.addRoundRect(searchBounds.x(), searchBounds.y(), searchBounds.width(), searchBounds.height(), 9.0f, MD3Theme.withAlpha(MD3Theme.PRIMARY, (int) (12 * focusProgress)));
-        }
+        PanelElements.FilledFieldColors fieldColors = PanelElements.drawFilledField(roundRectRenderer, rectRenderer, searchBounds, searchFocused, Math.max(hoverProgress, focusProgress * 0.85f));
 
         String query = state.getSearchQuery();
         boolean showPlaceholder = query.isEmpty() && !searchFocused;
@@ -310,11 +308,11 @@ public class ModuleListPanel {
         float scale = 0.52f;
         float textY = searchBounds.y() + (searchBounds.height() - textRenderer.getHeight(scale)) / 2.0f - 1.0f;
         float textX = searchBounds.x() + 8.0f;
-        textRenderer.addText(display, textX, textY, scale, showPlaceholder ? MD3Theme.TEXT_MUTED : MD3Theme.TEXT_PRIMARY);
+        textRenderer.addText(display, textX, textY, scale, showPlaceholder ? MD3Theme.lerp(MD3Theme.TEXT_MUTED, fieldColors.text(), focusProgress) : fieldColors.text());
 
         if (searchFocused) {
             float caretX = textX + textRenderer.getWidth(query.substring(0, Math.min(searchCursorIndex, query.length())), scale);
-            rectRenderer.addRect(caretX, searchBounds.y() + 4.0f, 1.0f, searchBounds.height() - 8.0f, MD3Theme.TEXT_PRIMARY);
+            rectRenderer.addRect(caretX, searchBounds.y() + 4.0f, 1.0f, searchBounds.height() - 8.0f, fieldColors.caret());
             IMEFocusHelper.updateCursorPos(caretX, textY);
         }
     }

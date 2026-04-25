@@ -8,6 +8,7 @@ import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
 import com.github.epsilon.gui.panel.PanelState;
+import com.github.epsilon.gui.panel.component.PanelElements;
 import com.github.epsilon.gui.panel.util.PanelContentBuffer;
 import com.github.epsilon.gui.panel.util.PanelContentInvalidationState;
 import com.github.epsilon.gui.panel.util.ScrollBarDragState;
@@ -272,8 +273,7 @@ public final class FriendClientSettingTab implements ClientSettingTabView {
         RoundRectRenderer roundRectRenderer = contentBuffer.roundRectRenderer();
         TextRenderer textRenderer = contentBuffer.textRenderer();
 
-        roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS,
-                MD3Theme.lerp(MD3Theme.SURFACE_CONTAINER, MD3Theme.SURFACE_CONTAINER_HIGH, hoverProgress));
+        PanelElements.drawRowSurface(roundRectRenderer, bounds, hoverProgress);
 
         float avatarSize = 20.0f;
         float avatarX = bounds.x() + MD3Theme.ROW_CONTENT_INSET + 2.0f;
@@ -294,19 +294,7 @@ public final class FriendClientSettingTab implements ClientSettingTabView {
         float nameY = bounds.y() + (bounds.height() - textRenderer.getHeight(nameScale)) / 2.0f - 1.0f;
         textRenderer.addText(name, nameX, nameY, nameScale, MD3Theme.TEXT_PRIMARY);
 
-        roundRectRenderer.addRoundRect(removeBounds.x(), removeBounds.y(), removeBounds.width(), removeBounds.height(),
-                removeBounds.height() / 2.0f,
-                MD3Theme.lerp(MD3Theme.withAlpha(MD3Theme.ERROR, 0), MD3Theme.withAlpha(MD3Theme.ERROR, 32), removeHoverProgress));
-        String removeIcon = "✕";
-        float removeScale = 0.50f;
-        float removeTextWidth = textRenderer.getWidth(removeIcon, removeScale);
-        float removeTextHeight = textRenderer.getHeight(removeScale);
-        Color removeColor = MD3Theme.lerp(MD3Theme.TEXT_MUTED, MD3Theme.ERROR, removeHoverProgress);
-        textRenderer.addText(removeIcon,
-                removeBounds.x() + (removeBounds.width() - removeTextWidth) / 2.0f,
-                removeBounds.y() + (removeBounds.height() - removeTextHeight) / 2.0f - 1.0f,
-                removeScale,
-                removeColor);
+        PanelElements.drawIconButton(roundRectRenderer, textRenderer, removeBounds, "✕", 0.50f, MD3Theme.ERROR, removeHoverProgress);
     }
 
     private PanelLayout.Rect getListViewport(PanelLayout.Rect bounds) {

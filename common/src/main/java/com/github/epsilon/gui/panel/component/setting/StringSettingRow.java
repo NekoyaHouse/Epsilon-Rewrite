@@ -5,6 +5,7 @@ import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
+import com.github.epsilon.gui.panel.component.PanelElements;
 import com.github.epsilon.gui.panel.component.SettingRow;
 import com.github.epsilon.gui.panel.util.IMEFocusHelper;
 import com.github.epsilon.settings.impl.StringSetting;
@@ -37,18 +38,12 @@ public class StringSettingRow extends SettingRow<StringSetting> {
     public void render(GuiGraphicsExtractor GuiGraphicsExtractor, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer, PanelLayout.Rect bounds, float hoverProgress, int mouseX, int mouseY, float partialTick) {
         float labelScale = 0.68f;
         float labelY = bounds.y() + (bounds.height() - textRenderer.getHeight(labelScale)) / 2.0f - 1.0f;
-        roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.lerp(MD3Theme.SURFACE_CONTAINER, MD3Theme.SURFACE_CONTAINER_HIGH, hoverProgress));
+        PanelElements.drawRowSurface(roundRectRenderer, bounds, hoverProgress);
         textRenderer.addText(setting.getDisplayName(), bounds.x() + MD3Theme.ROW_CONTENT_INSET, labelY, labelScale, MD3Theme.TEXT_PRIMARY);
 
         PanelLayout.Rect fieldBounds = getFieldBounds(bounds);
         boolean hovered = fieldBounds.contains(mouseX, mouseY);
-        Color fieldBase = MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER : MD3Theme.SURFACE_CONTAINER_LOW;
-        Color fieldHover = MD3Theme.SURFACE_CONTAINER_HIGHEST;
-        Color fieldColor = focused
-                ? MD3Theme.INVERSE_SURFACE
-                : MD3Theme.lerp(fieldBase, fieldHover, hovered ? 0.85f : hoverProgress * 0.55f);
-        Color fieldTextColor = focused ? MD3Theme.INVERSE_ON_SURFACE : MD3Theme.TEXT_PRIMARY;
-        roundRectRenderer.addRoundRect(fieldBounds.x(), fieldBounds.y(), fieldBounds.width(), fieldBounds.height(), 7.0f, fieldColor);
+        PanelElements.FilledFieldColors fieldColors = PanelElements.drawFilledField(roundRectRenderer, rectRenderer, fieldBounds, focused, hovered ? 1.0f : hoverProgress * 0.55f);
 
         String displaySource = focused ? getDisplayBuffer() : normalize(setting.getValue());
         DisplaySlice slice = buildDisplaySlice(displaySource, fieldBounds, focused);
@@ -62,14 +57,14 @@ public class StringSettingRow extends SettingRow<StringSetting> {
                 int localEnd = selectionEnd - slice.start();
                 float highlightX = slice.textX() + textRenderer.getWidth(slice.text().substring(0, localStart), FIELD_SCALE);
                 float highlightWidth = textRenderer.getWidth(slice.text().substring(localStart, localEnd), FIELD_SCALE);
-                rectRenderer.addRect(highlightX, fieldBounds.y() + 3.0f, highlightWidth, fieldBounds.height() - 6.0f, MD3Theme.withAlpha(MD3Theme.PRIMARY, 90));
+                rectRenderer.addRect(highlightX, fieldBounds.y() + 3.0f, highlightWidth, fieldBounds.height() - 6.0f, MD3Theme.withAlpha(fieldColors.indicator(), 90));
             }
         }
-        textRenderer.addText(slice.text(), slice.textX(), textY, FIELD_SCALE, fieldTextColor);
+        textRenderer.addText(slice.text(), slice.textX(), textY, FIELD_SCALE, fieldColors.text());
         if (focused) {
             float caretX = slice.textX() + textRenderer.getWidth(slice.text().substring(0, Math.min(slice.caretIndex(), slice.text().length())), FIELD_SCALE);
             caretX = Math.min(caretX, fieldBounds.right() - 5.0f);
-            rectRenderer.addRect(caretX, fieldBounds.y() + 4.0f, 1.0f, fieldBounds.height() - 8.0f, MD3Theme.INVERSE_ON_SURFACE);
+            rectRenderer.addRect(caretX, fieldBounds.y() + 4.0f, 1.0f, fieldBounds.height() - 8.0f, fieldColors.caret());
             IMEFocusHelper.updateCursorPos(caretX, textY);
         }
     }

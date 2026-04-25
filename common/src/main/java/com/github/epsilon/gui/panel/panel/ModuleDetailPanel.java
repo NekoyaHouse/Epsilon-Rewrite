@@ -11,6 +11,7 @@ import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
 import com.github.epsilon.gui.panel.PanelState;
 import com.github.epsilon.gui.panel.adapter.SettingListController;
+import com.github.epsilon.gui.panel.component.PanelElements;
 import com.github.epsilon.gui.panel.popup.PanelPopupHost;
 import com.github.epsilon.gui.panel.util.PanelContentBuffer;
 import com.github.epsilon.gui.panel.util.PanelContentInvalidationState;
@@ -287,7 +288,7 @@ public class ModuleDetailPanel {
     }
 
     private float getHeaderControlHeight() {
-        return 18.0f;
+        return MD3Theme.CONTROL_HEIGHT;
     }
 
     private float getKeybindControlSize() {
@@ -311,7 +312,7 @@ public class ModuleDetailPanel {
     }
 
     private float getHeaderControlRadius() {
-        return 7.0f;
+        return MD3Theme.CONTROL_RADIUS;
     }
 
     private float getKeybindControlRadius() {
@@ -326,45 +327,9 @@ public class ModuleDetailPanel {
         PanelLayout.Rect bindModeBounds = getBindModeBounds();
         bindModeAnimation.run(module.getBindMode() == Module.BindMode.Hold ? 1.0f : 0.0f);
         bindModeHoverAnimation.run(bindModeBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
-        float progress = bindModeAnimation.getValue();
-        float hoverProgress = bindModeHoverAnimation.getValue();
-        float outerRadius = getHeaderControlRadius();
-        float shellInset = 1.0f;
-        float innerX = bindModeBounds.x() + shellInset;
-        float innerY = bindModeBounds.y() + shellInset;
-        float innerWidth = bindModeBounds.width() - shellInset * 2.0f;
-        float innerHeight = bindModeBounds.height() - shellInset * 2.0f;
-        float segmentWidth = innerWidth / 2.0f;
-        float indicatorInset = 1.5f;
-        float indicatorWidth = segmentWidth - indicatorInset * 2.0f;
-        float indicatorX = innerX + indicatorInset + segmentWidth * progress;
-        float indicatorY = innerY + indicatorInset;
-        float indicatorHeight = innerHeight - indicatorInset * 2.0f;
-        float indicatorRadius = Math.max(4.0f, outerRadius - 2.0f);
-
-        roundRectRenderer.addRoundRect(bindModeBounds.x(), bindModeBounds.y(), bindModeBounds.width(), bindModeBounds.height(), outerRadius, MD3Theme.OUTLINE_SOFT);
-        roundRectRenderer.addRoundRect(innerX, innerY, innerWidth, innerHeight, Math.max(outerRadius - shellInset, 1.0f), MD3Theme.isLightTheme() ? MD3Theme.SURFACE : MD3Theme.SURFACE_CONTAINER_HIGH);
-        if (hoverProgress > 0.01f) {
-            int hoverAlpha = MD3Theme.isLightTheme() ? 10 : 14;
-            roundRectRenderer.addRoundRect(innerX, innerY, innerWidth, innerHeight, Math.max(outerRadius - shellInset, 1.0f), MD3Theme.withAlpha(MD3Theme.TEXT_PRIMARY, (int) (hoverAlpha * hoverProgress)));
-        }
-
-        float dividerX = innerX + segmentWidth - 0.5f;
-        rectRenderer.addRect(dividerX, innerY + 3.0f, 1.0f, innerHeight - 6.0f, MD3Theme.OUTLINE_SOFT);
-        roundRectRenderer.addRoundRect(indicatorX, indicatorY, indicatorWidth, indicatorHeight, indicatorRadius, MD3Theme.SECONDARY_CONTAINER);
-
-        String toggleText = toggleComponent.getTranslatedName();
-        String holdText = holdComponent.getTranslatedName();
-
-        float toggleScale = 0.52f;
-        float holdScale = 0.52f;
-        float toggleWidth = textRenderer.getWidth(toggleText, toggleScale);
-        float holdWidth = textRenderer.getWidth(holdText, holdScale);
-        float textHeight = textRenderer.getHeight(toggleScale);
-        float centerY = innerY + (innerHeight - textHeight) / 2.0f - 1.0f;
-        Color inactiveText = MD3Theme.isLightTheme() ? MD3Theme.TEXT_SECONDARY : MD3Theme.TEXT_MUTED;
-        textRenderer.addText(toggleText, innerX + (segmentWidth - toggleWidth) / 2.0f, centerY, toggleScale, MD3Theme.lerp(MD3Theme.ON_SECONDARY_CONTAINER, inactiveText, progress));
-        textRenderer.addText(holdText, innerX + segmentWidth + (segmentWidth - holdWidth) / 2.0f, centerY, holdScale, MD3Theme.lerp(inactiveText, MD3Theme.ON_SECONDARY_CONTAINER, progress));
+        PanelElements.drawSegmentedControl(roundRectRenderer, rectRenderer, textRenderer, bindModeBounds,
+                toggleComponent.getTranslatedName(), holdComponent.getTranslatedName(),
+                bindModeAnimation.getValue(), bindModeHoverAnimation.getValue());
     }
 
     private void drawKeybindControl(Module module, int mouseX, int mouseY) {
@@ -384,8 +349,8 @@ public class ModuleDetailPanel {
         Color foreground = MD3Theme.lerp(MD3Theme.ON_SECONDARY_CONTAINER, MD3Theme.ON_PRIMARY_CONTAINER, focusProgress);
         roundRectRenderer.addRoundRect(keybindBounds.x(), keybindBounds.y(), keybindBounds.width(), keybindBounds.height(), radius, background);
         if (hoverProgress > 0.01f) {
-            int hoverAlpha = listening ? 18 : 12;
-            roundRectRenderer.addRoundRect(keybindBounds.x(), keybindBounds.y(), keybindBounds.width(), keybindBounds.height(), radius, MD3Theme.withAlpha(foreground, (int) (hoverAlpha * hoverProgress)));
+            roundRectRenderer.addRoundRect(keybindBounds.x(), keybindBounds.y(), keybindBounds.width(), keybindBounds.height(), radius,
+                    MD3Theme.stateLayer(foreground, hoverProgress, listening ? 18 : 12));
         }
 
         String label = listening ? "..." : formatCompactKeybind(module.getKeyBind());
@@ -401,45 +366,9 @@ public class ModuleDetailPanel {
         PanelLayout.Rect hiddenBounds = getHiddenBounds();
         hiddenAnimation.run(module.isHidden() ? 1.0f : 0.0f);
         hiddenHoverAnimation.run(hiddenBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
-        float progress = hiddenAnimation.getValue();
-        float hoverProgress = hiddenHoverAnimation.getValue();
-        float outerRadius = getHeaderControlRadius();
-        float shellInset = 1.0f;
-        float innerX = hiddenBounds.x() + shellInset;
-        float innerY = hiddenBounds.y() + shellInset;
-        float innerWidth = hiddenBounds.width() - shellInset * 2.0f;
-        float innerHeight = hiddenBounds.height() - shellInset * 2.0f;
-        float segmentWidth = innerWidth / 2.0f;
-        float indicatorInset = 1.5f;
-        float indicatorWidth = segmentWidth - indicatorInset * 2.0f;
-        float indicatorX = innerX + indicatorInset + segmentWidth * progress;
-        float indicatorY = innerY + indicatorInset;
-        float indicatorHeight = innerHeight - indicatorInset * 2.0f;
-        float indicatorRadius = Math.max(4.0f, outerRadius - 2.0f);
-
-        roundRectRenderer.addRoundRect(hiddenBounds.x(), hiddenBounds.y(), hiddenBounds.width(), hiddenBounds.height(), outerRadius, MD3Theme.OUTLINE_SOFT);
-        roundRectRenderer.addRoundRect(innerX, innerY, innerWidth, innerHeight, Math.max(outerRadius - shellInset, 1.0f), MD3Theme.isLightTheme() ? MD3Theme.SURFACE : MD3Theme.SURFACE_CONTAINER_HIGH);
-        if (hoverProgress > 0.01f) {
-            int hoverAlpha = MD3Theme.isLightTheme() ? 10 : 14;
-            roundRectRenderer.addRoundRect(innerX, innerY, innerWidth, innerHeight, Math.max(outerRadius - shellInset, 1.0f), MD3Theme.withAlpha(MD3Theme.TEXT_PRIMARY, (int) (hoverAlpha * hoverProgress)));
-        }
-
-        float dividerX = innerX + segmentWidth - 0.5f;
-        rectRenderer.addRect(dividerX, innerY + 3.0f, 1.0f, innerHeight - 6.0f, MD3Theme.OUTLINE_SOFT);
-        roundRectRenderer.addRoundRect(indicatorX, indicatorY, indicatorWidth, indicatorHeight, indicatorRadius, MD3Theme.SECONDARY_CONTAINER);
-
-        String visibleText = visibleComponent.getTranslatedName();
-        String hiddenText = hiddenComponent.getTranslatedName();
-
-        float visibleScale = 0.52f;
-        float hiddenScale = 0.52f;
-        float visibleWidth = textRenderer.getWidth(visibleText, visibleScale);
-        float hiddenWidth = textRenderer.getWidth(hiddenText, hiddenScale);
-        float textHeight = textRenderer.getHeight(visibleScale);
-        float centerY = innerY + (innerHeight - textHeight) / 2.0f - 1.0f;
-        Color inactiveText = MD3Theme.isLightTheme() ? MD3Theme.TEXT_SECONDARY : MD3Theme.TEXT_MUTED;
-        textRenderer.addText(visibleText, innerX + (segmentWidth - visibleWidth) / 2.0f, centerY, visibleScale, MD3Theme.lerp(MD3Theme.ON_SECONDARY_CONTAINER, inactiveText, progress));
-        textRenderer.addText(hiddenText, innerX + segmentWidth + (segmentWidth - hiddenWidth) / 2.0f, centerY, hiddenScale, MD3Theme.lerp(inactiveText, MD3Theme.ON_SECONDARY_CONTAINER, progress));
+        PanelElements.drawSegmentedControl(roundRectRenderer, rectRenderer, textRenderer, hiddenBounds,
+                visibleComponent.getTranslatedName(), hiddenComponent.getTranslatedName(),
+                hiddenAnimation.getValue(), hiddenHoverAnimation.getValue());
     }
 
     private String formatCompactKeybind(int keyCode) {

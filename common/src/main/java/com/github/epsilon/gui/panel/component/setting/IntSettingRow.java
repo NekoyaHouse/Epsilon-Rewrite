@@ -5,6 +5,7 @@ import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
+import com.github.epsilon.gui.panel.component.PanelElements;
 import com.github.epsilon.gui.panel.component.SettingRow;
 import com.github.epsilon.settings.impl.IntSetting;
 import com.github.epsilon.utils.render.animation.Animation;
@@ -47,7 +48,7 @@ public class IntSettingRow extends SettingRow<IntSetting> {
         float animatedPress = pressAnimation.getValue();
         float indicatorProgress = indicatorAnimation.getValue();
 
-        roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.lerp(MD3Theme.SURFACE_CONTAINER, MD3Theme.SURFACE_CONTAINER_HIGH, animatedHover));
+        PanelElements.drawRowSurface(roundRectRenderer, bounds, animatedHover);
         textRenderer.addText(setting.getDisplayName(), bounds.x() + MD3Theme.ROW_CONTENT_INSET, labelY, labelScale, MD3Theme.TEXT_PRIMARY);
 
         PanelLayout.Rect trackBounds = getTrackBounds(bounds);
@@ -86,13 +87,7 @@ public class IntSettingRow extends SettingRow<IntSetting> {
             textRenderer.addText(label, textX, textY, textScale, MD3Theme.withAlpha(MD3Theme.INVERSE_ON_SURFACE, bubbleAlpha));
         }
 
-        Color fieldBase = MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER : MD3Theme.SURFACE_CONTAINER_LOW;
-        Color fieldHover = MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER_HIGHEST : MD3Theme.SURFACE_CONTAINER_HIGHEST;
-        Color fieldColor = focused
-                ? MD3Theme.INVERSE_SURFACE
-                : MD3Theme.lerp(fieldBase, fieldHover, animatedHover * 0.85f);
-        Color fieldTextColor = focused ? MD3Theme.INVERSE_ON_SURFACE : MD3Theme.TEXT_PRIMARY;
-        roundRectRenderer.addRoundRect(fieldBounds.x(), fieldBounds.y(), fieldBounds.width(), fieldBounds.height(), 7.0f, fieldColor);
+        PanelElements.FilledFieldColors fieldColors = PanelElements.drawFilledField(roundRectRenderer, rectRenderer, fieldBounds, focused, animatedHover * 0.85f);
 
         String display = focused ? getDisplayBuffer() : formatValue();
         float displayScale = 0.60f;
@@ -100,10 +95,10 @@ public class IntSettingRow extends SettingRow<IntSetting> {
         float textHeight = textRenderer.getHeight(displayScale);
         float textX = fieldBounds.x() + (fieldBounds.width() - textWidth) / 2.0f;
         float textY = fieldBounds.y() + (fieldBounds.height() - textHeight) / 2.0f - 1.0f;
-        textRenderer.addText(display, textX, textY, displayScale, fieldTextColor);
+        textRenderer.addText(display, textX, textY, displayScale, fieldColors.text());
         if (focused) {
             float caretX = textX + textRenderer.getWidth(display.substring(0, Math.min(cursorIndex, display.length())), displayScale);
-            rectRenderer.addRect(caretX, fieldBounds.y() + 4.0f, 1.0f, fieldBounds.height() - 8.0f, MD3Theme.INVERSE_ON_SURFACE);
+            rectRenderer.addRect(caretX, fieldBounds.y() + 4.0f, 1.0f, fieldBounds.height() - 8.0f, fieldColors.caret());
         }
     }
 

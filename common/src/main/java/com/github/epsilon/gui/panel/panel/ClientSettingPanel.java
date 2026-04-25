@@ -22,7 +22,6 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 
-import java.awt.*;
 import java.util.EnumMap;
 import java.util.List;
 
@@ -32,6 +31,11 @@ public class ClientSettingPanel {
     private static final TranslateComponent generalTabComponent = EpsilonTranslateComponent.create("gui", "tab.general");
     private static final TranslateComponent friendTabComponent = EpsilonTranslateComponent.create("gui", "tab.friend");
     private static final TranslateComponent configTabComponent = EpsilonTranslateComponent.create("gui", "tab.config");
+    private static final List<TabDefinition> TABS = List.of(
+            new TabDefinition(PanelState.ClientSettingTab.GENERAL, generalTabComponent),
+            new TabDefinition(PanelState.ClientSettingTab.FRIEND, friendTabComponent),
+            new TabDefinition(PanelState.ClientSettingTab.CONFIG, configTabComponent)
+    );
 
     private static final float TAB_BAR_HEIGHT = 26.0f;
     private static final float TAB_INDICATOR_HEIGHT = 2.5f;
@@ -136,15 +140,14 @@ public class ClientSettingPanel {
 
     private void renderTabs(int mouseX, int mouseY) {
         PanelLayout.Rect tabBar = getTabBarRect();
-        List<TabDefinition> tabs = getTabs();
-        float segmentWidth = tabBar.width() / tabs.size();
+        float segmentWidth = tabBar.width() / TABS.size();
         float labelScale = 0.62f;
         float textHeight = textRenderer.getHeight(labelScale);
         int activeIndex = getTabIndex(state.getClientSettingTab());
         tabIndicatorAnimation.run(activeIndex);
 
-        for (int index = 0; index < tabs.size(); index++) {
-            TabDefinition tab = tabs.get(index);
+        for (int index = 0; index < TABS.size(); index++) {
+            TabDefinition tab = TABS.get(index);
             PanelLayout.Rect tabBounds = new PanelLayout.Rect(tabBar.x() + segmentWidth * index, tabBar.y(), segmentWidth, tabBar.height());
             boolean active = tab.tab() == state.getClientSettingTab();
 
@@ -153,7 +156,7 @@ public class ClientSettingPanel {
             float hover = hoverAnimation.getValue();
             if (hover > 0.01f) {
                 roundRectRenderer.addRoundRect(tabBounds.x(), tabBounds.y(), tabBounds.width(), tabBounds.height(), 6.0f,
-                        MD3Theme.withAlpha(MD3Theme.TEXT_PRIMARY, (int) (8 * hover)));
+                        MD3Theme.stateLayer(MD3Theme.TEXT_PRIMARY, hover, 8));
             }
 
             String label = tab.component().getTranslatedName();
@@ -184,23 +187,15 @@ public class ClientSettingPanel {
     }
 
     private PanelState.ClientSettingTab resolveClickedTab(double mouseX, PanelLayout.Rect tabBar) {
-        List<TabDefinition> tabs = getTabs();
-        float segmentWidth = tabBar.width() / tabs.size();
-        int index = Math.min(tabs.size() - 1, Math.max(0, (int) ((mouseX - tabBar.x()) / segmentWidth)));
-        return tabs.get(index).tab();
+        float segmentWidth = tabBar.width() / TABS.size();
+        int index = Math.min(TABS.size() - 1, Math.max(0, (int) ((mouseX - tabBar.x()) / segmentWidth)));
+        return TABS.get(index).tab();
     }
 
     private ClientSettingTabView getCurrentTabView() {
         return tabViews.get(state.getClientSettingTab());
     }
 
-    private List<TabDefinition> getTabs() {
-        return List.of(
-                new TabDefinition(PanelState.ClientSettingTab.GENERAL, generalTabComponent),
-                new TabDefinition(PanelState.ClientSettingTab.FRIEND, friendTabComponent),
-                new TabDefinition(PanelState.ClientSettingTab.CONFIG, configTabComponent)
-        );
-    }
 
     private int getTabIndex(PanelState.ClientSettingTab tab) {
         return switch (tab) {
