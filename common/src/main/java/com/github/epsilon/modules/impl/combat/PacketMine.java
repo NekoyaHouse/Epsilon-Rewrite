@@ -442,7 +442,8 @@ public class PacketMine extends Module {
 
                 mineBreaks++;
 
-                progress = prevProgress = 0;
+                prevProgress = 0;
+                progress = 0;
 
                 if (doubleMine.getValue() && mode.is(Mode.Instant) && actions.size() >= 2)
                     return true;
@@ -504,7 +505,8 @@ public class PacketMine extends Module {
                 return;
             }
 
-            prevProgress = progress = 0;
+            prevProgress = 0;
+            progress = 0;
             Direction dir = RotationUtils.getDirection(pos, null);
             mc.getConnection().send(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK, pos, dir));
             start(dir);
