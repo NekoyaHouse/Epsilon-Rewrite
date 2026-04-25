@@ -7,6 +7,7 @@ import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
 import com.github.epsilon.gui.panel.component.PanelElements;
 import com.github.epsilon.gui.panel.component.SettingRow;
+import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import com.github.epsilon.settings.impl.BoolSetting;
 import com.github.epsilon.utils.render.animation.Animation;
 import com.github.epsilon.utils.render.animation.Easing;
@@ -25,19 +26,15 @@ public class BoolSettingRow extends SettingRow<BoolSetting> {
     }
 
     @Override
-    public void render(GuiGraphicsExtractor GuiGraphicsExtractor, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer, PanelLayout.Rect bounds, float hoverProgress, int mouseX, int mouseY, float partialTick) {
+    public void buildUi(PanelUiTree.Scope scope, GuiGraphicsExtractor guiGraphics, TextRenderer textRenderer, PanelLayout.Rect bounds, float hoverProgress, int mouseX, int mouseY, float partialTick) {
         float labelScale = 0.68f;
         float labelY = bounds.y() + (bounds.height() - textRenderer.getHeight(labelScale)) / 2.0f - 1.0f;
-        hoverAnimation.run(hoverProgress);
-        toggleAnimation.run(setting.getValue() ? 1.0f : 0.0f);
+        float animatedHover = scope.animate(hoverAnimation, hoverProgress);
+        float toggleProgress = scope.animate(toggleAnimation, setting.getValue());
 
-        float animatedHover = hoverAnimation.getValue();
-        float toggleProgress = toggleAnimation.getValue();
-
-        PanelElements.drawRowSurface(roundRectRenderer, bounds, animatedHover);
-        textRenderer.addText(setting.getDisplayName(), bounds.x() + MD3Theme.ROW_CONTENT_INSET, labelY, labelScale, MD3Theme.TEXT_PRIMARY);
-
-        PanelElements.drawSwitch(roundRectRenderer, getSwitchBounds(bounds), toggleProgress, animatedHover);
+        scope.roundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.rowSurface(animatedHover));
+        scope.text(setting.getDisplayName(), bounds.x() + MD3Theme.ROW_CONTENT_INSET, labelY, labelScale, MD3Theme.TEXT_PRIMARY);
+        scope.switchControl(getSwitchBounds(bounds), toggleProgress, animatedHover);
     }
 
     private PanelLayout.Rect getSwitchBounds(PanelLayout.Rect bounds) {

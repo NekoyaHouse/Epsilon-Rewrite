@@ -5,8 +5,8 @@ import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
-import com.github.epsilon.gui.panel.component.PanelElements;
 import com.github.epsilon.gui.panel.component.SettingRow;
+import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import com.github.epsilon.settings.impl.IntSetting;
 import com.github.epsilon.utils.render.animation.Animation;
 import com.github.epsilon.utils.render.animation.Easing;
@@ -15,8 +15,6 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.util.Mth;
-
-import java.awt.*;
 
 public class IntSettingRow extends SettingRow<IntSetting> {
 
@@ -37,7 +35,7 @@ public class IntSettingRow extends SettingRow<IntSetting> {
     }
 
     @Override
-    public void render(GuiGraphicsExtractor GuiGraphicsExtractor, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer, PanelLayout.Rect bounds, float hoverProgress, int mouseX, int mouseY, float partialTick) {
+    public void buildUi(PanelUiTree.Scope scope, GuiGraphicsExtractor guiGraphics, TextRenderer textRenderer, PanelLayout.Rect bounds, float hoverProgress, int mouseX, int mouseY, float partialTick) {
         float labelScale = 0.68f;
         float labelY = bounds.y() + (bounds.height() - textRenderer.getHeight(labelScale)) / 2.0f - 1.0f;
         hoverAnimation.run(dragging ? 1.0f : hoverProgress);
@@ -48,8 +46,8 @@ public class IntSettingRow extends SettingRow<IntSetting> {
         float animatedPress = pressAnimation.getValue();
         float indicatorProgress = indicatorAnimation.getValue();
 
-        PanelElements.drawRowSurface(roundRectRenderer, bounds, animatedHover);
-        textRenderer.addText(setting.getDisplayName(), bounds.x() + MD3Theme.ROW_CONTENT_INSET, labelY, labelScale, MD3Theme.TEXT_PRIMARY);
+        scope.roundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.rowSurface(animatedHover));
+        scope.text(setting.getDisplayName(), bounds.x() + MD3Theme.ROW_CONTENT_INSET, labelY, labelScale, MD3Theme.TEXT_PRIMARY);
 
         PanelLayout.Rect trackBounds = getTrackBounds(bounds);
         PanelLayout.Rect fieldBounds = getFieldBounds(bounds);
@@ -64,12 +62,12 @@ public class IntSettingRow extends SettingRow<IntSetting> {
         float inactiveWidth = Math.max(2.0f, trackBounds.right() - inactiveX);
 
         if (shouldDrawSteps()) {
-            drawSteps(rectRenderer, trackBounds, progress);
+            buildSteps(scope, trackBounds, progress);
         }
 
-        roundRectRenderer.addRoundRect(trackBounds.x(), trackBounds.y(), activeWidth, trackBounds.height(), 3.0f, 0.0f, 0.0f, 3.0f, MD3Theme.PRIMARY);
-        roundRectRenderer.addRoundRect(inactiveX, trackBounds.y(), inactiveWidth, trackBounds.height(), 0.0f, 3.0f, 3.0f, 0.0f, MD3Theme.SECONDARY_CONTAINER);
-        roundRectRenderer.addRoundRect(handleX, handleY, handleWidth, handleHeight, 2.0f, MD3Theme.PRIMARY);
+        scope.roundRect(trackBounds.x(), trackBounds.y(), activeWidth, trackBounds.height(), 3.0f, 0.0f, 0.0f, 3.0f, MD3Theme.PRIMARY);
+        scope.roundRect(inactiveX, trackBounds.y(), inactiveWidth, trackBounds.height(), 0.0f, 3.0f, 3.0f, 0.0f, MD3Theme.SECONDARY_CONTAINER);
+        scope.roundRect(handleX, handleY, handleWidth, handleHeight, 2.0f, MD3Theme.PRIMARY);
 
         if (indicatorProgress > 0.01f) {
             String label = formatValue();
@@ -79,15 +77,17 @@ public class IntSettingRow extends SettingRow<IntSetting> {
             float bubbleX = handleX + handleWidth / 2.0f - bubbleWidth / 2.0f;
             float bubbleY = bounds.y() - 22.0f;
             int bubbleAlpha = (int) (255 * indicatorProgress);
-            roundRectRenderer.addRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 9.0f, MD3Theme.withAlpha(MD3Theme.INVERSE_SURFACE, bubbleAlpha));
+            scope.roundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 9.0f, MD3Theme.withAlpha(MD3Theme.INVERSE_SURFACE, bubbleAlpha));
             float textWidth = textRenderer.getWidth(label, textScale);
             float textHeight = textRenderer.getHeight(textScale);
             float textX = bubbleX + (bubbleWidth - textWidth) / 2.0f;
             float textY = bubbleY + (bubbleHeight - textHeight) / 2.0f - 1.0f;
-            textRenderer.addText(label, textX, textY, textScale, MD3Theme.withAlpha(MD3Theme.INVERSE_ON_SURFACE, bubbleAlpha));
+            scope.text(label, textX, textY, textScale, MD3Theme.withAlpha(MD3Theme.INVERSE_ON_SURFACE, bubbleAlpha));
         }
 
-        PanelElements.FilledFieldColors fieldColors = PanelElements.drawFilledField(roundRectRenderer, rectRenderer, fieldBounds, focused, animatedHover * 0.85f);
+        float fieldHover = animatedHover * 0.85f;
+        scope.roundRect(fieldBounds.x(), fieldBounds.y(), fieldBounds.width(), fieldBounds.height(), MD3Theme.CONTROL_RADIUS, MD3Theme.filledFieldSurface(focused, fieldHover));
+        scope.rect(fieldBounds.x() + 4.0f, fieldBounds.bottom() - (focused ? 1.5f : 1.0f), Math.max(0.0f, fieldBounds.width() - 8.0f), focused ? 1.5f : 1.0f, MD3Theme.filledFieldIndicator(focused, fieldHover));
 
         String display = focused ? getDisplayBuffer() : formatValue();
         float displayScale = 0.60f;
@@ -95,10 +95,10 @@ public class IntSettingRow extends SettingRow<IntSetting> {
         float textHeight = textRenderer.getHeight(displayScale);
         float textX = fieldBounds.x() + (fieldBounds.width() - textWidth) / 2.0f;
         float textY = fieldBounds.y() + (fieldBounds.height() - textHeight) / 2.0f - 1.0f;
-        textRenderer.addText(display, textX, textY, displayScale, fieldColors.text());
+        scope.text(display, textX, textY, displayScale, MD3Theme.filledFieldContent(focused));
         if (focused) {
             float caretX = textX + textRenderer.getWidth(display.substring(0, Math.min(cursorIndex, display.length())), displayScale);
-            rectRenderer.addRect(caretX, fieldBounds.y() + 4.0f, 1.0f, fieldBounds.height() - 8.0f, fieldColors.caret());
+            scope.rect(caretX, fieldBounds.y() + 4.0f, 1.0f, fieldBounds.height() - 8.0f, MD3Theme.filledFieldCaret(focused));
         }
     }
 
@@ -246,7 +246,7 @@ public class IntSettingRow extends SettingRow<IntSetting> {
         return range > 0 && (double) step / (double) range > 0.08;
     }
 
-    private void drawSteps(RectRenderer rectRenderer, PanelLayout.Rect trackBounds, float progress) {
+    private void buildSteps(PanelUiTree.Scope scope, PanelLayout.Rect trackBounds, float progress) {
         int step = Math.max(1, setting.getStep());
         int range = setting.getMax() - setting.getMin();
         int steps = Math.max(1, range / step);
@@ -259,7 +259,7 @@ public class IntSettingRow extends SettingRow<IntSetting> {
             float x = trackBounds.x() + trackBounds.width() * stepProgress - dotSize / 2.0f;
             x = Mth.clamp(x, trackBounds.x(), trackBounds.right() - dotSize);
             float y = trackBounds.centerY() - dotSize / 2.0f;
-            rectRenderer.addRect(x, y, dotSize, dotSize, stepProgress <= progress ? MD3Theme.ON_PRIMARY : MD3Theme.ON_SECONDARY_CONTAINER);
+            scope.rect(x, y, dotSize, dotSize, stepProgress <= progress ? MD3Theme.ON_PRIMARY : MD3Theme.ON_SECONDARY_CONTAINER);
         }
     }
 

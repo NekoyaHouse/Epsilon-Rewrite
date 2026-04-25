@@ -12,7 +12,8 @@ import com.github.epsilon.gui.panel.PanelLayout;
 import com.github.epsilon.gui.panel.PanelState;
 import com.github.epsilon.gui.panel.adapter.ModuleViewModel;
 import com.github.epsilon.gui.panel.component.ModuleRow;
-import com.github.epsilon.gui.panel.component.PanelElements;
+import com.github.epsilon.gui.panel.dsl.PanelUiCompiler;
+import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import com.github.epsilon.gui.panel.util.*;
 import com.github.epsilon.modules.Module;
 import com.github.epsilon.utils.render.animation.Animation;
@@ -22,6 +23,7 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 
+import java.awt.Color;
 import java.util.*;
 
 public class ModuleListPanel {
@@ -49,6 +51,7 @@ public class ModuleListPanel {
     private final ScrollBarDragState scrollBarDrag = new ScrollBarDragState();
     private boolean searchFocused;
     private int searchCursorIndex;
+    private long lastContentSignature = Long.MIN_VALUE;
 
     private static final TranslateComponent searchComponent = EpsilonTranslateComponent.create("gui", "search");
 
@@ -65,10 +68,6 @@ public class ModuleListPanel {
         this.bounds = bounds;
         this.guiHeight = GuiGraphicsExtractor.guiHeight();
 
-        textRenderer.addText(state.getSelectedCategory().getName(), bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 10.0f, 0.78f, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
-        textRenderer.addText("Modules", bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 21.0f, 0.56f, MD3Theme.TEXT_SECONDARY);
-        drawSearchField(mouseX, mouseY);
-
         PanelLayout.Rect viewport = getViewport();
         List<Module> modules = state.getVisibleModules();
         float contentHeight = modules.size() * (ModuleRow.HEIGHT + MD3Theme.ROW_GAP);
@@ -76,36 +75,49 @@ public class ModuleListPanel {
         float maxModuleScroll = Math.max(0, contentHeight - viewport.height());
         boolean hasScrollBar = maxModuleScroll > 0;
         float rowWidth = hasScrollBar ? viewport.width() - ScrollBarUtil.TOTAL_WIDTH : viewport.width();
+        long contentSignature = buildContentSignature(modules);
+        boolean rebuildContent = shouldRebuildContent(bounds, mouseX, mouseY, modules, GuiGraphicsExtractor.guiHeight(), contentSignature);
 
-        if (shouldRebuildContent(bounds, mouseX, mouseY, modules, GuiGraphicsExtractor.guiHeight())) {
+        if (rebuildContent) {
             rows.clear();
             contentBuffer.clear();
             contentState.beginRebuild();
-
-            float y = viewport.y() - state.getModuleScroll();
-            for (Module module : modules) {
-                ModuleRow row = new ModuleRow(ModuleViewModel.from(module), new PanelLayout.Rect(viewport.x(), y, rowWidth, ModuleRow.HEIGHT));
-                rows.add(row);
-                Animation hoverAnimation = hoverAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.EASE_OUT_CUBIC, 120L));
-                Animation selectionAnimation = selectionAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.EASE_OUT_CUBIC, 160L));
-                Animation toggleAnimation = toggleAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.DYNAMIC_ISLAND, 220L));
-                Animation toggleHoverAnimation = toggleHoverAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.EASE_OUT_CUBIC, 120L));
-                hoverAnimation.run(row.getBounds().contains(mouseX, mouseY) ? 1.0f : 0.0f);
-                selectionAnimation.run(state.getSelectedModule() == module ? 1.0f : 0.0f);
-                toggleAnimation.run(module.isEnabled() ? 1.0f : 0.0f);
-                toggleHoverAnimation.run(row.getToggleBounds().contains(mouseX, mouseY) ? 1.0f : 0.0f);
-                contentState.noteAnimation(!hoverAnimation.isFinished()
-                        || !selectionAnimation.isFinished()
-                        || !toggleAnimation.isFinished()
-                        || !toggleHoverAnimation.isFinished());
-                row.render(contentBuffer.roundRectRenderer(), contentBuffer.rectRenderer(), contentBuffer.textRenderer(), hoverAnimation.getValue(), selectionAnimation.getValue(), toggleAnimation.getValue(), toggleHoverAnimation.getValue());
-                y += ModuleRow.HEIGHT + MD3Theme.ROW_GAP;
-            }
-
-            rememberSnapshot(bounds, mouseX, mouseY, modules, GuiGraphicsExtractor.guiHeight());
         }
 
-        contentBuffer.queueViewport(viewport, guiHeight, state.getModuleScroll(), maxModuleScroll, contentHeight);
+        PanelUiTree tree = PanelUiTree.build(scope -> {
+            scope.text(state.getSelectedCategory().getName(), bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 10.0f, 0.78f, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
+            scope.text("Modules", bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 21.0f, 0.56f, MD3Theme.TEXT_SECONDARY);
+            buildSearchField(scope, mouseX, mouseY);
+            scope.viewport(contentBuffer, viewport, guiHeight, state.getModuleScroll(), maxModuleScroll, contentHeight, content -> {
+                if (!rebuildContent) {
+                    return;
+                }
+                float y = viewport.y() - state.getModuleScroll();
+                for (Module module : modules) {
+                    ModuleRow row = new ModuleRow(ModuleViewModel.from(module), new PanelLayout.Rect(viewport.x(), y, rowWidth, ModuleRow.HEIGHT));
+                    rows.add(row);
+                    Animation hoverAnimation = hoverAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.EASE_OUT_CUBIC, 120L));
+                    Animation selectionAnimation = selectionAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.EASE_OUT_CUBIC, 160L));
+                    Animation toggleAnimation = toggleAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.DYNAMIC_ISLAND, 220L));
+                    Animation toggleHoverAnimation = toggleHoverAnimations.computeIfAbsent(module, ignored -> new Animation(Easing.EASE_OUT_CUBIC, 120L));
+                    hoverAnimation.run(row.getBounds().contains(mouseX, mouseY) ? 1.0f : 0.0f);
+                    selectionAnimation.run(state.getSelectedModule() == module ? 1.0f : 0.0f);
+                    toggleAnimation.run(module.isEnabled() ? 1.0f : 0.0f);
+                    toggleHoverAnimation.run(row.getToggleBounds().contains(mouseX, mouseY) ? 1.0f : 0.0f);
+                    contentState.noteAnimation(!hoverAnimation.isFinished()
+                            || !selectionAnimation.isFinished()
+                            || !toggleAnimation.isFinished()
+                            || !toggleHoverAnimation.isFinished());
+                    row.buildUi(content, textRenderer, hoverAnimation.getValue(), selectionAnimation.getValue(), toggleAnimation.getValue(), toggleHoverAnimation.getValue());
+                    y += ModuleRow.HEIGHT + MD3Theme.ROW_GAP;
+                }
+            });
+        });
+        PanelUiCompiler.render(tree, roundRectRenderer, rectRenderer, textRenderer);
+
+        if (rebuildContent) {
+            rememberSnapshot(bounds, mouseX, mouseY, modules, GuiGraphicsExtractor.guiHeight(), contentSignature);
+        }
     }
 
     public void flushContent() {
@@ -253,8 +265,8 @@ public class ModuleListPanel {
         }
     }
 
-    private boolean shouldRebuildContent(PanelLayout.Rect bounds, int mouseX, int mouseY, List<Module> modules, int currentGuiHeight) {
-        if (contentState.needsRebuild(bounds, mouseX, mouseY, currentGuiHeight)) {
+    private boolean shouldRebuildContent(PanelLayout.Rect bounds, int mouseX, int mouseY, List<Module> modules, int currentGuiHeight, long contentSignature) {
+        if (contentState.needsRebuild(bounds, mouseX, mouseY, currentGuiHeight, contentSignature)) {
             return true;
         }
         if (Float.compare(lastModuleScroll, state.getModuleScroll()) != 0) {
@@ -267,16 +279,35 @@ public class ModuleListPanel {
         if (!Objects.equals(lastSelectedModuleName, selectedModuleName)) {
             return true;
         }
-        return !Objects.equals(lastCategorySnapshot, CategorySnapshot.of(state.getSelectedCategory().name(), modules));
+        if (!Objects.equals(lastCategorySnapshot, CategorySnapshot.of(state.getSelectedCategory().name(), modules))) {
+            return true;
+        }
+        return lastContentSignature != contentSignature;
     }
 
-    private void rememberSnapshot(PanelLayout.Rect bounds, int mouseX, int mouseY, List<Module> modules, int currentGuiHeight) {
-        contentState.rememberSnapshot(bounds, mouseX, mouseY, currentGuiHeight);
+    private void rememberSnapshot(PanelLayout.Rect bounds, int mouseX, int mouseY, List<Module> modules, int currentGuiHeight, long contentSignature) {
+        contentState.rememberSnapshot(bounds, mouseX, mouseY, currentGuiHeight, contentSignature);
         lastModuleScroll = state.getModuleScroll();
         lastSearchQuery = state.getSearchQuery();
         lastSearchFocused = searchFocused;
         lastCategorySnapshot = CategorySnapshot.of(state.getSelectedCategory().name(), modules);
         lastSelectedModuleName = state.getSelectedModule() == null ? "" : state.getSelectedModule().getName();
+        lastContentSignature = contentSignature;
+    }
+
+    private long buildContentSignature(List<Module> modules) {
+        long signature = 17L;
+        signature = signature * 31L + state.getSelectedCategory().name().hashCode();
+        signature = signature * 31L + state.getSearchQuery().hashCode();
+        signature = signature * 31L + (searchFocused ? 1 : 0);
+        signature = signature * 31L + (state.getSelectedModule() == null ? 0 : state.getSelectedModule().getName().hashCode());
+        signature = signature * 31L + Float.floatToIntBits(state.getModuleScroll());
+        for (Module module : modules) {
+            signature = signature * 31L + module.getName().hashCode();
+            signature = signature * 31L + module.getKeyBind();
+            signature = signature * 31L + (module.isEnabled() ? 1 : 0);
+        }
+        return signature;
     }
 
     private record CategorySnapshot(String categoryName, List<String> moduleIds) {
@@ -294,13 +325,11 @@ public class ModuleListPanel {
         return new PanelLayout.Rect(bounds.right() - MD3Theme.PANEL_TITLE_INSET - 76.0f, bounds.y() + 8.0f, 76.0f, 18.0f);
     }
 
-    private void drawSearchField(int mouseX, int mouseY) {
+    private void buildSearchField(PanelUiTree.Scope scope, int mouseX, int mouseY) {
         PanelLayout.Rect searchBounds = getSearchBounds();
-        searchHoverAnimation.run(searchBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
-        searchFocusAnimation.run(searchFocused ? 1.0f : 0.0f);
-        float hoverProgress = searchHoverAnimation.getValue();
-        float focusProgress = searchFocusAnimation.getValue();
-        PanelElements.FilledFieldColors fieldColors = PanelElements.drawFilledField(roundRectRenderer, rectRenderer, searchBounds, searchFocused, Math.max(hoverProgress, focusProgress * 0.85f));
+        float hoverProgress = scope.animate(searchHoverAnimation, searchBounds.contains(mouseX, mouseY));
+        float focusProgress = scope.animate(searchFocusAnimation, searchFocused);
+        buildFilledField(scope, searchBounds, searchFocused, Math.max(hoverProgress, focusProgress * 0.85f));
 
         String query = state.getSearchQuery();
         boolean showPlaceholder = query.isEmpty() && !searchFocused;
@@ -308,12 +337,24 @@ public class ModuleListPanel {
         float scale = 0.52f;
         float textY = searchBounds.y() + (searchBounds.height() - textRenderer.getHeight(scale)) / 2.0f - 1.0f;
         float textX = searchBounds.x() + 8.0f;
-        textRenderer.addText(display, textX, textY, scale, showPlaceholder ? MD3Theme.lerp(MD3Theme.TEXT_MUTED, fieldColors.text(), focusProgress) : fieldColors.text());
+        Color textColor = showPlaceholder
+                ? MD3Theme.lerp(MD3Theme.TEXT_MUTED, MD3Theme.filledFieldContent(searchFocused), focusProgress)
+                : MD3Theme.filledFieldContent(searchFocused);
+        scope.text(display, textX, textY, scale, textColor);
 
         if (searchFocused) {
             float caretX = textX + textRenderer.getWidth(query.substring(0, Math.min(searchCursorIndex, query.length())), scale);
-            rectRenderer.addRect(caretX, searchBounds.y() + 4.0f, 1.0f, searchBounds.height() - 8.0f, fieldColors.caret());
+            scope.rect(caretX, searchBounds.y() + 4.0f, 1.0f, searchBounds.height() - 8.0f, MD3Theme.filledFieldCaret(true));
             IMEFocusHelper.updateCursorPos(caretX, textY);
         }
+    }
+
+    private void buildFilledField(PanelUiTree.Scope scope, PanelLayout.Rect bounds, boolean focused, float hoverProgress) {
+        scope.roundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CONTROL_RADIUS, MD3Theme.filledFieldSurface(focused, hoverProgress));
+        float indicatorHeight = focused ? 1.5f : 1.0f;
+        float indicatorInset = 4.0f;
+        scope.rect(bounds.x() + indicatorInset, bounds.bottom() - indicatorHeight,
+                Math.max(0.0f, bounds.width() - indicatorInset * 2.0f), indicatorHeight,
+                MD3Theme.filledFieldIndicator(focused, hoverProgress));
     }
 }

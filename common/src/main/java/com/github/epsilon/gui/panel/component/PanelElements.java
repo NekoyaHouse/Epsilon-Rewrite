@@ -6,6 +6,7 @@ import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.graphics.text.ttf.TtfFontLoader;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
+import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import org.jspecify.annotations.Nullable;
 
 import java.awt.*;
@@ -20,6 +21,10 @@ public final class PanelElements {
 
     public static void drawRowSurface(RoundRectRenderer roundRectRenderer, PanelLayout.Rect bounds, float hoverProgress) {
         roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.rowSurface(hoverProgress));
+    }
+
+    public static void buildRowSurface(PanelUiTree.Scope scope, PanelLayout.Rect bounds, float hoverProgress) {
+        scope.roundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.rowSurface(hoverProgress));
     }
 
     public static float rowLabelX(PanelLayout.Rect bounds) {
@@ -58,6 +63,10 @@ public final class PanelElements {
         roundRectRenderer.addRoundRect(knobX, knobY, knobSize, knobSize, knobSize / 2.0f, knob);
     }
 
+    public static void buildSwitch(PanelUiTree.Scope scope, PanelLayout.Rect rect, float toggleProgress, float hoverProgress) {
+        scope.switchControl(rect, toggleProgress, hoverProgress);
+    }
+
     public static FilledFieldColors drawFilledField(RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, PanelLayout.Rect bounds,
                                                     boolean focused, float hoverProgress) {
         Color container = MD3Theme.filledFieldSurface(focused, hoverProgress);
@@ -70,6 +79,15 @@ public final class PanelElements {
         float indicatorInset = 4.0f;
         rectRenderer.addRect(bounds.x() + indicatorInset, bounds.bottom() - indicatorHeight,
                 Math.max(0.0f, bounds.width() - indicatorInset * 2.0f), indicatorHeight, indicator);
+        return new FilledFieldColors(text, caret, indicator);
+    }
+
+    public static FilledFieldColors buildFilledField(PanelUiTree.Scope scope, PanelLayout.Rect bounds, boolean focused, float hoverProgress) {
+        Color text = MD3Theme.filledFieldContent(focused);
+        Color caret = MD3Theme.filledFieldCaret(focused);
+        Color indicator = MD3Theme.filledFieldIndicator(focused, hoverProgress);
+
+        scope.filledField(bounds, focused, hoverProgress);
         return new FilledFieldColors(text, caret, indicator);
     }
 
@@ -91,6 +109,12 @@ public final class PanelElements {
         float iconWidth = textRenderer.getWidth(trailingIcon, trailingIconScale, trailingIconFont);
         float iconY = bounds.y() + (bounds.height() - textRenderer.getHeight(trailingIconScale, trailingIconFont)) / 2.0f - 1.0f;
         textRenderer.addText(trailingIcon, bounds.right() - 8.0f - iconWidth, iconY, trailingIconScale, foreground, trailingIconFont);
+    }
+
+    public static void buildAssistChip(PanelUiTree.Scope scope, TextRenderer textRenderer, PanelLayout.Rect bounds,
+                                       String label, float textScale, Color background, Color foreground,
+                                       @Nullable String trailingIcon, float trailingIconScale, @Nullable TtfFontLoader trailingIconFont) {
+        scope.assistChip(bounds, label, textScale, background, foreground, trailingIcon, trailingIconScale, trailingIconFont);
     }
 
     public static void drawSegmentedControl(RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer,
@@ -129,6 +153,12 @@ public final class PanelElements {
         textRenderer.addText(trailingLabel, innerX + segmentWidth + (segmentWidth - trailingWidth) / 2.0f, labelY, labelScale, MD3Theme.lerp(inactiveLabel, activeLabel, progress));
     }
 
+    public static void buildSegmentedControl(PanelUiTree.Scope scope, TextRenderer textRenderer,
+                                             PanelLayout.Rect bounds, String leadingLabel, String trailingLabel,
+                                             float progress, float hoverProgress) {
+        scope.segmentedControl(bounds, leadingLabel, trailingLabel, progress, hoverProgress);
+    }
+
     public static void drawIconButton(RoundRectRenderer roundRectRenderer, TextRenderer textRenderer, PanelLayout.Rect bounds,
                                       String label, float scale, Color tone, float hoverProgress) {
         roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), bounds.height() / 2.0f,
@@ -141,6 +171,11 @@ public final class PanelElements {
                 bounds.y() + (bounds.height() - textHeight) / 2.0f - 1.0f,
                 scale,
                 labelColor);
+    }
+
+    public static void buildIconButton(PanelUiTree.Scope scope, TextRenderer textRenderer, PanelLayout.Rect bounds,
+                                       String label, float scale, Color tone, float hoverProgress) {
+        scope.iconButton(bounds, label, scale, tone, hoverProgress);
     }
 
     public record FilledFieldColors(Color text, Color caret, Color indicator) {

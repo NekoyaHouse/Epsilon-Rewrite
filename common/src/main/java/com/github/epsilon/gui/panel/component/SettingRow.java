@@ -4,6 +4,8 @@ import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.gui.panel.PanelLayout;
+import com.github.epsilon.gui.panel.dsl.PanelUiCompiler;
+import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import com.github.epsilon.settings.Setting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.CharacterEvent;
@@ -29,6 +31,12 @@ public abstract class SettingRow<T extends Setting<?>> {
     }
 
     public void render(GuiGraphicsExtractor GuiGraphicsExtractor, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer, PanelLayout.Rect bounds, float hoverProgress, int mouseX, int mouseY, float partialTick) {
+        PanelUiTree tree = PanelUiTree.build(scope -> buildUi(scope, GuiGraphicsExtractor, textRenderer, bounds, hoverProgress, mouseX, mouseY, partialTick));
+        PanelUiCompiler.render(tree, roundRectRenderer, rectRenderer, textRenderer);
+    }
+
+    public void buildUi(PanelUiTree.Scope scope, GuiGraphicsExtractor guiGraphics, TextRenderer textRenderer,
+                        PanelLayout.Rect bounds, float hoverProgress, int mouseX, int mouseY, float partialTick) {
     }
 
     public boolean mouseClicked(PanelLayout.Rect bounds, MouseButtonEvent event, boolean isDoubleClick) {

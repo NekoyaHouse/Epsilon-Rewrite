@@ -10,6 +10,8 @@ import com.github.epsilon.graphics.text.StaticFontLoader;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
 import com.github.epsilon.gui.panel.PanelState;
+import com.github.epsilon.gui.panel.dsl.PanelUiCompiler;
+import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import com.github.epsilon.gui.panel.panel.clientsettings.ClientSettingTabView;
 import com.github.epsilon.gui.panel.panel.clientsettings.ConfigClientSettingTab;
 import com.github.epsilon.gui.panel.panel.clientsettings.FriendClientSettingTab;
@@ -76,8 +78,11 @@ public class ClientSettingPanel {
         int effectiveMouseX = popupConsumesHover ? Integer.MIN_VALUE : mouseX;
         int effectiveMouseY = popupConsumesHover ? Integer.MIN_VALUE : mouseY;
 
-        textRenderer.addText(titleComponent.getTranslatedName(), bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 10.0f, 0.78f, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
-        renderTabs(effectiveMouseX, effectiveMouseY);
+        PanelUiTree tree = PanelUiTree.build(scope -> {
+            scope.text(titleComponent.getTranslatedName(), bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 10.0f, 0.78f, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
+            buildTabs(scope, effectiveMouseX, effectiveMouseY);
+        });
+        PanelUiCompiler.render(tree, roundRectRenderer, rectRenderer, textRenderer);
 
         activeTab.render(guiGraphics, getContentBounds(), effectiveMouseX, effectiveMouseY, partialTick);
     }
@@ -138,13 +143,13 @@ public class ClientSettingPanel {
         return getCurrentTabView().charTyped(event);
     }
 
-    private void renderTabs(int mouseX, int mouseY) {
+    private void buildTabs(PanelUiTree.Scope scope, int mouseX, int mouseY) {
         PanelLayout.Rect tabBar = getTabBarRect();
         float segmentWidth = tabBar.width() / TABS.size();
         float labelScale = 0.62f;
         float textHeight = textRenderer.getHeight(labelScale);
         int activeIndex = getTabIndex(state.getClientSettingTab());
-        tabIndicatorAnimation.run(activeIndex);
+        float indicatorProgress = scope.animate(tabIndicatorAnimation, activeIndex);
 
         for (int index = 0; index < TABS.size(); index++) {
             TabDefinition tab = TABS.get(index);
@@ -152,10 +157,9 @@ public class ClientSettingPanel {
             boolean active = tab.tab() == state.getClientSettingTab();
 
             Animation hoverAnimation = tabHoverAnimations.get(tab.tab());
-            hoverAnimation.run(tabBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
-            float hover = hoverAnimation.getValue();
+            float hover = scope.animate(hoverAnimation, tabBounds.contains(mouseX, mouseY));
             if (hover > 0.01f) {
-                roundRectRenderer.addRoundRect(tabBounds.x(), tabBounds.y(), tabBounds.width(), tabBounds.height(), 6.0f,
+                scope.roundRect(tabBounds.x(), tabBounds.y(), tabBounds.width(), tabBounds.height(), 6.0f,
                         MD3Theme.stateLayer(MD3Theme.TEXT_PRIMARY, hover, 8));
             }
 
@@ -163,16 +167,16 @@ public class ClientSettingPanel {
             float textWidth = textRenderer.getWidth(label, labelScale);
             float textX = tabBounds.x() + (tabBounds.width() - textWidth) / 2.0f;
             float textY = tabBounds.y() + (tabBounds.height() - TAB_INDICATOR_HEIGHT - textHeight) / 2.0f - 1.0f;
-            textRenderer.addText(label, textX, textY, labelScale, active ? MD3Theme.PRIMARY : MD3Theme.TEXT_MUTED);
+            scope.text(label, textX, textY, labelScale, active ? MD3Theme.PRIMARY : MD3Theme.TEXT_MUTED);
         }
 
         float dividerY = tabBar.bottom() - 1.0f;
-        rectRenderer.addRect(tabBar.x(), dividerY, tabBar.width(), 1.0f, MD3Theme.withAlpha(MD3Theme.OUTLINE, 40));
+        scope.rect(tabBar.x(), dividerY, tabBar.width(), 1.0f, MD3Theme.withAlpha(MD3Theme.OUTLINE, 40));
 
         float indicatorWidth = Math.min(56.0f, segmentWidth - 24.0f);
-        float indicatorX = tabBar.x() + tabIndicatorAnimation.getValue() * segmentWidth + (segmentWidth - indicatorWidth) / 2.0f;
+        float indicatorX = tabBar.x() + indicatorProgress * segmentWidth + (segmentWidth - indicatorWidth) / 2.0f;
         float indicatorY = tabBar.bottom() - TAB_INDICATOR_HEIGHT;
-        roundRectRenderer.addRoundRect(indicatorX, indicatorY, indicatorWidth, TAB_INDICATOR_HEIGHT,
+        scope.roundRect(indicatorX, indicatorY, indicatorWidth, TAB_INDICATOR_HEIGHT,
                 TAB_INDICATOR_HEIGHT / 2.0f, MD3Theme.PRIMARY);
     }
 

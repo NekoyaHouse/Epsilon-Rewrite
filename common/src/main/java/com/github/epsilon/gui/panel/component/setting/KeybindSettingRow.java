@@ -8,6 +8,7 @@ import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
 import com.github.epsilon.gui.panel.component.SettingRow;
+import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import com.github.epsilon.settings.impl.KeybindSetting;
 import com.github.epsilon.utils.render.animation.Animation;
 import com.github.epsilon.utils.render.animation.Easing;
@@ -41,12 +42,12 @@ public class KeybindSettingRow extends SettingRow<KeybindSetting> {
     }
 
     @Override
-    public void render(GuiGraphicsExtractor GuiGraphicsExtractor, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer, PanelLayout.Rect bounds, float hoverProgress, int mouseX, int mouseY, float partialTick) {
+    public void buildUi(PanelUiTree.Scope scope, GuiGraphicsExtractor guiGraphics, TextRenderer textRenderer, PanelLayout.Rect bounds, float hoverProgress, int mouseX, int mouseY, float partialTick) {
         float labelScale = 0.68f;
         float labelY = bounds.y() + (bounds.height() - textRenderer.getHeight(labelScale)) / 2.0f - 1.0f;
 
-        roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.lerp(MD3Theme.SURFACE_CONTAINER, MD3Theme.SURFACE_CONTAINER_HIGH, hoverProgress));
-        textRenderer.addText(setting.getDisplayName(), bounds.x() + MD3Theme.ROW_CONTENT_INSET, labelY, labelScale, MD3Theme.TEXT_PRIMARY);
+        scope.roundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.rowSurface(hoverProgress));
+        scope.text(setting.getDisplayName(), bounds.x() + MD3Theme.ROW_CONTENT_INSET, labelY, labelScale, MD3Theme.TEXT_PRIMARY);
 
         PanelLayout.Rect chipBounds = getChipBounds(bounds);
         chipHoverAnimation.run(chipBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
@@ -58,16 +59,16 @@ public class KeybindSettingRow extends SettingRow<KeybindSetting> {
 
         if (focusProgress > 0.01f) {
             float haloInset = 1.5f * focusProgress;
-            roundRectRenderer.addRoundRect(chipBounds.x() - haloInset, chipBounds.y() - haloInset, chipBounds.width() + haloInset * 2.0f, chipBounds.height() + haloInset * 2.0f, radius + haloInset, MD3Theme.withAlpha(MD3Theme.PRIMARY, (int) (28 * focusProgress)));
+            scope.roundRect(chipBounds.x() - haloInset, chipBounds.y() - haloInset, chipBounds.width() + haloInset * 2.0f, chipBounds.height() + haloInset * 2.0f, radius + haloInset, MD3Theme.withAlpha(MD3Theme.PRIMARY, (int) (28 * focusProgress)));
         }
 
         Color background = MD3Theme.lerp(MD3Theme.SECONDARY_CONTAINER, MD3Theme.PRIMARY_CONTAINER, focusProgress);
         Color foreground = MD3Theme.lerp(MD3Theme.ON_SECONDARY_CONTAINER, MD3Theme.ON_PRIMARY_CONTAINER, focusProgress);
-        roundRectRenderer.addRoundRect(chipBounds.x(), chipBounds.y(), chipBounds.width(), chipBounds.height(), radius, background);
+        scope.roundRect(chipBounds.x(), chipBounds.y(), chipBounds.width(), chipBounds.height(), radius, background);
 
         if (chipHover > 0.01f) {
             int hoverAlpha = listening ? 18 : 12;
-            roundRectRenderer.addRoundRect(chipBounds.x(), chipBounds.y(), chipBounds.width(), chipBounds.height(), radius, MD3Theme.withAlpha(foreground, (int) (hoverAlpha * chipHover)));
+            scope.roundRect(chipBounds.x(), chipBounds.y(), chipBounds.width(), chipBounds.height(), radius, MD3Theme.withAlpha(foreground, (int) (hoverAlpha * chipHover)));
         }
 
         String label = listening ? "..." : formatKeybind(setting.getValue());
@@ -76,7 +77,7 @@ public class KeybindSettingRow extends SettingRow<KeybindSetting> {
         float textHeight = textRenderer.getHeight(chipTextScale);
         float textX = chipBounds.x() + (chipBounds.width() - textWidth) / 2.0f;
         float textY = chipBounds.y() + (chipBounds.height() - textHeight) / 2.0f - 1.0f;
-        textRenderer.addText(label, textX, textY, chipTextScale, foreground);
+        scope.text(label, textX, textY, chipTextScale, foreground);
     }
 
     public PanelLayout.Rect getChipBounds(PanelLayout.Rect bounds) {

@@ -9,6 +9,8 @@ import com.github.epsilon.graphics.text.StaticFontLoader;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
 import com.github.epsilon.gui.panel.adapter.ModuleViewModel;
+import com.github.epsilon.gui.panel.dsl.PanelUiCompiler;
+import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import java.awt.*;
@@ -42,6 +44,11 @@ public class ModuleRow {
     }
 
     public void render(RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer, float hoverProgress, float selectedProgress, float toggleProgress, float toggleHoverProgress) {
+        PanelUiTree tree = PanelUiTree.build(scope -> buildUi(scope, textRenderer, hoverProgress, selectedProgress, toggleProgress, toggleHoverProgress));
+        PanelUiCompiler.render(tree, roundRectRenderer, rectRenderer, textRenderer);
+    }
+
+    public void buildUi(PanelUiTree.Scope scope, TextRenderer textRenderer, float hoverProgress, float selectedProgress, float toggleProgress, float toggleHoverProgress) {
         float titleScale = 0.70f;
         float subScale = 0.60f;
         float keyScale = 0.6f;
@@ -59,18 +66,19 @@ public class ModuleRow {
         float keyWidth = textRenderer.getWidth(keybindText, keyScale);
         float keyX = toggleBounds.x() - 8.0f - keyWidth;
 
-        PanelElements.drawRowSurface(roundRectRenderer, bounds, hoverProgress);
+        scope.roundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.rowSurface(hoverProgress));
         if (selectedProgress > 0.01f) {
-            roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS,
+            scope.roundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS,
                     MD3Theme.stateLayer(MD3Theme.PRIMARY, selectedProgress, 42));
         }
 
-        textRenderer.addText(module.displayName(), PanelElements.rowLabelX(bounds), titleY, titleScale, titleColor, StaticFontLoader.DUCKSANS);
+        scope.text(module.displayName(), PanelElements.rowLabelX(bounds), titleY, titleScale, titleColor, StaticFontLoader.DUCKSANS);
         String addonText = module.module().getAddonId() != null ? module.module().getAddonId() : "unknown";
-        textRenderer.addText(addonText, PanelElements.rowLabelX(bounds), subY, subScale, subColor);
-        PanelElements.drawSwitch(roundRectRenderer, toggleBounds, toggleProgress, toggleHoverProgress);
-        textRenderer.addText(keybindText, keyX, keyY, keyScale, keyColor);
+        scope.text(addonText, PanelElements.rowLabelX(bounds), subY, subScale, subColor);
+        scope.switchControl(toggleBounds, toggleProgress, toggleHoverProgress);
+        scope.text(keybindText, keyX, keyY, keyScale, keyColor);
     }
+
 
 
     private String formatKeybind(int keyCode) {

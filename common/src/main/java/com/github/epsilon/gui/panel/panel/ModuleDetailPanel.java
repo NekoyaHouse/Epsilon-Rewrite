@@ -12,6 +12,8 @@ import com.github.epsilon.gui.panel.PanelLayout;
 import com.github.epsilon.gui.panel.PanelState;
 import com.github.epsilon.gui.panel.adapter.SettingListController;
 import com.github.epsilon.gui.panel.component.PanelElements;
+import com.github.epsilon.gui.panel.dsl.PanelUiCompiler;
+import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import com.github.epsilon.gui.panel.popup.PanelPopupHost;
 import com.github.epsilon.gui.panel.util.PanelContentBuffer;
 import com.github.epsilon.gui.panel.util.PanelContentInvalidationState;
@@ -54,6 +56,7 @@ public class ModuleDetailPanel {
     private final Animation keybindFocusAnimation = new Animation(Easing.EASE_OUT_CUBIC, 150L);
     private final Animation hiddenAnimation = new Animation(Easing.EASE_OUT_CUBIC, 180L);
     private final Animation hiddenHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
+    private long lastContentSignature = Long.MIN_VALUE;
 
     private static final TranslateComponent toggleComponent = EpsilonTranslateComponent.create("keybind", "toggle");
     private static final TranslateComponent holdComponent = EpsilonTranslateComponent.create("keybind", "hold");
@@ -84,18 +87,21 @@ public class ModuleDetailPanel {
 
         Module module = state.getSelectedModule();
         String detailTitle = module == null ? "No Module" : module.getTranslatedName();
-        textRenderer.addText(detailTitle, bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 10.0f, 0.78f, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
+        PanelUiTree headerTree = PanelUiTree.build(scope -> scope.text(detailTitle, bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 10.0f, 0.78f, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS));
+        PanelUiCompiler.render(headerTree, roundRectRenderer, rectRenderer, textRenderer);
 
         if (module == null) {
             return;
         }
 
         headerBounds = new PanelLayout.Rect(bounds.x() + MD3Theme.PANEL_VIEWPORT_INSET, bounds.y() + 34.0f, bounds.width() - MD3Theme.PANEL_VIEWPORT_INSET * 2.0f, 36.0f);
-        roundRectRenderer.addRoundRect(headerBounds.x(), headerBounds.y(), headerBounds.width(), headerBounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.SURFACE_CONTAINER);
-
-        drawKeybindControl(module, mouseX, mouseY);
-        drawBindModeControl(module, mouseX, mouseY);
-        drawHiddenControl(module, mouseX, mouseY);
+        PanelUiTree controlTree = PanelUiTree.build(scope -> {
+            scope.roundRect(headerBounds.x(), headerBounds.y(), headerBounds.width(), headerBounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.SURFACE_CONTAINER);
+            buildKeybindControl(scope, module, mouseX, mouseY);
+            buildBindModeControl(scope, module, mouseX, mouseY);
+            buildHiddenControl(scope, module, mouseX, mouseY);
+        });
+        PanelUiCompiler.render(controlTree, roundRectRenderer, rectRenderer, textRenderer);
 
         PanelLayout.Rect viewport = getViewport();
         List<Setting<?>> settings = module.getSettings().stream().filter(Setting::isAvailable).toList();
@@ -104,8 +110,9 @@ public class ModuleDetailPanel {
         float maxDetailScroll = Math.max(0, contentHeight - viewport.height());
         boolean hasScrollBar = maxDetailScroll > 0;
         float rowWidth = hasScrollBar ? viewport.width() - ScrollBarUtil.TOTAL_WIDTH : viewport.width();
+        long contentSignature = buildContentSignature(module, settings);
 
-        if (shouldRebuildContent(bounds, mouseX, mouseY, module, settings, GuiGraphicsExtractor.guiHeight())) {
+        if (shouldRebuildContent(bounds, mouseX, mouseY, module, settings, GuiGraphicsExtractor.guiHeight(), contentSignature)) {
             contentBuffer.clear();
             contentState.beginRebuild();
 
@@ -116,7 +123,7 @@ public class ModuleDetailPanel {
                 contentState.noteAnimation(!hoverAnimation.isFinished() || row.hasActiveAnimation());
             });
 
-            rememberSnapshot(bounds, mouseX, mouseY, module, settings, GuiGraphicsExtractor.guiHeight());
+            rememberSnapshot(bounds, mouseX, mouseY, module, settings, GuiGraphicsExtractor.guiHeight(), contentSignature);
         }
 
         contentBuffer.queueViewport(viewport, guiHeight, state.getDetailScroll(), maxDetailScroll, contentHeight);
@@ -323,33 +330,31 @@ public class ModuleDetailPanel {
         return headerBounds.y() + (headerBounds.height() - getHeaderControlHeight()) / 2.0f;
     }
 
-    private void drawBindModeControl(Module module, int mouseX, int mouseY) {
+    private void buildBindModeControl(PanelUiTree.Scope scope, Module module, int mouseX, int mouseY) {
         PanelLayout.Rect bindModeBounds = getBindModeBounds();
-        bindModeAnimation.run(module.getBindMode() == Module.BindMode.Hold ? 1.0f : 0.0f);
-        bindModeHoverAnimation.run(bindModeBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
-        PanelElements.drawSegmentedControl(roundRectRenderer, rectRenderer, textRenderer, bindModeBounds,
+        float bindProgress = scope.animate(bindModeAnimation, module.getBindMode() == Module.BindMode.Hold);
+        float hoverProgress = scope.animate(bindModeHoverAnimation, bindModeBounds.contains(mouseX, mouseY));
+        PanelElements.buildSegmentedControl(scope, textRenderer, bindModeBounds,
                 toggleComponent.getTranslatedName(), holdComponent.getTranslatedName(),
-                bindModeAnimation.getValue(), bindModeHoverAnimation.getValue());
+                bindProgress, hoverProgress);
     }
 
-    private void drawKeybindControl(Module module, int mouseX, int mouseY) {
+    private void buildKeybindControl(PanelUiTree.Scope scope, Module module, int mouseX, int mouseY) {
         PanelLayout.Rect keybindBounds = getKeybindBounds();
         boolean listening = state.getListeningKeyBindModule() == module;
-        keybindHoverAnimation.run(keybindBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
-        keybindFocusAnimation.run(listening ? 1.0f : 0.0f);
-        float hoverProgress = keybindHoverAnimation.getValue();
-        float focusProgress = keybindFocusAnimation.getValue();
+        float hoverProgress = scope.animate(keybindHoverAnimation, keybindBounds.contains(mouseX, mouseY));
+        float focusProgress = scope.animate(keybindFocusAnimation, listening);
         float radius = getKeybindControlRadius();
         float haloInset = 1.5f * focusProgress;
         if (haloInset > 0.01f) {
-            roundRectRenderer.addRoundRect(keybindBounds.x() - haloInset, keybindBounds.y() - haloInset, keybindBounds.width() + haloInset * 2.0f, keybindBounds.height() + haloInset * 2.0f, radius + haloInset, MD3Theme.withAlpha(MD3Theme.PRIMARY, (int) (28 * focusProgress)));
+            scope.roundRect(keybindBounds.x() - haloInset, keybindBounds.y() - haloInset, keybindBounds.width() + haloInset * 2.0f, keybindBounds.height() + haloInset * 2.0f, radius + haloInset, MD3Theme.withAlpha(MD3Theme.PRIMARY, (int) (28 * focusProgress)));
         }
 
         Color background = MD3Theme.lerp(MD3Theme.SECONDARY_CONTAINER, MD3Theme.PRIMARY_CONTAINER, focusProgress);
         Color foreground = MD3Theme.lerp(MD3Theme.ON_SECONDARY_CONTAINER, MD3Theme.ON_PRIMARY_CONTAINER, focusProgress);
-        roundRectRenderer.addRoundRect(keybindBounds.x(), keybindBounds.y(), keybindBounds.width(), keybindBounds.height(), radius, background);
+        scope.roundRect(keybindBounds.x(), keybindBounds.y(), keybindBounds.width(), keybindBounds.height(), radius, background);
         if (hoverProgress > 0.01f) {
-            roundRectRenderer.addRoundRect(keybindBounds.x(), keybindBounds.y(), keybindBounds.width(), keybindBounds.height(), radius,
+            scope.roundRect(keybindBounds.x(), keybindBounds.y(), keybindBounds.width(), keybindBounds.height(), radius,
                     MD3Theme.stateLayer(foreground, hoverProgress, listening ? 18 : 12));
         }
 
@@ -359,16 +364,16 @@ public class ModuleDetailPanel {
         float textHeight = textRenderer.getHeight(scale);
         float textX = keybindBounds.x() + (keybindBounds.width() - textWidth) / 2.0f;
         float textY = keybindBounds.y() + (keybindBounds.height() - textHeight) / 2.0f - 1.0f;
-        textRenderer.addText(label, textX, textY, scale, foreground);
+        scope.text(label, textX, textY, scale, foreground);
     }
 
-    private void drawHiddenControl(Module module, int mouseX, int mouseY) {
+    private void buildHiddenControl(PanelUiTree.Scope scope, Module module, int mouseX, int mouseY) {
         PanelLayout.Rect hiddenBounds = getHiddenBounds();
-        hiddenAnimation.run(module.isHidden() ? 1.0f : 0.0f);
-        hiddenHoverAnimation.run(hiddenBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
-        PanelElements.drawSegmentedControl(roundRectRenderer, rectRenderer, textRenderer, hiddenBounds,
+        float hiddenProgress = scope.animate(hiddenAnimation, module.isHidden());
+        float hoverProgress = scope.animate(hiddenHoverAnimation, hiddenBounds.contains(mouseX, mouseY));
+        PanelElements.buildSegmentedControl(scope, textRenderer, hiddenBounds,
                 visibleComponent.getTranslatedName(), hiddenComponent.getTranslatedName(),
-                hiddenAnimation.getValue(), hiddenHoverAnimation.getValue());
+                hiddenProgress, hoverProgress);
     }
 
     private String formatCompactKeybind(int keyCode) {
@@ -426,8 +431,8 @@ public class ModuleDetailPanel {
                 || !hiddenHoverAnimation.isFinished();
     }
 
-    private boolean shouldRebuildContent(PanelLayout.Rect bounds, int mouseX, int mouseY, Module module, List<Setting<?>> settings, int currentGuiHeight) {
-        if (contentState.needsRebuild(bounds, mouseX, mouseY, currentGuiHeight)) {
+    private boolean shouldRebuildContent(PanelLayout.Rect bounds, int mouseX, int mouseY, Module module, List<Setting<?>> settings, int currentGuiHeight, long contentSignature) {
+        if (contentState.needsRebuild(bounds, mouseX, mouseY, currentGuiHeight, contentSignature)) {
             return true;
         }
         if (Float.compare(lastDetailScroll, state.getDetailScroll()) != 0) {
@@ -437,14 +442,32 @@ public class ModuleDetailPanel {
             return true;
         }
         List<String> visibleSettings = settings.stream().map(Setting::getName).toList();
-        return !Objects.equals(lastVisibleSettings, visibleSettings);
+        if (!Objects.equals(lastVisibleSettings, visibleSettings)) {
+            return true;
+        }
+        return lastContentSignature != contentSignature;
     }
 
-    private void rememberSnapshot(PanelLayout.Rect bounds, int mouseX, int mouseY, Module module, List<Setting<?>> settings, int currentGuiHeight) {
-        contentState.rememberSnapshot(bounds, mouseX, mouseY, currentGuiHeight);
+    private void rememberSnapshot(PanelLayout.Rect bounds, int mouseX, int mouseY, Module module, List<Setting<?>> settings, int currentGuiHeight, long contentSignature) {
+        contentState.rememberSnapshot(bounds, mouseX, mouseY, currentGuiHeight, contentSignature);
         lastDetailScroll = state.getDetailScroll();
         lastModuleKey = module.getName() + ":" + module.getBindMode() + ":" + module.getKeyBind() + ":" + module.isHidden();
         lastVisibleSettings = settings.stream().map(Setting::getName).toList();
+        lastContentSignature = contentSignature;
+    }
+
+    private long buildContentSignature(Module module, List<Setting<?>> settings) {
+        long signature = 17L;
+        signature = signature * 31L + module.getName().hashCode();
+        signature = signature * 31L + module.getBindMode().ordinal();
+        signature = signature * 31L + module.getKeyBind();
+        signature = signature * 31L + (module.isHidden() ? 1 : 0);
+        signature = signature * 31L + Float.floatToIntBits(state.getDetailScroll());
+        for (Setting<?> setting : settings) {
+            signature = signature * 31L + setting.getName().hashCode();
+            signature = signature * 31L + (setting.isAvailable() ? 1 : 0);
+        }
+        return signature;
     }
 
 }

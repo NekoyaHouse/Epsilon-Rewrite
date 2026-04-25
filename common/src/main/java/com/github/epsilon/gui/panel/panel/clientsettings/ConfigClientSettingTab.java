@@ -84,6 +84,7 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
     private float lastScroll = Float.NaN;
     private List<String> lastConfigList = List.of();
     private String lastActiveConfig = "";
+    private long lastContentSignature = Long.MIN_VALUE;
 
     public ConfigClientSettingTab(PanelState state, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer, PanelPopupHost popupHost) {
         this.state = state;
@@ -109,8 +110,9 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
         float maxScroll = Math.max(0.0f, contentHeight - listViewport.height());
         boolean hasScrollBar = maxScroll > 0.0f;
         float rowWidth = hasScrollBar ? listViewport.width() - ScrollBarUtil.TOTAL_WIDTH : listViewport.width();
+        long contentSignature = buildContentSignature(configs, activeConfig);
 
-        if (shouldRebuild(listViewport, mouseX, mouseY, configs, activeConfig, guiGraphics.guiHeight())) {
+        if (shouldRebuild(listViewport, mouseX, mouseY, configs, activeConfig, guiGraphics.guiHeight(), contentSignature)) {
             contentBuffer.clear();
             contentState.beginRebuild();
             rowEntries.clear();
@@ -142,7 +144,7 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
                 contentBuffer.textRenderer().addText(hint, hintX, hintY, hintScale, MD3Theme.TEXT_MUTED);
             }
 
-            rememberSnapshot(listViewport, mouseX, mouseY, configs, activeConfig, guiGraphics.guiHeight());
+            rememberSnapshot(listViewport, mouseX, mouseY, configs, activeConfig, guiGraphics.guiHeight(), contentSignature);
         }
 
         contentBuffer.queueViewport(listViewport, guiHeight, state.getConfigScroll(), maxScroll, contentHeight);
@@ -538,8 +540,8 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
         return message == null || message.isBlank() ? exception.getClass().getSimpleName() : message;
     }
 
-    private boolean shouldRebuild(PanelLayout.Rect listViewport, int mouseX, int mouseY, List<String> configs, String activeConfig, int currentGuiHeight) {
-        if (contentState.needsRebuild(listViewport, mouseX, mouseY, currentGuiHeight)) {
+    private boolean shouldRebuild(PanelLayout.Rect listViewport, int mouseX, int mouseY, List<String> configs, String activeConfig, int currentGuiHeight, long contentSignature) {
+        if (contentState.needsRebuild(listViewport, mouseX, mouseY, currentGuiHeight, contentSignature)) {
             return true;
         }
         if (Float.compare(lastScroll, state.getConfigScroll()) != 0) {
@@ -548,14 +550,28 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
         if (!Objects.equals(lastConfigList, configs)) {
             return true;
         }
-        return !Objects.equals(lastActiveConfig, activeConfig);
+        if (!Objects.equals(lastActiveConfig, activeConfig)) {
+            return true;
+        }
+        return lastContentSignature != contentSignature;
     }
 
-    private void rememberSnapshot(PanelLayout.Rect listViewport, int mouseX, int mouseY, List<String> configs, String activeConfig, int currentGuiHeight) {
-        contentState.rememberSnapshot(listViewport, mouseX, mouseY, currentGuiHeight);
+    private void rememberSnapshot(PanelLayout.Rect listViewport, int mouseX, int mouseY, List<String> configs, String activeConfig, int currentGuiHeight, long contentSignature) {
+        contentState.rememberSnapshot(listViewport, mouseX, mouseY, currentGuiHeight, contentSignature);
         lastScroll = state.getConfigScroll();
         lastConfigList = new ArrayList<>(configs);
         lastActiveConfig = activeConfig;
+        lastContentSignature = contentSignature;
+    }
+
+    private long buildContentSignature(List<String> configs, String activeConfig) {
+        long signature = 17L;
+        signature = signature * 31L + Float.floatToIntBits(state.getConfigScroll());
+        signature = signature * 31L + activeConfig.hashCode();
+        for (String config : configs) {
+            signature = signature * 31L + config.hashCode();
+        }
+        return signature;
     }
 
     private PanelLayout.Rect getInputSectionBounds(PanelLayout.Rect bounds) {

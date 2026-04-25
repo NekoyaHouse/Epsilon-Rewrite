@@ -56,6 +56,7 @@ public final class FriendClientSettingTab implements ClientSettingTabView {
     private int guiHeight;
     private float lastScroll = Float.NaN;
     private List<String> lastFriendList = List.of();
+    private long lastContentSignature = Long.MIN_VALUE;
 
     public FriendClientSettingTab(PanelState state, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer) {
         this.state = state;
@@ -80,8 +81,9 @@ public final class FriendClientSettingTab implements ClientSettingTabView {
         float maxScroll = Math.max(0.0f, contentHeight - listViewport.height());
         boolean hasScrollBar = maxScroll > 0.0f;
         float rowWidth = hasScrollBar ? listViewport.width() - ScrollBarUtil.TOTAL_WIDTH : listViewport.width();
+        long contentSignature = buildContentSignature(friends);
 
-        if (shouldRebuild(listViewport, mouseX, mouseY, friends, guiGraphics.guiHeight())) {
+        if (shouldRebuild(listViewport, mouseX, mouseY, friends, guiGraphics.guiHeight(), contentSignature)) {
             contentBuffer.clear();
             contentState.beginRebuild();
             rowEntries.clear();
@@ -121,7 +123,7 @@ public final class FriendClientSettingTab implements ClientSettingTabView {
                 contentBuffer.textRenderer().addText(hint, hintX, hintY, hintScale, MD3Theme.TEXT_MUTED);
             }
 
-            rememberSnapshot(listViewport, mouseX, mouseY, friends, guiGraphics.guiHeight());
+            rememberSnapshot(listViewport, mouseX, mouseY, friends, guiGraphics.guiHeight(), contentSignature);
         }
 
         contentBuffer.queueViewport(listViewport, guiHeight, state.getFriendScroll(), maxScroll, contentHeight);
@@ -325,20 +327,33 @@ public final class FriendClientSettingTab implements ClientSettingTabView {
         );
     }
 
-    private boolean shouldRebuild(PanelLayout.Rect listViewport, int mouseX, int mouseY, List<String> friends, int guiHeight) {
-        if (contentState.needsRebuild(listViewport, mouseX, mouseY, guiHeight)) {
+    private boolean shouldRebuild(PanelLayout.Rect listViewport, int mouseX, int mouseY, List<String> friends, int guiHeight, long contentSignature) {
+        if (contentState.needsRebuild(listViewport, mouseX, mouseY, guiHeight, contentSignature)) {
             return true;
         }
         if (Float.compare(lastScroll, state.getFriendScroll()) != 0) {
             return true;
         }
-        return !Objects.equals(lastFriendList, friends);
+        if (!Objects.equals(lastFriendList, friends)) {
+            return true;
+        }
+        return lastContentSignature != contentSignature;
     }
 
-    private void rememberSnapshot(PanelLayout.Rect listViewport, int mouseX, int mouseY, List<String> friends, int guiHeight) {
-        contentState.rememberSnapshot(listViewport, mouseX, mouseY, guiHeight);
+    private void rememberSnapshot(PanelLayout.Rect listViewport, int mouseX, int mouseY, List<String> friends, int guiHeight, long contentSignature) {
+        contentState.rememberSnapshot(listViewport, mouseX, mouseY, guiHeight, contentSignature);
         lastScroll = state.getFriendScroll();
         lastFriendList = new ArrayList<>(friends);
+        lastContentSignature = contentSignature;
+    }
+
+    private long buildContentSignature(List<String> friends) {
+        long signature = 17L;
+        signature = signature * 31L + Float.floatToIntBits(state.getFriendScroll());
+        for (String friend : friends) {
+            signature = signature * 31L + friend.hashCode();
+        }
+        return signature;
     }
 
     private record FriendRowEntry(String name, PanelLayout.Rect rowBounds, PanelLayout.Rect removeBounds) {

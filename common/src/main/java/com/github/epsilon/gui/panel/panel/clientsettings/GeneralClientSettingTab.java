@@ -42,6 +42,7 @@ public final class GeneralClientSettingTab implements ClientSettingTabView {
     private float lastScroll = Float.NaN;
     private List<String> lastVisibleSettings = List.of();
     private String lastListeningKey = "";
+    private long lastContentSignature = Long.MIN_VALUE;
 
     public GeneralClientSettingTab(PanelState state, PanelPopupHost popupHost) {
         this.state = state;
@@ -61,8 +62,9 @@ public final class GeneralClientSettingTab implements ClientSettingTabView {
         float maxScroll = Math.max(0.0f, contentHeight - bounds.height());
         boolean hasScrollBar = maxScroll > 0.0f;
         float rowWidth = hasScrollBar ? bounds.width() - ScrollBarUtil.TOTAL_WIDTH : bounds.width();
+        long contentSignature = buildContentSignature(settings);
 
-        if (shouldRebuildContent(bounds, mouseX, mouseY, settings, guiGraphics.guiHeight())) {
+        if (shouldRebuildContent(bounds, mouseX, mouseY, settings, guiGraphics.guiHeight(), contentSignature)) {
             contentBuffer.clear();
             contentState.beginRebuild();
 
@@ -80,7 +82,7 @@ public final class GeneralClientSettingTab implements ClientSettingTabView {
                 contentState.noteAnimation(!hoverAnimation.isFinished() || row.hasActiveAnimation());
             });
 
-            rememberSnapshot(bounds, mouseX, mouseY, settings, guiGraphics.guiHeight());
+            rememberSnapshot(bounds, mouseX, mouseY, settings, guiGraphics.guiHeight(), contentSignature);
         }
 
         contentBuffer.queueViewport(bounds, guiHeight, state.getClientSettingScroll(), maxScroll, contentHeight);
@@ -221,8 +223,8 @@ public final class GeneralClientSettingTab implements ClientSettingTabView {
         markDirty();
     }
 
-    private boolean shouldRebuildContent(PanelLayout.Rect bounds, int mouseX, int mouseY, List<Setting<?>> settings, int currentGuiHeight) {
-        if (contentState.needsRebuild(bounds, mouseX, mouseY, currentGuiHeight)) {
+    private boolean shouldRebuildContent(PanelLayout.Rect bounds, int mouseX, int mouseY, List<Setting<?>> settings, int currentGuiHeight, long contentSignature) {
+        if (contentState.needsRebuild(bounds, mouseX, mouseY, currentGuiHeight, contentSignature)) {
             return true;
         }
         if (Float.compare(lastScroll, state.getClientSettingScroll()) != 0) {
@@ -233,14 +235,29 @@ public final class GeneralClientSettingTab implements ClientSettingTabView {
             return true;
         }
         List<String> visibleSettings = settings.stream().map(Setting::getName).toList();
-        return !Objects.equals(lastVisibleSettings, visibleSettings);
+        if (!Objects.equals(lastVisibleSettings, visibleSettings)) {
+            return true;
+        }
+        return lastContentSignature != contentSignature;
     }
 
-    private void rememberSnapshot(PanelLayout.Rect bounds, int mouseX, int mouseY, List<Setting<?>> settings, int currentGuiHeight) {
-        contentState.rememberSnapshot(bounds, mouseX, mouseY, currentGuiHeight);
+    private void rememberSnapshot(PanelLayout.Rect bounds, int mouseX, int mouseY, List<Setting<?>> settings, int currentGuiHeight, long contentSignature) {
+        contentState.rememberSnapshot(bounds, mouseX, mouseY, currentGuiHeight, contentSignature);
         lastScroll = state.getClientSettingScroll();
         lastListeningKey = state.getListeningKeybindSetting() == null ? "" : state.getListeningKeybindSetting().getName();
         lastVisibleSettings = settings.stream().map(Setting::getName).toList();
+        lastContentSignature = contentSignature;
+    }
+
+    private long buildContentSignature(List<Setting<?>> settings) {
+        long signature = 17L;
+        signature = signature * 31L + Float.floatToIntBits(state.getClientSettingScroll());
+        signature = signature * 31L + (state.getListeningKeybindSetting() == null ? 0 : state.getListeningKeybindSetting().getName().hashCode());
+        for (Setting<?> setting : settings) {
+            signature = signature * 31L + setting.getName().hashCode();
+            signature = signature * 31L + (setting.isAvailable() ? 1 : 0);
+        }
+        return signature;
     }
 }
 
