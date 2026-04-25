@@ -143,7 +143,7 @@ final class HudEditorInspector {
         int effectiveMouseX = popupConsumesHover ? Integer.MIN_VALUE : mouseX;
         int effectiveMouseY = popupConsumesHover ? Integer.MIN_VALUE : mouseY;
 
-        settingList.layoutRows(settings, viewport, scroll, rowWidth, (setting, row, rowBounds) -> {
+        settingList.layoutRows(settings, viewport, scroll, rowWidth, (_, row, rowBounds) -> {
             float hover = rowBounds.contains(effectiveMouseX, effectiveMouseY) ? 1.0f : 0.0f;
             row.render(graphics, contentBuffer.roundRectRenderer(), contentBuffer.rectRenderer(), contentBuffer.textRenderer(), rowBounds, hover, effectiveMouseX, effectiveMouseY, partialTick);
         });
@@ -222,7 +222,7 @@ final class HudEditorInspector {
         if (windowDragging) {
             panelX = (float) (event.x() - dragOffsetX);
             panelY = (float) (event.y() - dragOffsetY);
-            float width = Math.min(PANEL_WIDTH, Math.max(164.0f, lastScreenWidth - PANEL_MARGIN * 2.0f));
+            float width = Math.clamp(lastScreenWidth - PANEL_MARGIN * 2.0f, 164.0f, PANEL_WIDTH);
             float height = computePanelHeight(lastScreenHeight);
             clampPanelPosition(lastScreenWidth, lastScreenHeight, width, height);
             return true;
@@ -270,7 +270,7 @@ final class HudEditorInspector {
     }
 
     private PanelLayout.Rect computeBounds(int screenWidth, int screenHeight) {
-        float width = Math.min(PANEL_WIDTH, Math.max(164.0f, screenWidth - PANEL_MARGIN * 2.0f));
+        float width = Math.clamp(screenWidth - PANEL_MARGIN * 2.0f, 164.0f, PANEL_WIDTH);
         float height = computePanelHeight(screenHeight);
 
         if (Float.isNaN(panelX) || Float.isNaN(panelY)) {

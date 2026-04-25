@@ -126,7 +126,7 @@ public class HudEditorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {
+    public boolean mouseClicked(@NonNull MouseButtonEvent event, boolean isDoubleClick) {
         if (inspector.mouseClicked(event, isDoubleClick)) {
             return true;
         }
@@ -230,7 +230,7 @@ public class HudEditorScreen extends Screen {
     }
 
     @Override
-    public boolean charTyped(CharacterEvent event) {
+    public boolean charTyped(@NonNull CharacterEvent event) {
         if (inspector.charTyped(event)) {
             return true;
         }

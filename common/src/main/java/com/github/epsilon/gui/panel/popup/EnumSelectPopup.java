@@ -79,9 +79,7 @@ public class EnumSelectPopup implements PanelPopupHost.Popup {
                     POPUP_SHADOW_RADIUS,
                     MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)),
                     MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, 255));
-            scope.chip(anchorBounds, setting.getTranslatedValue(), 0.60f,
-                    MD3Theme.SECONDARY_CONTAINER, MD3Theme.ON_SECONDARY_CONTAINER,
-                    DROPDOWN_ICON, 0.58f, StaticFontLoader.ICONS);
+
             hoveredIndex = -1;
             scope.viewport(contentBuffer, viewportBounds, guiGraphics.guiHeight(), scroll, maxScroll, fullContentHeight, content -> {
                 Enum<?>[] modes = setting.getModes();
@@ -137,7 +135,7 @@ public class EnumSelectPopup implements PanelPopupHost.Popup {
         if (!scrollable) {
             return false;
         }
-        scroll = Math.max(0, Math.min(maxScroll, scroll - (float) scrollY * 20.0f));
+        scroll = Math.clamp(maxScroll, 0, scroll - (float) scrollY * 20.0f);
         return true;
     }
 

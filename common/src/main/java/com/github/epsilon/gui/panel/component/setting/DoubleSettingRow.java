@@ -12,7 +12,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.util.Mth;
 
 public class DoubleSettingRow extends SettingRow<DoubleSetting> {
 
@@ -50,19 +49,15 @@ public class DoubleSettingRow extends SettingRow<DoubleSetting> {
         PanelLayout.Rect trackBounds = getTrackBounds(bounds);
         PanelLayout.Rect fieldBounds = getFieldBounds(bounds);
         float progress = getProgress();
-        float handleWidth = 4.0f - animatedPress * 2.0f;
+        float handleWidth = 2.0f - animatedPress * 2.0f;
         float handleHeight = 14.0f;
         float handleX = trackBounds.x() + trackBounds.width() * progress - handleWidth / 2.0f;
-        float handleGap = 4.0f;
-
-        if (shouldDrawSteps()) {
-            buildSteps(scope, trackBounds, progress);
-        }
+        float handleGap = 2.5f;
 
         scope.slider(trackBounds, progress, 3.0f,
                 MD3Theme.SECONDARY_CONTAINER,
-                handleWidth / 2.0f + handleGap, 2.0f, MD3Theme.PRIMARY,
-                handleWidth, handleHeight, 2.0f, MD3Theme.PRIMARY);
+                handleGap, 2.0f, MD3Theme.PRIMARY,
+                handleWidth, handleHeight, 1.0f, MD3Theme.PRIMARY);
 
         if (indicatorProgress > 0.01f) {
             String label = formatValue();
@@ -206,7 +201,7 @@ public class DoubleSettingRow extends SettingRow<DoubleSetting> {
     public void updateFromMouse(PanelLayout.Rect bounds, double mouseX) {
         PanelLayout.Rect trackBounds = getTrackBounds(bounds);
         double progress = (mouseX - trackBounds.x()) / trackBounds.width();
-        progress = Math.max(0.0, Math.min(1.0, progress));
+        progress = Math.clamp(progress, 0.0, 1.0);
         double rawValue = setting.getMin() + (setting.getMax() - setting.getMin()) * progress;
         double step = setting.getStep() <= 0.0 ? 0.01 : setting.getStep();
         double snapped = setting.getMin() + Math.round((rawValue - setting.getMin()) / step) * step;
@@ -227,29 +222,6 @@ public class DoubleSettingRow extends SettingRow<DoubleSetting> {
             return 0.0f;
         }
         return (float) ((setting.getValue() - setting.getMin()) / (setting.getMax() - setting.getMin()));
-    }
-
-    private boolean shouldDrawSteps() {
-        double step = setting.getStep() <= 0.0 ? 0.0 : setting.getStep();
-        double range = setting.getMax() - setting.getMin();
-        return range > 0.0 && step / range > 0.08;
-    }
-
-    private void buildSteps(PanelUiTree.Scope scope, PanelLayout.Rect trackBounds, float progress) {
-        double step = setting.getStep() <= 0.0 ? 0.0 : setting.getStep();
-        double range = setting.getMax() - setting.getMin();
-        int steps = Math.max(1, (int) Math.floor(range / step));
-        float dotSize = 1.5f;
-        for (int i = 0; i <= steps; i++) {
-            float stepProgress = i / (float) steps;
-            if (Math.abs(stepProgress - progress) < (1.0f / steps) * 0.5f) {
-                continue;
-            }
-            float x = trackBounds.x() + trackBounds.width() * stepProgress - dotSize / 2.0f;
-            x = Mth.clamp(x, trackBounds.x(), trackBounds.right() - dotSize);
-            float y = trackBounds.centerY() - dotSize / 2.0f;
-            scope.rect(x, y, dotSize, dotSize, stepProgress <= progress ? MD3Theme.ON_PRIMARY : MD3Theme.ON_SECONDARY_CONTAINER);
-        }
     }
 
     private String formatValue() {

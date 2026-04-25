@@ -218,7 +218,7 @@ public class StringSettingRow extends SettingRow<StringSetting> {
             return new DisplaySlice(shown, fieldBounds.x() + horizontalInset, 0, 0, shown.length());
         }
 
-        int safeCursor = Math.max(0, Math.min(cursorIndex, safeValue.length()));
+        int safeCursor = Math.clamp(cursorIndex, 0, safeValue.length());
         int start = 0;
         int end = safeValue.length();
         while (start < safeCursor) {
@@ -290,20 +290,14 @@ public class StringSettingRow extends SettingRow<StringSetting> {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft == null) {
-            return;
-        }
         String current = getDisplayBuffer();
         minecraft.keyboardHandler.setClipboard(current.substring(getSelectionStart(), getSelectionEnd()));
     }
 
     private void pasteClipboard() {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft == null) {
-            return;
-        }
         String clipboard = minecraft.keyboardHandler.getClipboard();
-        if (clipboard == null || clipboard.isEmpty()) {
+        if (clipboard.isEmpty()) {
             return;
         }
         String sanitized = sanitizeClipboard(clipboard);
@@ -380,9 +374,6 @@ public class StringSettingRow extends SettingRow<StringSetting> {
 
     private boolean isControlDown() {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft == null || minecraft.getWindow() == null) {
-            return false;
-        }
         return InputConstants.isKeyDown(minecraft.getWindow(), 341) || InputConstants.isKeyDown(minecraft.getWindow(), 345);
     }
 
