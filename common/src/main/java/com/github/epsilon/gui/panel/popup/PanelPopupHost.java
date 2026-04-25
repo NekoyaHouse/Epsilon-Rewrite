@@ -1,6 +1,7 @@
 package com.github.epsilon.gui.panel.popup;
 
 import com.github.epsilon.gui.panel.PanelLayout;
+import com.github.epsilon.gui.panel.dsl.PanelRenderBatch;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -10,6 +11,8 @@ public class PanelPopupHost {
 
     private Popup activePopup;
     private PanelLayout.Rect overlayBounds;
+    private final PanelRenderBatch renderBatch = new PanelRenderBatch();
+    private boolean pending;
 
     public void open(Popup popup) {
         this.activePopup = popup;
@@ -42,9 +45,24 @@ public class PanelPopupHost {
     }
 
     public void render(GuiGraphicsExtractor GuiGraphicsExtractor, int mouseX, int mouseY, float partialTick) {
-        if (activePopup != null) {
-            activePopup.extractGui(GuiGraphicsExtractor, mouseX, mouseY, partialTick);
+        if (activePopup == null) {
+            renderBatch.clear();
+            pending = false;
+            return;
         }
+        renderBatch.clear();
+        activePopup.extractGui(GuiGraphicsExtractor, renderBatch, mouseX, mouseY, partialTick);
+        pending = true;
+    }
+
+    public void flush() {
+        if (!pending || activePopup == null) {
+            renderBatch.clear();
+            pending = false;
+            return;
+        }
+        activePopup.flush(renderBatch);
+        pending = false;
     }
 
     public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {
@@ -115,7 +133,11 @@ public class PanelPopupHost {
 
         PanelLayout.Rect getBounds();
 
-        void extractGui(GuiGraphicsExtractor GuiGraphicsExtractor, int mouseX, int mouseY, float partialTick);
+        void extractGui(GuiGraphicsExtractor GuiGraphicsExtractor, PanelRenderBatch renderBatch, int mouseX, int mouseY, float partialTick);
+
+        default void flush(PanelRenderBatch renderBatch) {
+            renderBatch.flushAndClear();
+        }
 
         boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick);
 

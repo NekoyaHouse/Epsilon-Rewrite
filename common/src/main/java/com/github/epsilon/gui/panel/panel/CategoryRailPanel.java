@@ -193,7 +193,8 @@ public class CategoryRailPanel {
         if (!clippedTextPending) {
             return;
         }
-        clippedTextRenderer.drawAndClear();
+        clippedTextRenderer.draw();
+        clippedTextRenderer.clear();
         clearTextScissor();
         clippedTextPending = false;
     }

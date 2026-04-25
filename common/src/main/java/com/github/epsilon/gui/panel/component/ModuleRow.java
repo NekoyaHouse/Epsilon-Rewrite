@@ -75,7 +75,7 @@ public class ModuleRow {
         scope.text(module.displayName(), PanelElements.rowLabelX(bounds), titleY, titleScale, titleColor, StaticFontLoader.DUCKSANS);
         String addonText = module.module().getAddonId() != null ? module.module().getAddonId() : "unknown";
         scope.text(addonText, PanelElements.rowLabelX(bounds), subY, subScale, subColor);
-        scope.switchControl(toggleBounds, toggleProgress, toggleHoverProgress);
+        scope.toggle(toggleBounds, toggleProgress, toggleHoverProgress);
         scope.text(keybindText, keyX, keyY, keyScale, keyColor);
     }
 

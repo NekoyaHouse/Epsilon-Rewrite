@@ -61,7 +61,8 @@ public final class PanelContentBuffer {
         rectRenderer.draw();
         textRenderer.draw();
         PanelScissor.clear(rectRenderer, roundRectRenderer, shadowRenderer, textRenderer);
-        scrollBarRenderer.drawAndClear();
+        scrollBarRenderer.draw();
+        scrollBarRenderer.clear();
         pending = false;
     }
 

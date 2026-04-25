@@ -1,15 +1,10 @@
 package com.github.epsilon.gui.panel.popup;
 
-import com.github.epsilon.graphics.renderers.RoundRectRenderer;
-import com.github.epsilon.graphics.renderers.ShadowRenderer;
-import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.graphics.text.StaticFontLoader;
-import com.github.epsilon.gui.panel.component.PanelElements;
-import com.github.epsilon.gui.panel.dsl.PanelUiCompiler;
+import com.github.epsilon.gui.panel.dsl.PanelRenderBatch;
 import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
-import com.github.epsilon.managers.RenderManager;
 import com.github.epsilon.utils.render.animation.Animation;
 import com.github.epsilon.utils.render.animation.Easing;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -23,9 +18,6 @@ public final class MessagePopup implements PanelPopupHost.Popup {
     private final String detail;
     private final String buttonLabel;
 
-    private final RoundRectRenderer roundRectRenderer = new RoundRectRenderer();
-    private final ShadowRenderer shadowRenderer = new ShadowRenderer();
-    private final TextRenderer textRenderer = new TextRenderer();
     private final Animation openAnimation = new Animation(Easing.EASE_OUT_CUBIC, 160L);
     private final Animation buttonHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
 
@@ -49,16 +41,17 @@ public final class MessagePopup implements PanelPopupHost.Popup {
     }
 
     @Override
-    public void extractGui(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractGui(GuiGraphicsExtractor guiGraphics, PanelRenderBatch renderBatch, int mouseX, int mouseY, float partialTick) {
         openAnimation.run(1.0f);
         float progress = openAnimation.getValue();
         float popupY = bounds.y() - (1.0f - progress) * 6.0f;
         updateLayout(popupY);
         buttonHoverAnimation.run(buttonBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
         PanelUiTree tree = PanelUiTree.build(scope -> {
-            scope.shadow(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS,
-                    POPUP_SHADOW_RADIUS, MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)));
-            scope.roundRect(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS,
+            scope.popupCard(new PanelLayout.Rect(bounds.x(), popupY, bounds.width(), bounds.height()),
+                    MD3Theme.CARD_RADIUS,
+                    POPUP_SHADOW_RADIUS,
+                    MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)),
                     MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, 255));
 
             float titleScale = 0.66f;
@@ -72,18 +65,11 @@ public final class MessagePopup implements PanelPopupHost.Popup {
             }
 
             float hover = buttonHoverAnimation.getValue();
-            scope.button(buttonBounds.x(), buttonBounds.y(), buttonBounds.width(), buttonBounds.height(),
-                    buttonBounds.height() / 2.0f,
+            scope.button(buttonBounds, buttonBounds.height() / 2.0f,
                     MD3Theme.lerp(MD3Theme.PRIMARY_CONTAINER, MD3Theme.PRIMARY, hover * 0.35f),
                     buttonLabel, 0.56f, MD3Theme.ON_PRIMARY_CONTAINER);
         });
-        PanelUiCompiler.render(tree, shadowRenderer, roundRectRenderer, null, textRenderer);
-
-        RenderManager.INSTANCE.applyRender(() -> {
-            shadowRenderer.drawAndClear();
-            roundRectRenderer.drawAndClear();
-            textRenderer.drawAndClear();
-        });
+        renderBatch.render(tree);
     }
 
     @Override

@@ -75,42 +75,19 @@ public final class PanelUiCompiler {
                     float x, float y, float width, float height, float radius, Color background,
                     String label, float labelScale, Color labelColor
             )) {
-                target.roundRectRenderer().addRoundRect(x, y, width, height, radius, background);
-                float labelWidth = target.textRenderer().getWidth(label, labelScale);
-                float labelHeight = target.textRenderer().getHeight(labelScale);
-                target.textRenderer().addText(label,
-                        x + (width - labelWidth) / 2.0f,
-                        y + (height - labelHeight) / 2.0f - 1.0f,
-                        labelScale,
-                        labelColor);
+                renderButton(target, x, y, width, height, radius, background, label, labelScale, labelColor);
                 continue;
             }
             if (node instanceof PanelUiTree.SwitchNode(com.github.epsilon.gui.panel.PanelLayout.Rect bounds, float toggleProgress, float hoverProgress)) {
-                Color track = MD3Theme.lerp(MD3Theme.SURFACE_CONTAINER_HIGHEST, MD3Theme.PRIMARY, toggleProgress);
-                Color knob = MD3Theme.lerp(MD3Theme.OUTLINE, MD3Theme.ON_PRIMARY, toggleProgress);
-                float knobSize = 8.0f + 3.0f * toggleProgress;
-                float knobTravel = bounds.width() - 10.0f - knobSize;
-                float knobX = bounds.x() + 5.0f + knobTravel * toggleProgress;
-                float knobY = bounds.centerY() - knobSize / 2.0f;
-                target.roundRectRenderer().addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), bounds.height() / 2.0f, track);
-                if (hoverProgress > 0.02f) {
-                    float haloSize = 16.0f;
-                    float haloX = knobX + knobSize / 2.0f - haloSize / 2.0f;
-                    float haloY = bounds.centerY() - haloSize / 2.0f;
-                    target.roundRectRenderer().addRoundRect(haloX, haloY, haloSize, haloSize, haloSize / 2.0f,
-                            MD3Theme.stateLayer(MD3Theme.TEXT_PRIMARY, hoverProgress, 18));
-                }
-                target.roundRectRenderer().addRoundRect(knobX, knobY, knobSize, knobSize, knobSize / 2.0f, knob);
+                renderSwitch(target, bounds, toggleProgress, hoverProgress);
                 continue;
             }
             if (node instanceof PanelUiTree.FilledFieldNode(com.github.epsilon.gui.panel.PanelLayout.Rect bounds, boolean focused, float hoverProgress)) {
-                target.roundRectRenderer().addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CONTROL_RADIUS,
-                        MD3Theme.filledFieldSurface(focused, hoverProgress));
-                float indicatorHeight = focused ? 1.5f : 1.0f;
-                float indicatorInset = 4.0f;
-                target.rectRenderer().addRect(bounds.x() + indicatorInset, bounds.bottom() - indicatorHeight,
-                        Math.max(0.0f, bounds.width() - indicatorInset * 2.0f), indicatorHeight,
-                        MD3Theme.filledFieldIndicator(focused, hoverProgress));
+                renderFilledField(target, bounds, focused, hoverProgress);
+                continue;
+            }
+            if (node instanceof PanelUiTree.InputNode(PanelUiTree.InputElement element)) {
+                renderInput(target, element);
                 continue;
             }
             if (node instanceof PanelUiTree.AssistChipNode(
@@ -175,6 +152,19 @@ public final class PanelUiCompiler {
                         labelColor);
                 continue;
             }
+            if (node instanceof PanelUiTree.PopupCardNode(com.github.epsilon.gui.panel.PanelLayout.Rect bounds, float radius, float blurRadius, Color shadowColor, Color surfaceColor)) {
+                renderPopupCard(target, bounds, radius, blurRadius, shadowColor, surfaceColor);
+                continue;
+            }
+            if (node instanceof PanelUiTree.SliderNode(
+                    com.github.epsilon.gui.panel.PanelLayout.Rect bounds, float progress, float trackRadius, Color trackColor,
+                    float activeEndInset, float activeMinWidth, Color activeColor,
+                    float handleWidth, float handleHeight, float handleRadius, Color handleColor
+            )) {
+                renderSlider(target, bounds, progress, trackRadius, trackColor, activeEndInset, activeMinWidth, activeColor,
+                        handleWidth, handleHeight, handleRadius, handleColor);
+                continue;
+            }
             if (node instanceof PanelUiTree.ViewportNode(
                     PanelContentBuffer buffer, com.github.epsilon.gui.panel.PanelLayout.Rect viewport, int guiHeight,
                     float scroll, float maxScroll, float contentHeight, List<PanelUiTree.UiNode> children
@@ -182,6 +172,123 @@ public final class PanelUiCompiler {
                 renderNodes(children, RenderTarget.forContentBuffer(buffer));
                 buffer.queueViewport(viewport, guiHeight, scroll, maxScroll, contentHeight);
             }
+        }
+    }
+
+    private static void renderButton(RenderTarget target, float x, float y, float width, float height, float radius,
+                                     Color background, String label, float labelScale, Color labelColor) {
+        target.roundRectRenderer().addRoundRect(x, y, width, height, radius, background);
+        float labelWidth = target.textRenderer().getWidth(label, labelScale);
+        float labelHeight = target.textRenderer().getHeight(labelScale);
+        target.textRenderer().addText(label,
+                x + (width - labelWidth) / 2.0f,
+                y + (height - labelHeight) / 2.0f - 1.0f,
+                labelScale,
+                labelColor);
+    }
+
+    private static void renderPopupCard(RenderTarget target, com.github.epsilon.gui.panel.PanelLayout.Rect bounds,
+                                        float radius, float blurRadius, Color shadowColor, Color surfaceColor) {
+        if (target.shadowRenderer() != null) {
+            target.shadowRenderer().addShadow(bounds.x(), bounds.y(), bounds.width(), bounds.height(), radius, blurRadius, shadowColor);
+        }
+        target.roundRectRenderer().addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), radius, surfaceColor);
+    }
+
+    private static void renderSlider(RenderTarget target, com.github.epsilon.gui.panel.PanelLayout.Rect bounds,
+                                     float progress, float trackRadius, Color trackColor,
+                                     float activeEndInset, float activeMinWidth, Color activeColor,
+                                     float handleWidth, float handleHeight, float handleRadius, Color handleColor) {
+        float clampedProgress = Math.max(0.0f, Math.min(1.0f, progress));
+        float safeHandleWidth = Math.max(1.0f, handleWidth);
+        float handleX = bounds.x() + bounds.width() * clampedProgress - safeHandleWidth / 2.0f;
+        float handleY = bounds.centerY() - handleHeight / 2.0f;
+        float activeWidth = Math.max(activeMinWidth, bounds.width() * clampedProgress - activeEndInset);
+
+        target.roundRectRenderer().addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), trackRadius, trackColor);
+        if (activeWidth > 0.0f) {
+            float clampedActiveWidth = Math.min(bounds.width(), activeWidth);
+            target.roundRectRenderer().addRoundRect(bounds.x(), bounds.y(), clampedActiveWidth, bounds.height(), trackRadius, 0.0f, 0.0f, trackRadius, activeColor);
+        }
+        target.roundRectRenderer().addRoundRect(handleX, handleY, safeHandleWidth, handleHeight, handleRadius, handleColor);
+    }
+
+    private static void renderSwitch(RenderTarget target, com.github.epsilon.gui.panel.PanelLayout.Rect bounds,
+                                     float toggleProgress, float hoverProgress) {
+        Color track = MD3Theme.lerp(MD3Theme.SURFACE_CONTAINER_HIGHEST, MD3Theme.PRIMARY, toggleProgress);
+        Color knob = MD3Theme.lerp(MD3Theme.OUTLINE, MD3Theme.ON_PRIMARY, toggleProgress);
+        float knobSize = 8.0f + 3.0f * toggleProgress;
+        float knobTravel = bounds.width() - 10.0f - knobSize;
+        float knobX = bounds.x() + 5.0f + knobTravel * toggleProgress;
+        float knobY = bounds.centerY() - knobSize / 2.0f;
+        target.roundRectRenderer().addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), bounds.height() / 2.0f, track);
+        if (hoverProgress > 0.02f) {
+            float haloSize = 16.0f;
+            float haloX = knobX + knobSize / 2.0f - haloSize / 2.0f;
+            float haloY = bounds.centerY() - haloSize / 2.0f;
+            target.roundRectRenderer().addRoundRect(haloX, haloY, haloSize, haloSize, haloSize / 2.0f,
+                    MD3Theme.stateLayer(MD3Theme.TEXT_PRIMARY, hoverProgress, 18));
+        }
+        target.roundRectRenderer().addRoundRect(knobX, knobY, knobSize, knobSize, knobSize / 2.0f, knob);
+    }
+
+    private static void renderFilledField(RenderTarget target, com.github.epsilon.gui.panel.PanelLayout.Rect bounds,
+                                          boolean focused, float hoverProgress) {
+        target.roundRectRenderer().addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CONTROL_RADIUS,
+                MD3Theme.filledFieldSurface(focused, hoverProgress));
+        float indicatorHeight = focused ? 1.5f : 1.0f;
+        float indicatorInset = 4.0f;
+        target.rectRenderer().addRect(bounds.x() + indicatorInset, bounds.bottom() - indicatorHeight,
+                Math.max(0.0f, bounds.width() - indicatorInset * 2.0f), indicatorHeight,
+                MD3Theme.filledFieldIndicator(focused, hoverProgress));
+    }
+
+    private static void renderInput(RenderTarget target, PanelUiTree.InputElement element) {
+        com.github.epsilon.gui.panel.PanelLayout.Rect bounds = element.bounds();
+        renderFilledField(target, bounds, element.focused(), element.hoverProgress());
+
+        if (element.focusRingProgress() > 0.01f && element.focusRingInset() > 0.0f) {
+            float inset = element.focusRingInset() * element.focusRingProgress();
+            target.roundRectRenderer().addRoundRect(
+                    bounds.x() - inset,
+                    bounds.y() - inset,
+                    bounds.width() + inset * 2.0f,
+                    bounds.height() + inset * 2.0f,
+                    MD3Theme.CONTROL_RADIUS + inset,
+                    MD3Theme.withAlpha(element.focusRingColor(), (int) (48 * element.focusRingProgress()))
+            );
+        }
+
+        String text = element.text();
+        if (text != null && !text.isEmpty()) {
+            float textX = bounds.x() + element.textInset();
+            float textY = bounds.y() + (bounds.height() - target.textRenderer().getHeight(element.textScale())) / 2.0f - 1.0f;
+
+            PanelUiTree.SelectionRange selection = element.selection();
+            if (selection != null && element.selectionColor() != null) {
+                int start = Math.max(0, Math.min(selection.start(), text.length()));
+                int end = Math.max(start, Math.min(selection.end(), text.length()));
+                if (end > start) {
+                    float selectionX = textX + target.textRenderer().getWidth(text.substring(0, start), element.textScale());
+                    float selectionWidth = target.textRenderer().getWidth(text.substring(start, end), element.textScale());
+                    target.rectRenderer().addRect(selectionX, bounds.y() + 3.0f, selectionWidth, bounds.height() - 6.0f, element.selectionColor());
+                }
+            }
+
+            target.textRenderer().addText(text, textX, textY, element.textScale(), element.textColor());
+
+            if (element.caretIndex() != null && element.caretColor() != null) {
+                int caretIndex = Math.max(0, Math.min(element.caretIndex(), text.length()));
+                float caretX = textX + target.textRenderer().getWidth(text.substring(0, caretIndex), element.textScale());
+                target.rectRenderer().addRect(caretX, bounds.y() + 4.0f, 1.0f, bounds.height() - 8.0f, element.caretColor());
+            }
+        }
+
+        if (element.trailingHint() != null && !element.trailingHint().isBlank() && element.trailingHintColor() != null) {
+            float hintWidth = target.textRenderer().getWidth(element.trailingHint(), element.trailingHintScale());
+            float hintY = bounds.y() + (bounds.height() - target.textRenderer().getHeight(element.trailingHintScale())) / 2.0f - 1.0f;
+            float hintX = bounds.right() - element.textInset() - hintWidth;
+            target.textRenderer().addText(element.trailingHint(), hintX, hintY, element.trailingHintScale(), element.trailingHintColor());
         }
     }
 

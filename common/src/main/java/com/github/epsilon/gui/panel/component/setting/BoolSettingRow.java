@@ -1,7 +1,5 @@
 package com.github.epsilon.gui.panel.component.setting;
 
-import com.github.epsilon.graphics.renderers.RectRenderer;
-import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
@@ -34,7 +32,7 @@ public class BoolSettingRow extends SettingRow<BoolSetting> {
 
         scope.roundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.rowSurface(animatedHover));
         scope.text(setting.getDisplayName(), bounds.x() + MD3Theme.ROW_CONTENT_INSET, labelY, labelScale, MD3Theme.TEXT_PRIMARY);
-        scope.switchControl(getSwitchBounds(bounds), toggleProgress, animatedHover);
+        scope.toggle(getSwitchBounds(bounds), toggleProgress, animatedHover);
     }
 
     private PanelLayout.Rect getSwitchBounds(PanelLayout.Rect bounds) {

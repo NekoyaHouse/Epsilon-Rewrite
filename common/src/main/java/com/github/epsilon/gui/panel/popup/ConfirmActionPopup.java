@@ -1,14 +1,10 @@
 package com.github.epsilon.gui.panel.popup;
 
-import com.github.epsilon.graphics.renderers.RoundRectRenderer;
-import com.github.epsilon.graphics.renderers.ShadowRenderer;
-import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.graphics.text.StaticFontLoader;
-import com.github.epsilon.gui.panel.dsl.PanelUiCompiler;
+import com.github.epsilon.gui.panel.dsl.PanelRenderBatch;
 import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
-import com.github.epsilon.managers.RenderManager;
 import com.github.epsilon.utils.render.animation.Animation;
 import com.github.epsilon.utils.render.animation.Easing;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -26,9 +22,6 @@ public final class ConfirmActionPopup implements PanelPopupHost.Popup {
     private final String cancelLabel;
     private final Runnable onConfirm;
 
-    private final RoundRectRenderer roundRectRenderer = new RoundRectRenderer();
-    private final ShadowRenderer shadowRenderer = new ShadowRenderer();
-    private final TextRenderer textRenderer = new TextRenderer();
     private final Animation openAnimation = new Animation(Easing.EASE_OUT_CUBIC, 160L);
     private final Animation confirmHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
     private final Animation cancelHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
@@ -59,7 +52,7 @@ public final class ConfirmActionPopup implements PanelPopupHost.Popup {
     }
 
     @Override
-    public void extractGui(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractGui(GuiGraphicsExtractor guiGraphics, PanelRenderBatch renderBatch, int mouseX, int mouseY, float partialTick) {
         openAnimation.run(1.0f);
         float progress = openAnimation.getValue();
         animatedY = bounds.y() - (1.0f - progress) * 6.0f;
@@ -68,9 +61,10 @@ public final class ConfirmActionPopup implements PanelPopupHost.Popup {
         confirmHoverAnimation.run(confirmButtonBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
         cancelHoverAnimation.run(cancelButtonBounds.contains(mouseX, mouseY) ? 1.0f : 0.0f);
         PanelUiTree tree = PanelUiTree.build(scope -> {
-            scope.shadow(bounds.x(), animatedY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS,
-                    POPUP_SHADOW_RADIUS, MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)));
-            scope.roundRect(bounds.x(), animatedY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS,
+            scope.popupCard(new PanelLayout.Rect(bounds.x(), animatedY, bounds.width(), bounds.height()),
+                    MD3Theme.CARD_RADIUS,
+                    POPUP_SHADOW_RADIUS,
+                    MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)),
                     MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, 255));
 
             float titleScale = 0.66f;
@@ -86,13 +80,7 @@ public final class ConfirmActionPopup implements PanelPopupHost.Popup {
             buildButton(scope, cancelButtonBounds, cancelLabel, false, cancelHoverAnimation.getValue());
             buildButton(scope, confirmButtonBounds, confirmLabel, true, confirmHoverAnimation.getValue());
         });
-        PanelUiCompiler.render(tree, shadowRenderer, roundRectRenderer, null, textRenderer);
-
-        RenderManager.INSTANCE.applyRender(() -> {
-            shadowRenderer.drawAndClear();
-            roundRectRenderer.drawAndClear();
-            textRenderer.drawAndClear();
-        });
+        renderBatch.render(tree);
     }
 
     @Override
@@ -122,8 +110,7 @@ public final class ConfirmActionPopup implements PanelPopupHost.Popup {
         Color baseColor = destructive ? MD3Theme.ERROR : MD3Theme.SURFACE_CONTAINER_HIGH;
         Color hoverColor = destructive ? MD3Theme.withAlpha(MD3Theme.ERROR, 220) : MD3Theme.SURFACE_CONTAINER_HIGHEST;
         Color textColor = destructive ? MD3Theme.ON_PRIMARY : MD3Theme.TEXT_PRIMARY;
-        scope.button(buttonBounds.x(), buttonBounds.y(), buttonBounds.width(), buttonBounds.height(),
-                buttonBounds.height() / 2.0f,
+        scope.button(buttonBounds, buttonBounds.height() / 2.0f,
                 MD3Theme.withAlpha(MD3Theme.lerp(baseColor, hoverColor, hover * 0.35f), 255),
                 label, 0.56f, textColor);
     }

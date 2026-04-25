@@ -29,7 +29,7 @@ public class EnumSettingRow extends SettingRow<EnumSetting<?>> {
         scope.roundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.rowSurface(hoverProgress));
         scope.text(setting.getDisplayName(), bounds.x() + MD3Theme.ROW_CONTENT_INSET, labelY, labelScale, MD3Theme.TEXT_PRIMARY);
         PanelLayout.Rect chipBounds = getChipBounds(textRenderer, bounds);
-        scope.assistChip(chipBounds, setting.getTranslatedValue(), chipTextScale, MD3Theme.SECONDARY_CONTAINER, MD3Theme.ON_SECONDARY_CONTAINER,
+        scope.chip(chipBounds, setting.getTranslatedValue(), chipTextScale, MD3Theme.SECONDARY_CONTAINER, MD3Theme.ON_SECONDARY_CONTAINER,
                 DROPDOWN_ICON, 0.58f, StaticFontLoader.ICONS);
     }
 

@@ -5,6 +5,7 @@ import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.ShadowRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
+import com.github.epsilon.gui.panel.dsl.PanelRenderBatch;
 import com.github.epsilon.gui.panel.input.PanelInputRouter;
 import com.github.epsilon.gui.panel.panel.CategoryRailPanel;
 import com.github.epsilon.gui.panel.panel.ClientSettingPanel;
@@ -36,6 +37,7 @@ public class PanelScreen extends Screen {
     private final RectRenderer rectRenderer = new RectRenderer();
     private final RoundRectRenderer roundRectRenderer = new RoundRectRenderer();
     private final ShadowRenderer shadowRenderer = new ShadowRenderer();
+    private final PanelRenderBatch renderBatch = new PanelRenderBatch(shadowRenderer, roundRectRenderer, rectRenderer, textRenderer);
     private final PanelPopupHost popupHost = new PanelPopupHost();
     private final PanelInputRouter inputRouter = new PanelInputRouter();
     private final CategoryRailPanel categoryRailPanel = new CategoryRailPanel(state, rectRenderer, roundRectRenderer, textRenderer);
@@ -135,9 +137,9 @@ public class PanelScreen extends Screen {
             moduleDetailPanel.render(guiGraphics, layout.detail(), mouseX, mouseY, partialTick);
         }
 
-        RenderManager.INSTANCE.applyRender(this::flushQueuedRenderers);
-
         popupHost.render(guiGraphics, mouseX, mouseY, partialTick);
+
+        RenderManager.INSTANCE.applyRender(this::flushQueuedRenderers);
 
         LuminRenderSystem.setActiveTarget(null);
 
@@ -166,10 +168,7 @@ public class PanelScreen extends Screen {
     }
 
     private void flushQueuedRenderers() {
-        shadowRenderer.drawAndClear();
-        roundRectRenderer.drawAndClear();
-        rectRenderer.drawAndClear();
-        textRenderer.drawAndClear();
+        renderBatch.flushAndClear();
         if (state.isClientSettingMode()) {
             clientSettingPanel.flushContent();
         } else {
@@ -177,6 +176,7 @@ public class PanelScreen extends Screen {
             moduleDetailPanel.flushContent();
         }
         categoryRailPanel.flushClippedText();
+        popupHost.flush();
     }
 
 

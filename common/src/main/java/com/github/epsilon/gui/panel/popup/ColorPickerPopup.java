@@ -1,14 +1,10 @@
 package com.github.epsilon.gui.panel.popup;
 
-import com.github.epsilon.graphics.renderers.RectRenderer;
-import com.github.epsilon.graphics.renderers.RoundRectRenderer;
-import com.github.epsilon.graphics.renderers.ShadowRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
-import com.github.epsilon.gui.panel.dsl.PanelUiCompiler;
+import com.github.epsilon.gui.panel.dsl.PanelRenderBatch;
 import com.github.epsilon.gui.panel.dsl.PanelUiTree;
-import com.github.epsilon.managers.RenderManager;
 import com.github.epsilon.settings.impl.ColorSetting;
 import com.github.epsilon.utils.render.animation.Animation;
 import com.github.epsilon.utils.render.animation.Easing;
@@ -40,9 +36,6 @@ public class ColorPickerPopup implements PanelPopupHost.Popup {
     private final PanelLayout.Rect bounds;
     private final PanelLayout.Rect anchorBounds;
     private final ColorSetting setting;
-    private final RoundRectRenderer roundRectRenderer = new RoundRectRenderer();
-    private final RectRenderer rectRenderer = new RectRenderer();
-    private final ShadowRenderer shadowRenderer = new ShadowRenderer();
     private final TextRenderer textRenderer = new TextRenderer();
     private final Animation openAnimation = new Animation(Easing.EASE_OUT_CUBIC, 160L);
     private final Animation[] indicatorAnimations = new Animation[]{
@@ -72,14 +65,16 @@ public class ColorPickerPopup implements PanelPopupHost.Popup {
     }
 
     @Override
-    public void extractGui(GuiGraphicsExtractor GuiGraphicsExtractor, int mouseX, int mouseY, float partialTick) {
+    public void extractGui(GuiGraphicsExtractor GuiGraphicsExtractor, PanelRenderBatch renderBatch, int mouseX, int mouseY, float partialTick) {
         PanelUiTree tree = PanelUiTree.build(scope -> {
             float progress = scope.animate(openAnimation, 1.0f);
             float popupY = bounds.y() - (1.0f - progress) * 6.0f;
 
-            scope.shadow(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, POPUP_SHADOW_RADIUS,
-                    MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)));
-            scope.roundRect(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, 255));
+            scope.popupCard(new PanelLayout.Rect(bounds.x(), popupY, bounds.width(), bounds.height()),
+                    MD3Theme.CARD_RADIUS,
+                    POPUP_SHADOW_RADIUS,
+                    MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)),
+                    MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, 255));
             scope.roundRect(anchorBounds.x(), anchorBounds.y(), anchorBounds.width(), anchorBounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SECONDARY_CONTAINER, 255));
 
             PanelLayout.Rect previewBounds = getPreviewBounds(popupY);
@@ -114,11 +109,10 @@ public class ColorPickerPopup implements PanelPopupHost.Popup {
                 scope.text(channel.shortLabel, rowBounds.x() + 8.0f, rowBounds.y() + 6.5f, 0.58f,
                         MD3Theme.isLightTheme() ? MD3Theme.TEXT_MUTED : MD3Theme.TEXT_SECONDARY);
                 scope.roundRect(rowBounds.x(), rowBounds.y(), rowBounds.width(), rowBounds.height(), 8.0f, MD3Theme.withAlpha(rowSurface, 255));
-                scope.roundRect(trackBounds.x(), trackBounds.y(), trackBounds.width(), trackBounds.height(), 2.5f,
-                        MD3Theme.withAlpha(MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER_HIGH : MD3Theme.SURFACE_CONTAINER_HIGHEST, 255));
-                scope.roundRect(trackBounds.x(), trackBounds.y(), activeWidth, trackBounds.height(), 2.5f, 0.0f, 0.0f, 2.5f,
-                        MD3Theme.withAlpha(channel.accent, 255));
-                scope.roundRect(handleX, trackBounds.centerY() - 6.0f, 4.0f, 12.0f, 2.0f, MD3Theme.withAlpha(MD3Theme.ON_PRIMARY_CONTAINER, 255));
+                scope.slider(trackBounds, channelProgress, 2.5f,
+                        MD3Theme.withAlpha(MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER_HIGH : MD3Theme.SURFACE_CONTAINER_HIGHEST, 255),
+                        0.0f, 3.0f, MD3Theme.withAlpha(channel.accent, 255),
+                        4.0f, 12.0f, 2.0f, MD3Theme.withAlpha(MD3Theme.ON_PRIMARY_CONTAINER, 255));
 
                 String valueText = focusedChannel == channel ? getDisplayBuffer() : Integer.toString(getChannelValue(channel));
                 buildValueBox(scope, valueBounds, valueText, focusedChannel == channel, 255);
@@ -127,14 +121,7 @@ public class ColorPickerPopup implements PanelPopupHost.Popup {
                 }
             }
         });
-        PanelUiCompiler.render(tree, shadowRenderer, roundRectRenderer, rectRenderer, textRenderer);
-
-        RenderManager.INSTANCE.applyRender(() -> {
-            shadowRenderer.drawAndClear();
-            roundRectRenderer.drawAndClear();
-            rectRenderer.drawAndClear();
-            textRenderer.drawAndClear();
-        });
+        renderBatch.render(tree);
     }
 
     @Override

@@ -64,7 +64,7 @@ public final class PanelElements {
     }
 
     public static void buildSwitch(PanelUiTree.Scope scope, PanelLayout.Rect rect, float toggleProgress, float hoverProgress) {
-        scope.switchControl(rect, toggleProgress, hoverProgress);
+        scope.toggle(rect, toggleProgress, hoverProgress);
     }
 
     public static FilledFieldColors drawFilledField(RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, PanelLayout.Rect bounds,
@@ -87,7 +87,10 @@ public final class PanelElements {
         Color caret = MD3Theme.filledFieldCaret(focused);
         Color indicator = MD3Theme.filledFieldIndicator(focused, hoverProgress);
 
-        scope.filledField(bounds, focused, hoverProgress);
+        scope.input(bounds, focused, hoverProgress,
+                6.0f, null, 0.0f, new Color(0, 0, 0, 0),
+                null, null,
+                null, 0.0f, null);
         return new FilledFieldColors(text, caret, indicator);
     }
 
@@ -114,7 +117,7 @@ public final class PanelElements {
     public static void buildAssistChip(PanelUiTree.Scope scope, TextRenderer textRenderer, PanelLayout.Rect bounds,
                                        String label, float textScale, Color background, Color foreground,
                                        @Nullable String trailingIcon, float trailingIconScale, @Nullable TtfFontLoader trailingIconFont) {
-        scope.assistChip(bounds, label, textScale, background, foreground, trailingIcon, trailingIconScale, trailingIconFont);
+        scope.chip(bounds, label, textScale, background, foreground, trailingIcon, trailingIconScale, trailingIconFont);
     }
 
     public static void drawSegmentedControl(RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer,
@@ -156,7 +159,7 @@ public final class PanelElements {
     public static void buildSegmentedControl(PanelUiTree.Scope scope, TextRenderer textRenderer,
                                              PanelLayout.Rect bounds, String leadingLabel, String trailingLabel,
                                              float progress, float hoverProgress) {
-        scope.segmentedControl(bounds, leadingLabel, trailingLabel, progress, hoverProgress);
+        scope.segmented(bounds, leadingLabel, trailingLabel, progress, hoverProgress);
     }
 
     public static void drawIconButton(RoundRectRenderer roundRectRenderer, TextRenderer textRenderer, PanelLayout.Rect bounds,

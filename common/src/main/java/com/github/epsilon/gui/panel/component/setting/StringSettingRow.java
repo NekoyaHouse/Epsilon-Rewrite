@@ -1,11 +1,8 @@
 package com.github.epsilon.gui.panel.component.setting;
 
-import com.github.epsilon.graphics.renderers.RectRenderer;
-import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
-import com.github.epsilon.gui.panel.component.PanelElements;
 import com.github.epsilon.gui.panel.component.SettingRow;
 import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import com.github.epsilon.gui.panel.util.IMEFocusHelper;
@@ -45,29 +42,27 @@ public class StringSettingRow extends SettingRow<StringSetting> {
         PanelLayout.Rect fieldBounds = getFieldBounds(bounds);
         boolean hovered = fieldBounds.contains(mouseX, mouseY);
         float fieldHover = hovered ? 1.0f : hoverProgress * 0.55f;
-        scope.roundRect(fieldBounds.x(), fieldBounds.y(), fieldBounds.width(), fieldBounds.height(), MD3Theme.CONTROL_RADIUS, MD3Theme.filledFieldSurface(focused, fieldHover));
-        scope.rect(fieldBounds.x() + 4.0f, fieldBounds.bottom() - (focused ? 1.5f : 1.0f), Math.max(0.0f, fieldBounds.width() - 8.0f), focused ? 1.5f : 1.0f, MD3Theme.filledFieldIndicator(focused, fieldHover));
 
         String displaySource = focused ? getDisplayBuffer() : normalize(setting.getValue());
         DisplaySlice slice = buildDisplaySlice(displaySource, fieldBounds, focused);
-        float textHeight = textRenderer.getHeight(FIELD_SCALE);
-        float textY = fieldBounds.y() + (fieldBounds.height() - textHeight) / 2.0f - 1.0f;
+        PanelUiTree.SelectionRange selection = null;
         if (focused && hasSelection()) {
             int selectionStart = Math.max(slice.start(), getSelectionStart());
             int selectionEnd = Math.min(slice.end(), getSelectionEnd());
             if (selectionEnd > selectionStart) {
-                int localStart = selectionStart - slice.start();
-                int localEnd = selectionEnd - slice.start();
-                float highlightX = slice.textX() + textRenderer.getWidth(slice.text().substring(0, localStart), FIELD_SCALE);
-                float highlightWidth = textRenderer.getWidth(slice.text().substring(localStart, localEnd), FIELD_SCALE);
-                scope.rect(highlightX, fieldBounds.y() + 3.0f, highlightWidth, fieldBounds.height() - 6.0f, MD3Theme.withAlpha(MD3Theme.filledFieldIndicator(focused, fieldHover), 90));
+                selection = new PanelUiTree.SelectionRange(selectionStart - slice.start(), selectionEnd - slice.start());
             }
         }
-        scope.text(slice.text(), slice.textX(), textY, FIELD_SCALE, MD3Theme.filledFieldContent(focused));
+        scope.input(fieldBounds, focused, fieldHover,
+                0.0f, new Color(0, 0, 0, 0), 0.0f,
+                slice.textX() - fieldBounds.x(), slice.text(), FIELD_SCALE, MD3Theme.filledFieldContent(focused),
+                selection, selection == null ? null : MD3Theme.withAlpha(MD3Theme.filledFieldIndicator(focused, fieldHover), 90),
+                focused ? slice.caretIndex() : null, focused ? MD3Theme.filledFieldCaret(focused) : null,
+                null, 0.0f, null);
         if (focused) {
             float caretX = slice.textX() + textRenderer.getWidth(slice.text().substring(0, Math.min(slice.caretIndex(), slice.text().length())), FIELD_SCALE);
             caretX = Math.min(caretX, fieldBounds.right() - 5.0f);
-            scope.rect(caretX, fieldBounds.y() + 4.0f, 1.0f, fieldBounds.height() - 8.0f, MD3Theme.filledFieldCaret(focused));
+            float textY = fieldBounds.y() + (fieldBounds.height() - textRenderer.getHeight(FIELD_SCALE)) / 2.0f - 1.0f;
             IMEFocusHelper.updateCursorPos(caretX, textY);
         }
     }

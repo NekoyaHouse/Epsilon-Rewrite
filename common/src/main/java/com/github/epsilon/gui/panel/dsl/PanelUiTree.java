@@ -111,15 +111,73 @@ public final class PanelUiTree {
 
         public void button(float x, float y, float width, float height, float radius, Color background,
                            String label, float labelScale, Color labelColor) {
-            nodes.add(new ButtonNode(x, y, width, height, radius, background, label, labelScale, labelColor));
+            button(new ButtonElement(new PanelLayout.Rect(x, y, width, height), radius, background, label, labelScale, labelColor));
+        }
+
+        public void button(PanelLayout.Rect bounds, float radius, Color background,
+                           String label, float labelScale, Color labelColor) {
+            button(new ButtonElement(bounds, radius, background, label, labelScale, labelColor));
+        }
+
+        public void button(ButtonElement element) {
+            PanelLayout.Rect bounds = element.bounds();
+            nodes.add(new ButtonNode(bounds.x(), bounds.y(), bounds.width(), bounds.height(), element.radius(),
+                    element.background(), element.label(), element.labelScale(), element.labelColor()));
         }
 
         public void switchControl(PanelLayout.Rect bounds, float toggleProgress, float hoverProgress) {
-            nodes.add(new SwitchNode(bounds, toggleProgress, hoverProgress));
+            toggleSwitch(new SwitchElement(bounds, toggleProgress, hoverProgress));
+        }
+
+        public void toggle(PanelLayout.Rect bounds, float toggleProgress, float hoverProgress) {
+            toggleSwitch(new SwitchElement(bounds, toggleProgress, hoverProgress));
+        }
+
+        public void toggleSwitch(SwitchElement element) {
+            nodes.add(new SwitchNode(element.bounds(), element.toggleProgress(), element.hoverProgress()));
+        }
+
+        public void toggle(SwitchElement element) {
+            toggleSwitch(element);
         }
 
         public void filledField(PanelLayout.Rect bounds, boolean focused, float hoverProgress) {
-            nodes.add(new FilledFieldNode(bounds, focused, hoverProgress));
+            input(new InputElement(bounds, focused, hoverProgress,
+                    0.0f, new Color(0, 0, 0, 0), 0.0f,
+                    6.0f, null, 0.0f, new Color(0, 0, 0, 0),
+                    null, null,
+                    null, null,
+                    null, 0.0f, null));
+        }
+
+        public void input(InputElement element) {
+            nodes.add(new InputNode(element));
+        }
+
+        public void input(PanelLayout.Rect bounds, boolean focused, float hoverProgress,
+                          float textInset, @Nullable String text, float textScale, Color textColor,
+                          @Nullable Integer caretIndex, @Nullable Color caretColor,
+                          @Nullable String trailingHint, float trailingHintScale, @Nullable Color trailingHintColor) {
+            input(new InputElement(bounds, focused, hoverProgress,
+                    0.0f, new Color(0, 0, 0, 0), 0.0f,
+                    textInset, text, textScale, textColor,
+                    null, null,
+                    caretIndex, caretColor,
+                    trailingHint, trailingHintScale, trailingHintColor));
+        }
+
+        public void input(PanelLayout.Rect bounds, boolean focused, float hoverProgress,
+                          float focusRingProgress, Color focusRingColor, float focusRingInset,
+                          float textInset, @Nullable String text, float textScale, Color textColor,
+                          @Nullable SelectionRange selection, @Nullable Color selectionColor,
+                          @Nullable Integer caretIndex, @Nullable Color caretColor,
+                          @Nullable String trailingHint, float trailingHintScale, @Nullable Color trailingHintColor) {
+            input(new InputElement(bounds, focused, hoverProgress,
+                    focusRingProgress, focusRingColor, focusRingInset,
+                    textInset, text, textScale, textColor,
+                    selection, selectionColor,
+                    caretIndex, caretColor,
+                    trailingHint, trailingHintScale, trailingHintColor));
         }
 
         public void assistChip(PanelLayout.Rect bounds, String label, float textScale, Color background, Color foreground,
@@ -127,13 +185,34 @@ public final class PanelUiTree {
             nodes.add(new AssistChipNode(bounds, label, textScale, background, foreground, trailingIcon, trailingIconScale, trailingIconFont));
         }
 
+        public void chip(PanelLayout.Rect bounds, String label, float textScale, Color background, Color foreground,
+                         @Nullable String trailingIcon, float trailingIconScale, @Nullable TtfFontLoader trailingIconFont) {
+            assistChip(bounds, label, textScale, background, foreground, trailingIcon, trailingIconScale, trailingIconFont);
+        }
+
         public void segmentedControl(PanelLayout.Rect bounds, String leadingLabel, String trailingLabel,
                                      float progress, float hoverProgress) {
             nodes.add(new SegmentedControlNode(bounds, leadingLabel, trailingLabel, progress, hoverProgress));
         }
 
+        public void segmented(PanelLayout.Rect bounds, String leadingLabel, String trailingLabel,
+                              float progress, float hoverProgress) {
+            segmentedControl(bounds, leadingLabel, trailingLabel, progress, hoverProgress);
+        }
+
         public void iconButton(PanelLayout.Rect bounds, String label, float scale, Color tone, float hoverProgress) {
             nodes.add(new IconButtonNode(bounds, label, scale, tone, hoverProgress));
+        }
+
+        public void popupCard(PanelLayout.Rect bounds, float radius, float blurRadius, Color shadowColor, Color surfaceColor) {
+            nodes.add(new PopupCardNode(bounds, radius, blurRadius, shadowColor, surfaceColor));
+        }
+
+        public void slider(PanelLayout.Rect bounds, float progress, float trackRadius,
+                           Color trackColor, float activeEndInset, float activeMinWidth, Color activeColor,
+                           float handleWidth, float handleHeight, float handleRadius, Color handleColor) {
+            nodes.add(new SliderNode(bounds, progress, trackRadius, trackColor, activeEndInset, activeMinWidth, activeColor,
+                    handleWidth, handleHeight, handleRadius, handleColor));
         }
 
         public void viewport(PanelContentBuffer buffer, PanelLayout.Rect viewport, int guiHeight,
@@ -183,7 +262,25 @@ public final class PanelUiTree {
     private record MemoEntry(List<UiNode> nodes) {
     }
 
-    sealed interface UiNode permits GroupNode, ShadowNode, RoundRectNode, RectNode, TextNode, ButtonNode, SwitchNode, FilledFieldNode, AssistChipNode, SegmentedControlNode, IconButtonNode, ViewportNode {
+    sealed interface UiNode permits GroupNode, ShadowNode, RoundRectNode, RectNode, TextNode, ButtonNode, SwitchNode, FilledFieldNode, InputNode, AssistChipNode, SegmentedControlNode, IconButtonNode, PopupCardNode, SliderNode, ViewportNode {
+    }
+
+    public record ButtonElement(PanelLayout.Rect bounds, float radius, Color background,
+                                String label, float labelScale, Color labelColor) {
+    }
+
+    public record SwitchElement(PanelLayout.Rect bounds, float toggleProgress, float hoverProgress) {
+    }
+
+    public record SelectionRange(int start, int end) {
+    }
+
+    public record InputElement(PanelLayout.Rect bounds, boolean focused, float hoverProgress,
+                               float focusRingProgress, Color focusRingColor, float focusRingInset,
+                               float textInset, @Nullable String text, float textScale, Color textColor,
+                               @Nullable SelectionRange selection, @Nullable Color selectionColor,
+                               @Nullable Integer caretIndex, @Nullable Color caretColor,
+                               @Nullable String trailingHint, float trailingHintScale, @Nullable Color trailingHintColor) {
     }
 
     record GroupNode(List<UiNode> children) implements UiNode {
@@ -216,6 +313,9 @@ public final class PanelUiTree {
     record FilledFieldNode(PanelLayout.Rect bounds, boolean focused, float hoverProgress) implements UiNode {
     }
 
+    record InputNode(InputElement element) implements UiNode {
+    }
+
     record AssistChipNode(PanelLayout.Rect bounds, String label, float textScale, Color background, Color foreground,
                           @Nullable String trailingIcon, float trailingIconScale, @Nullable TtfFontLoader trailingIconFont) implements UiNode {
     }
@@ -225,6 +325,14 @@ public final class PanelUiTree {
     }
 
     record IconButtonNode(PanelLayout.Rect bounds, String label, float scale, Color tone, float hoverProgress) implements UiNode {
+    }
+
+    record PopupCardNode(PanelLayout.Rect bounds, float radius, float blurRadius, Color shadowColor, Color surfaceColor) implements UiNode {
+    }
+
+    record SliderNode(PanelLayout.Rect bounds, float progress, float trackRadius, Color trackColor,
+                      float activeEndInset, float activeMinWidth, Color activeColor,
+                      float handleWidth, float handleHeight, float handleRadius, Color handleColor) implements UiNode {
     }
 
     record ViewportNode(PanelContentBuffer buffer, PanelLayout.Rect viewport, int guiHeight,

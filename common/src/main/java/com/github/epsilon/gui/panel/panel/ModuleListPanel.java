@@ -329,32 +329,25 @@ public class ModuleListPanel {
         PanelLayout.Rect searchBounds = getSearchBounds();
         float hoverProgress = scope.animate(searchHoverAnimation, searchBounds.contains(mouseX, mouseY));
         float focusProgress = scope.animate(searchFocusAnimation, searchFocused);
-        buildFilledField(scope, searchBounds, searchFocused, Math.max(hoverProgress, focusProgress * 0.85f));
+        float fieldHover = Math.max(hoverProgress, focusProgress * 0.85f);
 
         String query = state.getSearchQuery();
         boolean showPlaceholder = query.isEmpty() && !searchFocused;
         String display = showPlaceholder ? searchComponent.getTranslatedName() : query;
         float scale = 0.52f;
-        float textY = searchBounds.y() + (searchBounds.height() - textRenderer.getHeight(scale)) / 2.0f - 1.0f;
-        float textX = searchBounds.x() + 8.0f;
         Color textColor = showPlaceholder
                 ? MD3Theme.lerp(MD3Theme.TEXT_MUTED, MD3Theme.filledFieldContent(searchFocused), focusProgress)
                 : MD3Theme.filledFieldContent(searchFocused);
-        scope.text(display, textX, textY, scale, textColor);
+        scope.input(searchBounds, searchFocused, fieldHover,
+                8.0f, display, scale, textColor,
+                searchFocused ? searchCursorIndex : null, searchFocused ? MD3Theme.filledFieldCaret(true) : null,
+                null, 0.0f, null);
 
         if (searchFocused) {
+            float textY = searchBounds.y() + (searchBounds.height() - textRenderer.getHeight(scale)) / 2.0f - 1.0f;
+            float textX = searchBounds.x() + 8.0f;
             float caretX = textX + textRenderer.getWidth(query.substring(0, Math.min(searchCursorIndex, query.length())), scale);
-            scope.rect(caretX, searchBounds.y() + 4.0f, 1.0f, searchBounds.height() - 8.0f, MD3Theme.filledFieldCaret(true));
             IMEFocusHelper.updateCursorPos(caretX, textY);
         }
-    }
-
-    private void buildFilledField(PanelUiTree.Scope scope, PanelLayout.Rect bounds, boolean focused, float hoverProgress) {
-        scope.roundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), MD3Theme.CONTROL_RADIUS, MD3Theme.filledFieldSurface(focused, hoverProgress));
-        float indicatorHeight = focused ? 1.5f : 1.0f;
-        float indicatorInset = 4.0f;
-        scope.rect(bounds.x() + indicatorInset, bounds.bottom() - indicatorHeight,
-                Math.max(0.0f, bounds.width() - indicatorInset * 2.0f), indicatorHeight,
-                MD3Theme.filledFieldIndicator(focused, hoverProgress));
     }
 }
