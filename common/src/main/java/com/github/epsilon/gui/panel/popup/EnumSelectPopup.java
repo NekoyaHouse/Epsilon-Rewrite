@@ -20,6 +20,7 @@ public class EnumSelectPopup implements PanelPopupHost.Popup {
     private static final float ITEM_HEIGHT = 24.0f;
     private static final float ITEM_INNER_HEIGHT = 22.0f;
     private static final float CONTENT_PADDING = 6.0f;
+    private static final String DROPDOWN_ICON = "v";
 
     private final PanelLayout.Rect bounds;
     private final EnumSetting<?> setting;
@@ -78,7 +79,9 @@ public class EnumSelectPopup implements PanelPopupHost.Popup {
                     POPUP_SHADOW_RADIUS,
                     MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)),
                     MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, 255));
-            scope.roundRect(anchorBounds.x(), anchorBounds.y(), anchorBounds.width(), anchorBounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SECONDARY_CONTAINER, 255));
+            scope.chip(anchorBounds, setting.getTranslatedValue(), 0.60f,
+                    MD3Theme.SECONDARY_CONTAINER, MD3Theme.ON_SECONDARY_CONTAINER,
+                    DROPDOWN_ICON, 0.58f, StaticFontLoader.ICONS);
             hoveredIndex = -1;
             scope.viewport(contentBuffer, viewportBounds, guiGraphics.guiHeight(), scroll, maxScroll, fullContentHeight, content -> {
                 Enum<?>[] modes = setting.getModes();
