@@ -11,39 +11,11 @@ import com.github.epsilon.graphics.renderers.TextRenderer;
  * 一个批次持有阴影、圆角矩形、矩形和文本四类 renderer，负责承接
  * {@link PanelUiCompiler} 的编译输出，并在统一阶段执行 flush 或 clear。
  */
-public final class PanelRenderBatch {
-
-    private final ShadowRenderer shadowRenderer;
-    private final RoundRectRenderer roundRectRenderer;
-    private final RectRenderer rectRenderer;
-    private final TextRenderer textRenderer;
+public record PanelRenderBatch(ShadowRenderer shadowRenderer, RoundRectRenderer roundRectRenderer,
+                               RectRenderer rectRenderer, TextRenderer textRenderer) {
 
     public PanelRenderBatch() {
         this(new ShadowRenderer(), new RoundRectRenderer(), new RectRenderer(), new TextRenderer());
-    }
-
-    public PanelRenderBatch(ShadowRenderer shadowRenderer, RoundRectRenderer roundRectRenderer,
-                            RectRenderer rectRenderer, TextRenderer textRenderer) {
-        this.shadowRenderer = shadowRenderer;
-        this.roundRectRenderer = roundRectRenderer;
-        this.rectRenderer = rectRenderer;
-        this.textRenderer = textRenderer;
-    }
-
-    public ShadowRenderer shadowRenderer() {
-        return shadowRenderer;
-    }
-
-    public RoundRectRenderer roundRectRenderer() {
-        return roundRectRenderer;
-    }
-
-    public RectRenderer rectRenderer() {
-        return rectRenderer;
-    }
-
-    public TextRenderer textRenderer() {
-        return textRenderer;
     }
 
     /**

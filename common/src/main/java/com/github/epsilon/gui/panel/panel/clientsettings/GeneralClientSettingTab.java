@@ -1,9 +1,6 @@
 package com.github.epsilon.gui.panel.panel.clientsettings;
 
 import com.github.epsilon.assets.holders.TranslateHolder;
-import com.github.epsilon.graphics.renderers.RectRenderer;
-import com.github.epsilon.graphics.renderers.RoundRectRenderer;
-import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
 import com.github.epsilon.gui.panel.PanelState;

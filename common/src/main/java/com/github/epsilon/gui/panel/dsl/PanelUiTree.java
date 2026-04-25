@@ -406,10 +406,10 @@ public final class PanelUiTree {
             if (this == obj) {
                 return true;
             }
-            if (!(obj instanceof MemoKey other)) {
+            if (!(obj instanceof MemoKey(Object key1, long signature1))) {
                 return false;
             }
-            return signature == other.signature && Objects.equals(key, other.key);
+            return signature == signature1 && Objects.equals(key, key1);
         }
 
         @Override

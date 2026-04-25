@@ -146,7 +146,7 @@ public final class MD3Theme {
     }
 
     public static Color filledFieldContent(boolean focused) {
-        return focused ? TEXT_PRIMARY : TEXT_PRIMARY;
+        return TEXT_PRIMARY;
     }
 
     public static Color filledFieldCaret(boolean focused) {
