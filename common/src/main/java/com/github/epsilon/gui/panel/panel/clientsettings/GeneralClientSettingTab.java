@@ -1,5 +1,6 @@
 package com.github.epsilon.gui.panel.panel.clientsettings;
 
+import com.github.epsilon.assets.holders.TranslateHolder;
 import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
@@ -251,6 +252,7 @@ public final class GeneralClientSettingTab implements ClientSettingTabView {
 
     private long buildContentSignature(List<Setting<?>> settings) {
         long signature = 17L;
+        signature = signature * 31L + TranslateHolder.INSTANCE.getRevision();
         signature = signature * 31L + Float.floatToIntBits(state.getClientSettingScroll());
         signature = signature * 31L + (state.getListeningKeybindSetting() == null ? 0 : state.getListeningKeybindSetting().getName().hashCode());
         for (Setting<?> setting : settings) {

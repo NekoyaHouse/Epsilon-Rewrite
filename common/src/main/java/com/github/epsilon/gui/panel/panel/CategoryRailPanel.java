@@ -1,6 +1,7 @@
 package com.github.epsilon.gui.panel.panel;
 
 import com.github.epsilon.Epsilon;
+import com.github.epsilon.assets.holders.TranslateHolder;
 import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.graphics.renderers.RectRenderer;
@@ -79,6 +80,7 @@ public class CategoryRailPanel {
         this.bounds = bounds;
         applyTextScissor(bounds, GuiGraphicsExtractor.guiHeight());
         PanelUiTree tree = PanelUiTree.build(scope -> {
+            long i18nRevision = TranslateHolder.INSTANCE.getRevision();
             float contentProgress = scope.animate(contentAnimation, state.isSidebarExpanded());
             float titleProgress = scope.animate(headerTitleAnimation, contentProgress);
             float subtitleProgress = scope.animate(headerSubtitleAnimation, contentProgress > 0.08f);
@@ -103,10 +105,10 @@ public class CategoryRailPanel {
                 float subtitleY = titleY + titleHeight + pad;
                 float titleOffset = (1.0f - titleProgress) * 8.0f;
                 float subtitleOffset = (1.0f - subtitleProgress) * 10.0f;
-                scope.text("Epsilon " + Epsilon.VERSION, bounds.x() + 38.0f + titleOffset, titleY, titleScale,
+                scope.text("Epsilon", bounds.x() + 38.0f + titleOffset, titleY, titleScale,
                         MD3Theme.withAlpha(MD3Theme.TEXT_PRIMARY, (int) (255 * titleProgress)), StaticFontLoader.DUCKSANS);
                 if (subtitleProgress > 0.02f) {
-                    scope.text("Open Source", bounds.x() + 38.0f + subtitleOffset, subtitleY, subtitleScale,
+                    scope.text(Epsilon.VERSION, bounds.x() + 38.0f + subtitleOffset, subtitleY, subtitleScale,
                             MD3Theme.withAlpha(MD3Theme.TEXT_SECONDARY, (int) (210 * subtitleProgress)));
                 }
                 if (dividerProgress > 0.02f) {
@@ -171,7 +173,7 @@ public class CategoryRailPanel {
                 boolean hovered = itemRect.contains(mouseX, mouseY);
                 boolean selected = !state.isClientSettingMode() && state.getSelectedCategory() == category;
                 int count = getCategoryCount(category);
-                int signature = Objects.hash(category.name(), hovered, selected, count, Float.floatToIntBits(contentProgress));
+                int signature = Objects.hash(category.name(), i18nRevision, hovered, selected, count, Float.floatToIntBits(contentProgress));
                 scope.memo("rail-item-" + category.name(), signature, memo -> buildCategoryItem(memo, menuButton, itemRect, category, count, hovered, selected, contentProgress, itemIconScale, itemLabelScale, itemCountScale));
                 itemY += CATEGORY_ITEM_SPACING;
             }
@@ -181,7 +183,7 @@ public class CategoryRailPanel {
             boolean settingsHovered = settingsRect.contains(mouseX, mouseY);
             boolean settingsSelected = state.isClientSettingMode();
             float settingsHover = scope.animate(settingsHoverAnimation, settingsHovered);
-            scope.memo("rail-settings", Objects.hash(settingsHovered, settingsSelected, Float.floatToIntBits(contentProgress), Float.floatToIntBits(settingsHover)), memo ->
+            scope.memo("rail-settings", Objects.hash(i18nRevision, settingsHovered, settingsSelected, Float.floatToIntBits(contentProgress), Float.floatToIntBits(settingsHover)), memo ->
                     buildSettingsItem(memo, menuButton, settingsRect, settingsHovered, settingsSelected, contentProgress, settingsHover, itemIconScale, itemLabelScale));
         });
         PanelUiCompiler.render(tree, roundRectRenderer, rectRenderer, clippedTextRenderer);

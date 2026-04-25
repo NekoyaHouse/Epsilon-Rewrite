@@ -1,5 +1,6 @@
 package com.github.epsilon.gui.panel.panel;
 
+import com.github.epsilon.assets.holders.TranslateHolder;
 import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.graphics.renderers.RectRenderer;
@@ -60,6 +61,7 @@ public class ModuleListPanel {
     private long lastContentSignature = Long.MIN_VALUE;
 
     private static final TranslateComponent searchComponent = EpsilonTranslateComponent.create("gui", "search");
+    private static final TranslateComponent modulesComponent = EpsilonTranslateComponent.create("gui", "modules");
 
     public ModuleListPanel(PanelState state, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, ShadowRenderer shadowRenderer, TextRenderer textRenderer) {
         this.state = state;
@@ -98,7 +100,7 @@ public class ModuleListPanel {
 
         PanelUiTree tree = PanelUiTree.build(scope -> {
             scope.text(state.getSelectedCategory().getName(), bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 10.0f, 0.78f, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
-            scope.text("Modules", bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 21.0f, 0.56f, MD3Theme.TEXT_SECONDARY);
+            scope.text(modulesComponent.getTranslatedName(), bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 21.0f, 0.56f, MD3Theme.TEXT_SECONDARY);
             buildSearchField(scope, mouseX, mouseY);
             scope.viewport(contentBuffer, viewport, guiHeight, state.getModuleScroll(), maxModuleScroll, contentHeight, content -> {
                 if (!rebuildContent) {
@@ -337,6 +339,7 @@ public class ModuleListPanel {
 
     private long buildContentSignature(List<Module> modules) {
         long signature = 17L;
+        signature = signature * 31L + TranslateHolder.INSTANCE.getRevision();
         signature = signature * 31L + state.getSelectedCategory().name().hashCode();
         signature = signature * 31L + state.getSearchQuery().hashCode();
         signature = signature * 31L + (searchFocused ? 1 : 0);

@@ -11,15 +11,16 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
 
 import java.awt.*;
+import java.util.function.Supplier;
 
 public final class ConfirmActionPopup implements PanelPopupHost.Popup {
 
     private final PanelLayout.Rect bounds;
-    private final String title;
-    private final String message;
+    private final Supplier<String> titleSupplier;
+    private final Supplier<String> messageSupplier;
     private final String detail;
-    private final String confirmLabel;
-    private final String cancelLabel;
+    private final Supplier<String> confirmLabelSupplier;
+    private final Supplier<String> cancelLabelSupplier;
     private final Runnable onConfirm;
 
     private final Animation openAnimation = new Animation(Easing.EASE_OUT_CUBIC, 160L);
@@ -33,12 +34,17 @@ public final class ConfirmActionPopup implements PanelPopupHost.Popup {
 
     public ConfirmActionPopup(PanelLayout.Rect bounds, String title, String message, String detail,
                               String confirmLabel, String cancelLabel, Runnable onConfirm) {
+        this(bounds, () -> title, () -> message, detail, () -> confirmLabel, () -> cancelLabel, onConfirm);
+    }
+
+    public ConfirmActionPopup(PanelLayout.Rect bounds, Supplier<String> titleSupplier, Supplier<String> messageSupplier, String detail,
+                              Supplier<String> confirmLabelSupplier, Supplier<String> cancelLabelSupplier, Runnable onConfirm) {
         this.bounds = bounds;
-        this.title = title;
-        this.message = message;
+        this.titleSupplier = titleSupplier;
+        this.messageSupplier = messageSupplier;
         this.detail = detail;
-        this.confirmLabel = confirmLabel;
-        this.cancelLabel = cancelLabel;
+        this.confirmLabelSupplier = confirmLabelSupplier;
+        this.cancelLabelSupplier = cancelLabelSupplier;
         this.onConfirm = onConfirm;
         this.openAnimation.setStartValue(0.0f);
         this.confirmHoverAnimation.setStartValue(0.0f);
@@ -71,6 +77,10 @@ public final class ConfirmActionPopup implements PanelPopupHost.Popup {
             float messageScale = 0.56f;
             float detailScale = 0.60f;
             float textX = bounds.x() + 12.0f;
+            String title = titleSupplier.get();
+            String message = messageSupplier.get();
+            String cancelLabel = cancelLabelSupplier.get();
+            String confirmLabel = confirmLabelSupplier.get();
             scope.text(title, textX, animatedY + 10.0f, titleScale, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
             scope.text(message, textX, animatedY + 24.0f, messageScale, MD3Theme.TEXT_SECONDARY);
             if (detail != null && !detail.isBlank()) {

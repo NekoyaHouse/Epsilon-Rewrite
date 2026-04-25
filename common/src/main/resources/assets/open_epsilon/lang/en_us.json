@@ -4,6 +4,8 @@
   "epsilon.categories.render": "Render",
   "epsilon.categories.world": "World",
   "epsilon.gui.clientsettings": "Client Settings",
+  "epsilon.gui.modules": "Modules",
+  "epsilon.gui.no_module": "No Module",
   "epsilon.gui.tab.general": "General",
   "epsilon.gui.tab.friend": "Friends",
   "epsilon.gui.tab.config": "Config",

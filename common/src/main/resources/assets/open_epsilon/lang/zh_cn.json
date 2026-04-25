@@ -4,6 +4,8 @@
   "epsilon.categories.render": "渲染",
   "epsilon.categories.world": "世界",
   "epsilon.gui.clientsettings": "客户端设置",
+  "epsilon.gui.modules": "功能列表",
+  "epsilon.gui.no_module": "未选择功能",
   "epsilon.gui.tab.general": "通用",
   "epsilon.gui.tab.friend": "好友",
   "epsilon.gui.tab.config": "配置",

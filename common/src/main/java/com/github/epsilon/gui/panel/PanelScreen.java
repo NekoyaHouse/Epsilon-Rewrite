@@ -1,5 +1,6 @@
 package com.github.epsilon.gui.panel;
 
+import com.github.epsilon.assets.holders.TranslateHolder;
 import com.github.epsilon.graphics.LuminRenderSystem;
 import com.github.epsilon.graphics.renderers.RectRenderer;
 import com.github.epsilon.graphics.renderers.RoundRectRenderer;
@@ -57,6 +58,7 @@ public class PanelScreen extends Screen {
     private String lastSearchQuery = "";
     private boolean lastSidebarExpanded;
     private boolean lastClientSettingMode;
+    private long lastI18nRevision = Long.MIN_VALUE;
 
     private @Nullable IMEPreeditOverlay preeditOverlay;
 
@@ -94,17 +96,20 @@ public class PanelScreen extends Screen {
         String currentQuery = state.getSearchQuery();
         boolean sidebarExpanded = state.isSidebarExpanded();
         boolean clientSettingMode = state.isClientSettingMode();
+        long currentI18nRevision = TranslateHolder.INSTANCE.getRevision();
         if (!lastSelectedCategory.equals(currentCategory)
                 || !lastSelectedModule.equals(currentModule)
                 || !lastSearchQuery.equals(currentQuery)
                 || lastSidebarExpanded != sidebarExpanded
-                || lastClientSettingMode != clientSettingMode) {
+                || lastClientSettingMode != clientSettingMode
+                || lastI18nRevision != currentI18nRevision) {
             dirtyState.markAllDirty();
             lastSelectedCategory = currentCategory;
             lastSelectedModule = currentModule;
             lastSearchQuery = currentQuery;
             lastSidebarExpanded = sidebarExpanded;
             lastClientSettingMode = clientSettingMode;
+            lastI18nRevision = currentI18nRevision;
         }
 
         if (categoryRailPanel.hasActiveAnimations()

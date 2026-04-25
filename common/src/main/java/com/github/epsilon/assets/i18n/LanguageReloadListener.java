@@ -2,6 +2,7 @@ package com.github.epsilon.assets.i18n;
 
 import com.github.epsilon.assets.holders.TextureCacheHolder;
 import com.github.epsilon.assets.holders.TranslateHolder;
+import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import org.jspecify.annotations.NonNull;
 
@@ -22,6 +23,7 @@ public class LanguageReloadListener implements PreparableReloadListener {
                 .thenRunAsync(() -> {
 
                     TranslateHolder.INSTANCE.refresh();
+                    PanelUiTree.clearMemoCache();
                     TextureCacheHolder.INSTANCE.clearCache();
 
                 }, applyExectutor);

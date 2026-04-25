@@ -8,10 +8,10 @@ import org.jspecify.annotations.Nullable;
 
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
@@ -22,7 +22,7 @@ import java.util.function.Consumer;
  */
 public final class PanelUiTree {
 
-    private static final Map<MemoKey, MemoEntry> MEMO_CACHE = new HashMap<>();
+    private static final Map<MemoKey, MemoEntry> MEMO_CACHE = new ConcurrentHashMap<>();
 
     private final List<UiNode> nodes;
     private final boolean hasActiveAnimations;
@@ -42,6 +42,10 @@ public final class PanelUiTree {
         Scope scope = new Scope();
         content.accept(scope);
         return new PanelUiTree(List.copyOf(scope.nodes), scope.hasActiveAnimations);
+    }
+
+    public static void clearMemoCache() {
+        MEMO_CACHE.clear();
     }
 
     List<UiNode> nodes() {
