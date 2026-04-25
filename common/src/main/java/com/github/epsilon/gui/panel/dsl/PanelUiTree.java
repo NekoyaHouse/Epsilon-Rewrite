@@ -9,9 +9,6 @@ import org.jspecify.annotations.Nullable;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
@@ -21,8 +18,6 @@ import java.util.function.Consumer;
  * 然后再由 {@link PanelUiCompiler} 将树结构编译进具体 renderer 或视口缓冲。
  */
 public final class PanelUiTree {
-
-    private static final Map<MemoKey, MemoEntry> MEMO_CACHE = new ConcurrentHashMap<>();
 
     private final List<UiNode> nodes;
     private final boolean hasActiveAnimations;
@@ -45,7 +40,7 @@ public final class PanelUiTree {
     }
 
     public static void clearMemoCache() {
-        MEMO_CACHE.clear();
+        // Memo cache has been removed; keep this method as a compatibility no-op.
     }
 
     List<UiNode> nodes() {
@@ -87,29 +82,18 @@ public final class PanelUiTree {
         }
 
         /**
-         * 构建一个可缓存的子树。
+         * 构建一个语义上的 memo 子树。
          * <p>
-         * 当 {@code key + signature} 命中缓存且子树内部没有活动动画时，之前生成的节点会被直接复用，
-         * 以减少重复构建成本。
+         * 当前实现不再保留全局缓存；该方法仅作为兼容入口，行为等同于 {@link #group(Consumer)}。
          *
          * @param key 缓存的逻辑键
          * @param signature 当前子树的状态签名
          * @param content 子树内容
          */
         public void memo(Object key, long signature, Consumer<Scope> content) {
-            MemoKey memoKey = new MemoKey(key, signature);
-            MemoEntry cached = MEMO_CACHE.get(memoKey);
-            if (cached != null) {
-                nodes.add(new GroupNode(cached.nodes()));
-                return;
-            }
-
             CaptureResult capture = capture(content);
             hasActiveAnimations = hasActiveAnimations || capture.hasActiveAnimations();
             nodes.add(new GroupNode(capture.nodes()));
-            if (!capture.hasActiveAnimations()) {
-                MEMO_CACHE.put(memoKey, new MemoEntry(capture.nodes()));
-            }
         }
 
         /**
@@ -400,26 +384,6 @@ public final class PanelUiTree {
     private record CaptureResult(List<UiNode> nodes, boolean hasActiveAnimations) {
     }
 
-    private record MemoKey(Object key, long signature) {
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (!(obj instanceof MemoKey other)) {
-                return false;
-            }
-            return signature == other.signature && Objects.equals(key, other.key);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(key, signature);
-        }
-    }
-
-    private record MemoEntry(List<UiNode> nodes) {
-    }
 
     sealed interface UiNode permits GroupNode, ShadowNode, RoundRectNode, RectNode, TextNode, ButtonNode, SwitchNode, FilledFieldNode, InputNode, AssistChipNode, SegmentedControlNode, IconButtonNode, PopupCardNode, SliderNode, ViewportNode {
     }

@@ -2,8 +2,6 @@ package com.github.epsilon.gui.panel.component.setting;
 
 import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
-import com.github.epsilon.graphics.renderers.RectRenderer;
-import com.github.epsilon.graphics.renderers.RoundRectRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;

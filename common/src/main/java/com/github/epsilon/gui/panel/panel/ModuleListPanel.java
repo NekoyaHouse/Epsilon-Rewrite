@@ -24,8 +24,9 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 
-import java.awt.Color;
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 /**
  * 模块列表面板。

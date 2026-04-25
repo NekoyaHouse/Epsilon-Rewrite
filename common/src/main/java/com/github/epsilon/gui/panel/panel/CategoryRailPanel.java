@@ -1,7 +1,6 @@
 package com.github.epsilon.gui.panel.panel;
 
 import com.github.epsilon.Epsilon;
-import com.github.epsilon.assets.holders.TranslateHolder;
 import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.graphics.renderers.RectRenderer;
@@ -22,7 +21,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
 
 import java.awt.*;
-import java.util.Objects;
 
 public class CategoryRailPanel {
 
@@ -80,7 +78,6 @@ public class CategoryRailPanel {
         this.bounds = bounds;
         applyTextScissor(bounds, GuiGraphicsExtractor.guiHeight());
         PanelUiTree tree = PanelUiTree.build(scope -> {
-            long i18nRevision = TranslateHolder.INSTANCE.getRevision();
             float contentProgress = scope.animate(contentAnimation, state.isSidebarExpanded());
             float titleProgress = scope.animate(headerTitleAnimation, contentProgress);
             float subtitleProgress = scope.animate(headerSubtitleAnimation, contentProgress > 0.08f);
@@ -173,8 +170,7 @@ public class CategoryRailPanel {
                 boolean hovered = itemRect.contains(mouseX, mouseY);
                 boolean selected = !state.isClientSettingMode() && state.getSelectedCategory() == category;
                 int count = getCategoryCount(category);
-                int signature = Objects.hash(category.name(), i18nRevision, hovered, selected, count, Float.floatToIntBits(contentProgress));
-                scope.memo("rail-item-" + category.name(), signature, memo -> buildCategoryItem(memo, menuButton, itemRect, category, count, hovered, selected, contentProgress, itemIconScale, itemLabelScale, itemCountScale));
+                buildCategoryItem(scope, menuButton, itemRect, category, count, hovered, selected, contentProgress, itemIconScale, itemLabelScale, itemCountScale);
                 itemY += CATEGORY_ITEM_SPACING;
             }
 
@@ -183,8 +179,7 @@ public class CategoryRailPanel {
             boolean settingsHovered = settingsRect.contains(mouseX, mouseY);
             boolean settingsSelected = state.isClientSettingMode();
             float settingsHover = scope.animate(settingsHoverAnimation, settingsHovered);
-            scope.memo("rail-settings", Objects.hash(i18nRevision, settingsHovered, settingsSelected, Float.floatToIntBits(contentProgress), Float.floatToIntBits(settingsHover)), memo ->
-                    buildSettingsItem(memo, menuButton, settingsRect, settingsHovered, settingsSelected, contentProgress, settingsHover, itemIconScale, itemLabelScale));
+            buildSettingsItem(scope, menuButton, settingsRect, settingsHovered, settingsSelected, contentProgress, settingsHover, itemIconScale, itemLabelScale);
         });
         PanelUiCompiler.render(tree, roundRectRenderer, rectRenderer, clippedTextRenderer);
 

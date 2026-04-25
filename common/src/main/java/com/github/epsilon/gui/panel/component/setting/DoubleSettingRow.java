@@ -14,8 +14,6 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.util.Mth;
 
-import java.awt.*;
-
 public class DoubleSettingRow extends SettingRow<DoubleSetting> {
 
     private final Animation hoverAnimation = new Animation(Easing.EASE_OUT_QUART, 150L);

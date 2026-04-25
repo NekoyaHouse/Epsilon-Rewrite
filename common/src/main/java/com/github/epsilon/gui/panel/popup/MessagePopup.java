@@ -1,10 +1,10 @@
 package com.github.epsilon.gui.panel.popup;
 
 import com.github.epsilon.graphics.text.StaticFontLoader;
-import com.github.epsilon.gui.panel.dsl.PanelRenderBatch;
-import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
+import com.github.epsilon.gui.panel.dsl.PanelRenderBatch;
+import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import com.github.epsilon.utils.render.animation.Animation;
 import com.github.epsilon.utils.render.animation.Easing;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
