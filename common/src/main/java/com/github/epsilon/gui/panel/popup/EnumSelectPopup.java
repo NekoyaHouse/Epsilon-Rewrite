@@ -6,6 +6,8 @@ import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.graphics.text.StaticFontLoader;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
+import com.github.epsilon.gui.panel.dsl.PanelUiCompiler;
+import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import com.github.epsilon.gui.panel.util.ScrollBarUtil;
 import com.github.epsilon.managers.RenderManager;
 import com.github.epsilon.settings.impl.EnumSetting;
@@ -70,28 +72,31 @@ public class EnumSelectPopup implements PanelPopupHost.Popup {
 
     @Override
     public void extractGui(GuiGraphicsExtractor GuiGraphicsExtractor, int mouseX, int mouseY, float partialTick) {
-        openAnimation.run(1.0f);
+        PanelUiTree chromeTree = PanelUiTree.build(scope -> {
+            float progress = scope.animate(openAnimation, 1.0f);
+            float popupY = bounds.y() - (1.0f - progress) * 6.0f;
+
+            scope.shadow(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, POPUP_SHADOW_RADIUS,
+                    MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)));
+            scope.roundRect(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, 255));
+            scope.roundRect(anchorBounds.x(), anchorBounds.y(), anchorBounds.width(), anchorBounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SECONDARY_CONTAINER, 255));
+
+            if (scrollable) {
+                float viewportHeight = bounds.height() - CONTENT_PADDING * 2;
+                float fullContentHeight = setting.getModes().length * ITEM_HEIGHT;
+                PanelLayout.Rect scrollViewport = new PanelLayout.Rect(bounds.x() + CONTENT_PADDING, popupY + CONTENT_PADDING, bounds.width() - CONTENT_PADDING * 2, viewportHeight);
+                ScrollBarUtil.draw(roundRectRenderer, scrollViewport, scroll, maxScroll, fullContentHeight);
+            }
+        });
         float progress = openAnimation.getValue();
         float popupY = bounds.y() - (1.0f - progress) * 6.0f;
+        PanelUiCompiler.render(chromeTree, shadowRenderer, roundRectRenderer, null, textRenderer);
 
-        // Background & shadow (no scissor)
-        shadowRenderer.addShadow(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, POPUP_SHADOW_RADIUS, MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)));
-        roundRectRenderer.addRoundRect(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, 255));
-        roundRectRenderer.addRoundRect(anchorBounds.x(), anchorBounds.y(), anchorBounds.width(), anchorBounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SECONDARY_CONTAINER, 255));
-
-        // Scrollbar (rendered with background, before items — no overlap since items are narrower)
-        if (scrollable) {
-            float viewportHeight = bounds.height() - CONTENT_PADDING * 2;
-            float fullContentHeight = setting.getModes().length * ITEM_HEIGHT;
-            PanelLayout.Rect scrollViewport = new PanelLayout.Rect(bounds.x() + CONTENT_PADDING, popupY + CONTENT_PADDING, bounds.width() - CONTENT_PADDING * 2, viewportHeight);
-            ScrollBarUtil.draw(roundRectRenderer, scrollViewport, scroll, maxScroll, fullContentHeight);
-        }
-
-        // Items
         Enum<?>[] modes = setting.getModes();
         float itemStartY = popupY + CONTENT_PADDING - scroll;
         float itemAreaWidth = bounds.width() - CONTENT_PADDING * 2 - (scrollable ? 6.0f : 0);
         hoveredIndex = -1;
+        PanelUiTree itemsTree = PanelUiTree.build(scope -> {
         for (int i = 0; i < modes.length; i++) {
             float itemY = itemStartY + i * ITEM_HEIGHT;
             PanelLayout.Rect itemBounds = new PanelLayout.Rect(bounds.x() + CONTENT_PADDING, itemY, itemAreaWidth, ITEM_INNER_HEIGHT);
@@ -107,12 +112,13 @@ public class EnumSelectPopup implements PanelPopupHost.Popup {
             Color selectedBackground = MD3Theme.SECONDARY_CONTAINER;
             Color background = selected ? selectedBackground : (hovered ? hoverBackground : baseBackground);
             Color textColor = selected ? MD3Theme.ON_SECONDARY_CONTAINER : (hovered ? MD3Theme.withAlpha(MD3Theme.TEXT_PRIMARY, 255) : MD3Theme.TEXT_SECONDARY);
-            itemRoundRectRenderer.addRoundRect(itemBounds.x(), itemY, itemBounds.width(), itemBounds.height(), 8.0f, background);
+            scope.roundRect(itemBounds.x(), itemY, itemBounds.width(), itemBounds.height(), 8.0f, background);
             if (selected) {
-                itemTextRenderer.addText("V", itemBounds.x() + 8.0f, itemY + 6.5f, 0.72f, MD3Theme.ON_SECONDARY_CONTAINER, StaticFontLoader.ICONS);
+                scope.text("V", itemBounds.x() + 8.0f, itemY + 6.5f, 0.72f, MD3Theme.ON_SECONDARY_CONTAINER, StaticFontLoader.ICONS);
             }
-            itemTextRenderer.addText(setting.getTranslatedValueByIndex(i), itemBounds.x() + (selected ? 22.0f : 10.0f), itemY + 7.0f, 0.62f, textColor, StaticFontLoader.DUCKSANS);
+            scope.text(setting.getTranslatedValueByIndex(i), itemBounds.x() + (selected ? 22.0f : 10.0f), itemY + 7.0f, 0.62f, textColor, StaticFontLoader.DUCKSANS);
         }
+        });
 
         // Apply scissor on item renderers if scrollable
         if (scrollable) {
@@ -128,6 +134,7 @@ public class EnumSelectPopup implements PanelPopupHost.Popup {
         }
 
         RenderManager.INSTANCE.applyRender(() -> {
+            PanelUiCompiler.render(itemsTree, itemRoundRectRenderer, null, itemTextRenderer);
             shadowRenderer.drawAndClear();
             roundRectRenderer.drawAndClear();
             itemRoundRectRenderer.drawAndClear();

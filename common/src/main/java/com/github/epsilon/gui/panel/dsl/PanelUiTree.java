@@ -8,10 +8,15 @@ import org.jspecify.annotations.Nullable;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 public final class PanelUiTree {
+
+    private static final Map<MemoKey, MemoEntry> MEMO_CACHE = new HashMap<>();
 
     private final List<UiNode> nodes;
     private final boolean hasActiveAnimations;
@@ -41,7 +46,25 @@ public final class PanelUiTree {
         private boolean hasActiveAnimations;
 
         public void group(Consumer<Scope> content) {
-            nodes.add(new GroupNode(capture(content)));
+            CaptureResult capture = capture(content);
+            hasActiveAnimations = hasActiveAnimations || capture.hasActiveAnimations();
+            nodes.add(new GroupNode(capture.nodes()));
+        }
+
+        public void memo(Object key, long signature, Consumer<Scope> content) {
+            MemoKey memoKey = new MemoKey(key, signature);
+            MemoEntry cached = MEMO_CACHE.get(memoKey);
+            if (cached != null) {
+                nodes.add(new GroupNode(cached.nodes()));
+                return;
+            }
+
+            CaptureResult capture = capture(content);
+            hasActiveAnimations = hasActiveAnimations || capture.hasActiveAnimations();
+            nodes.add(new GroupNode(capture.nodes()));
+            if (!capture.hasActiveAnimations()) {
+                MEMO_CACHE.put(memoKey, new MemoEntry(capture.nodes()));
+            }
         }
 
         public float animate(Animation animation, boolean target) {
@@ -116,19 +139,48 @@ public final class PanelUiTree {
         public void viewport(PanelContentBuffer buffer, PanelLayout.Rect viewport, int guiHeight,
                              float scroll, float maxScroll, float contentHeight,
                              Consumer<Scope> content) {
-            nodes.add(new ViewportNode(buffer, viewport, guiHeight, scroll, maxScroll, contentHeight, capture(content)));
+            CaptureResult capture = capture(content);
+            hasActiveAnimations = hasActiveAnimations || capture.hasActiveAnimations();
+            nodes.add(new ViewportNode(buffer, viewport, guiHeight, scroll, maxScroll, contentHeight, capture.nodes()));
         }
 
-        private List<UiNode> capture(Consumer<Scope> content) {
+        private CaptureResult capture(Consumer<Scope> content) {
             List<UiNode> parent = nodes;
+            boolean parentAnimations = hasActiveAnimations;
             nodes = new ArrayList<>();
+            hasActiveAnimations = false;
             try {
                 content.accept(this);
-                return List.copyOf(nodes);
+                return new CaptureResult(List.copyOf(nodes), hasActiveAnimations);
             } finally {
                 nodes = parent;
+                hasActiveAnimations = parentAnimations;
             }
         }
+    }
+
+    private record CaptureResult(List<UiNode> nodes, boolean hasActiveAnimations) {
+    }
+
+    private record MemoKey(Object key, long signature) {
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!(obj instanceof MemoKey other)) {
+                return false;
+            }
+            return signature == other.signature && Objects.equals(key, other.key);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(key, signature);
+        }
+    }
+
+    private record MemoEntry(List<UiNode> nodes) {
     }
 
     sealed interface UiNode permits GroupNode, ShadowNode, RoundRectNode, RectNode, TextNode, ButtonNode, SwitchNode, FilledFieldNode, AssistChipNode, SegmentedControlNode, IconButtonNode, ViewportNode {

@@ -70,7 +70,11 @@ public class PanelPopupHost {
             close();
             return true;
         }
-        return activePopup.keyPressed(event);
+        boolean handled = activePopup.keyPressed(event);
+        if (handled && activePopup.shouldCloseAfterClick()) {
+            close();
+        }
+        return handled;
     }
 
     public boolean charTyped(CharacterEvent event) {

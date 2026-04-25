@@ -6,6 +6,8 @@ import com.github.epsilon.graphics.renderers.ShadowRenderer;
 import com.github.epsilon.graphics.renderers.TextRenderer;
 import com.github.epsilon.gui.panel.MD3Theme;
 import com.github.epsilon.gui.panel.PanelLayout;
+import com.github.epsilon.gui.panel.dsl.PanelUiCompiler;
+import com.github.epsilon.gui.panel.dsl.PanelUiTree;
 import com.github.epsilon.managers.RenderManager;
 import com.github.epsilon.settings.impl.ColorSetting;
 import com.github.epsilon.utils.render.animation.Animation;
@@ -71,58 +73,61 @@ public class ColorPickerPopup implements PanelPopupHost.Popup {
 
     @Override
     public void extractGui(GuiGraphicsExtractor GuiGraphicsExtractor, int mouseX, int mouseY, float partialTick) {
-        openAnimation.run(1.0f);
-        float progress = openAnimation.getValue();
-        float popupY = bounds.y() - (1.0f - progress) * 6.0f;
+        PanelUiTree tree = PanelUiTree.build(scope -> {
+            float progress = scope.animate(openAnimation, 1.0f);
+            float popupY = bounds.y() - (1.0f - progress) * 6.0f;
 
-        shadowRenderer.addShadow(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, POPUP_SHADOW_RADIUS, MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)));
-        roundRectRenderer.addRoundRect(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, 255));
-        roundRectRenderer.addRoundRect(anchorBounds.x(), anchorBounds.y(), anchorBounds.width(), anchorBounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SECONDARY_CONTAINER, 255));
+            scope.shadow(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, POPUP_SHADOW_RADIUS,
+                    MD3Theme.withAlpha(MD3Theme.SHADOW, (int) (MD3Theme.POPUP_SHADOW_ALPHA * progress)));
+            scope.roundRect(bounds.x(), popupY, bounds.width(), bounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER_LOW, 255));
+            scope.roundRect(anchorBounds.x(), anchorBounds.y(), anchorBounds.width(), anchorBounds.height(), MD3Theme.CARD_RADIUS, MD3Theme.withAlpha(MD3Theme.SECONDARY_CONTAINER, 255));
 
-        PanelLayout.Rect previewBounds = getPreviewBounds(popupY);
-        Color previewSurface = MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER_HIGH : MD3Theme.SURFACE_CONTAINER;
-        roundRectRenderer.addRoundRect(previewBounds.x(), previewBounds.y(), previewBounds.width(), previewBounds.height(), 10.0f, MD3Theme.withAlpha(previewSurface, 255));
-        PanelLayout.Rect swatchBounds = getPreviewSwatchBounds(popupY);
-        Color swatchSurface = MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER : MD3Theme.SURFACE_CONTAINER_HIGHEST;
-        roundRectRenderer.addRoundRect(swatchBounds.x(), swatchBounds.y(), swatchBounds.width(), swatchBounds.height(), 8.0f, MD3Theme.withAlpha(swatchSurface, 255));
-        if (setting.isAllowAlpha()) {
-            drawCheckerboard(swatchBounds, 255);
-        }
-        roundRectRenderer.addRoundRect(swatchBounds.x(), swatchBounds.y(), swatchBounds.width(), swatchBounds.height(), 8.0f, setting.getValue());
-        roundRectRenderer.addRoundRect(swatchBounds.x(), swatchBounds.y(), swatchBounds.width(), swatchBounds.height(), 8.0f, MD3Theme.withAlpha(MD3Theme.OUTLINE_SOFT, (int) (72 * progress)));
-
-        String hex = formatHex(setting.getValue());
-        String meta = setting.isAllowAlpha() ? "RGBA" : "RGB";
-        textRenderer.addText(hex, previewBounds.x() + 40.0f, previewBounds.y() + 8.0f, 0.64f, MD3Theme.TEXT_PRIMARY);
-        textRenderer.addText(meta, previewBounds.x() + 40.0f, previewBounds.y() + 19.0f, 0.52f, MD3Theme.TEXT_SECONDARY);
-
-        Channel[] channels = getChannels();
-        for (int i = 0; i < channels.length; i++) {
-            Channel channel = channels[i];
-            PanelLayout.Rect rowBounds = getChannelRowBounds(popupY, i);
-            PanelLayout.Rect trackBounds = getTrackBounds(rowBounds);
-            PanelLayout.Rect valueBounds = getValueBounds(rowBounds);
-            boolean hovered = rowBounds.contains(mouseX, mouseY);
-            float channelProgress = getChannelValue(channel) / 255.0f;
-            float activeWidth = Math.max(3.0f, trackBounds.width() * channelProgress);
-            float handleX = trackBounds.x() + trackBounds.width() * channelProgress - 2.0f;
-            Animation indicatorAnimation = indicatorAnimations[i];
-            indicatorAnimation.run((hovered || draggingChannel == channel) ? 1.0f : 0.0f);
-            float indicatorProgress = indicatorAnimation.getValue();
-            Color rowSurface = hovered
-                    ? (MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER_HIGHEST : MD3Theme.SURFACE_CONTAINER_HIGH)
-                    : MD3Theme.SURFACE_CONTAINER;
-            textRenderer.addText(channel.shortLabel, rowBounds.x() + 8.0f, rowBounds.y() + 6.5f, 0.58f, MD3Theme.isLightTheme() ? MD3Theme.TEXT_MUTED : MD3Theme.TEXT_SECONDARY);
-            roundRectRenderer.addRoundRect(rowBounds.x(), rowBounds.y(), rowBounds.width(), rowBounds.height(), 8.0f, MD3Theme.withAlpha(rowSurface, 255));
-            roundRectRenderer.addRoundRect(trackBounds.x(), trackBounds.y(), trackBounds.width(), trackBounds.height(), 2.5f, MD3Theme.withAlpha(MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER_HIGH : MD3Theme.SURFACE_CONTAINER_HIGHEST, 255));
-            roundRectRenderer.addRoundRect(trackBounds.x(), trackBounds.y(), activeWidth, trackBounds.height(), 2.5f, 0.0f, 0.0f, 2.5f, MD3Theme.withAlpha(channel.accent, 255));
-            roundRectRenderer.addRoundRect(handleX, trackBounds.centerY() - 6.0f, 4.0f, 12.0f, 2.0f, MD3Theme.withAlpha(MD3Theme.ON_PRIMARY_CONTAINER, 255));
-            String valueText = focusedChannel == channel ? getDisplayBuffer() : Integer.toString(getChannelValue(channel));
-            drawValueBox(valueBounds, valueText, focusedChannel == channel, 255);
-            if (indicatorProgress > 0.01f) {
-                drawValueIndicator(handleX + 2.0f, rowBounds.y() - 4.0f, Integer.toString(getChannelValue(channel)), indicatorProgress);
+            PanelLayout.Rect previewBounds = getPreviewBounds(popupY);
+            PanelLayout.Rect swatchBounds = getPreviewSwatchBounds(popupY);
+            Color previewSurface = MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER_HIGH : MD3Theme.SURFACE_CONTAINER;
+            Color swatchSurface = MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER : MD3Theme.SURFACE_CONTAINER_HIGHEST;
+            scope.roundRect(previewBounds.x(), previewBounds.y(), previewBounds.width(), previewBounds.height(), 10.0f, MD3Theme.withAlpha(previewSurface, 255));
+            scope.roundRect(swatchBounds.x(), swatchBounds.y(), swatchBounds.width(), swatchBounds.height(), 8.0f, MD3Theme.withAlpha(swatchSurface, 255));
+            if (setting.isAllowAlpha()) {
+                buildCheckerboard(scope, swatchBounds, 255);
             }
-        }
+            scope.roundRect(swatchBounds.x(), swatchBounds.y(), swatchBounds.width(), swatchBounds.height(), 8.0f, setting.getValue());
+            scope.roundRect(swatchBounds.x(), swatchBounds.y(), swatchBounds.width(), swatchBounds.height(), 8.0f, MD3Theme.withAlpha(MD3Theme.OUTLINE_SOFT, (int) (72 * progress)));
+            scope.text(formatHex(setting.getValue()), previewBounds.x() + 40.0f, previewBounds.y() + 8.0f, 0.64f, MD3Theme.TEXT_PRIMARY);
+            scope.text(setting.isAllowAlpha() ? "RGBA" : "RGB", previewBounds.x() + 40.0f, previewBounds.y() + 19.0f, 0.52f, MD3Theme.TEXT_SECONDARY);
+
+            Channel[] channels = getChannels();
+            for (int i = 0; i < channels.length; i++) {
+                Channel channel = channels[i];
+                PanelLayout.Rect rowBounds = getChannelRowBounds(popupY, i);
+                PanelLayout.Rect trackBounds = getTrackBounds(rowBounds);
+                PanelLayout.Rect valueBounds = getValueBounds(rowBounds);
+                boolean hovered = rowBounds.contains(mouseX, mouseY);
+                float channelProgress = getChannelValue(channel) / 255.0f;
+                float activeWidth = Math.max(3.0f, trackBounds.width() * channelProgress);
+                float handleX = trackBounds.x() + trackBounds.width() * channelProgress - 2.0f;
+                float indicatorProgress = scope.animate(indicatorAnimations[i], hovered || draggingChannel == channel);
+                Color rowSurface = hovered
+                        ? (MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER_HIGHEST : MD3Theme.SURFACE_CONTAINER_HIGH)
+                        : MD3Theme.SURFACE_CONTAINER;
+
+                scope.text(channel.shortLabel, rowBounds.x() + 8.0f, rowBounds.y() + 6.5f, 0.58f,
+                        MD3Theme.isLightTheme() ? MD3Theme.TEXT_MUTED : MD3Theme.TEXT_SECONDARY);
+                scope.roundRect(rowBounds.x(), rowBounds.y(), rowBounds.width(), rowBounds.height(), 8.0f, MD3Theme.withAlpha(rowSurface, 255));
+                scope.roundRect(trackBounds.x(), trackBounds.y(), trackBounds.width(), trackBounds.height(), 2.5f,
+                        MD3Theme.withAlpha(MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER_HIGH : MD3Theme.SURFACE_CONTAINER_HIGHEST, 255));
+                scope.roundRect(trackBounds.x(), trackBounds.y(), activeWidth, trackBounds.height(), 2.5f, 0.0f, 0.0f, 2.5f,
+                        MD3Theme.withAlpha(channel.accent, 255));
+                scope.roundRect(handleX, trackBounds.centerY() - 6.0f, 4.0f, 12.0f, 2.0f, MD3Theme.withAlpha(MD3Theme.ON_PRIMARY_CONTAINER, 255));
+
+                String valueText = focusedChannel == channel ? getDisplayBuffer() : Integer.toString(getChannelValue(channel));
+                buildValueBox(scope, valueBounds, valueText, focusedChannel == channel, 255);
+                if (indicatorProgress > 0.01f) {
+                    buildValueIndicator(scope, handleX + 2.0f, rowBounds.y() - 4.0f, Integer.toString(getChannelValue(channel)), indicatorProgress);
+                }
+            }
+        });
+        PanelUiCompiler.render(tree, shadowRenderer, roundRectRenderer, rectRenderer, textRenderer);
 
         RenderManager.INSTANCE.applyRender(() -> {
             shadowRenderer.drawAndClear();
@@ -307,37 +312,37 @@ public class ColorPickerPopup implements PanelPopupHost.Popup {
         return String.format("#%02X%02X%02X", color.getRed(), color.getGreen(), color.getBlue());
     }
 
-    private void drawValueIndicator(float anchorX, float rowTop, String valueText, float progress) {
+    private void buildValueIndicator(PanelUiTree.Scope scope, float anchorX, float rowTop, String valueText, float progress) {
         float textScale = 0.54f;
         float bubbleWidth = textRenderer.getWidth(valueText, textScale) + 12.0f;
         float bubbleHeight = 16.0f;
         float bubbleX = anchorX - bubbleWidth / 2.0f;
         float bubbleY = rowTop - 14.0f - (1.0f - progress) * 4.0f;
         int bubbleAlpha = (int) (255 * progress);
-        roundRectRenderer.addRoundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 8.0f, MD3Theme.withAlpha(MD3Theme.INVERSE_SURFACE, bubbleAlpha));
+        scope.roundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 8.0f, MD3Theme.withAlpha(MD3Theme.INVERSE_SURFACE, bubbleAlpha));
         float textY = bubbleY + (bubbleHeight - textRenderer.getHeight(textScale)) / 2.0f - 1.0f;
-        textRenderer.addText(valueText, bubbleX + (bubbleWidth - textRenderer.getWidth(valueText, textScale)) / 2.0f, textY, textScale, MD3Theme.withAlpha(MD3Theme.INVERSE_ON_SURFACE, bubbleAlpha));
+        scope.text(valueText, bubbleX + (bubbleWidth - textRenderer.getWidth(valueText, textScale)) / 2.0f, textY, textScale, MD3Theme.withAlpha(MD3Theme.INVERSE_ON_SURFACE, bubbleAlpha));
     }
 
-    private void drawValueBox(PanelLayout.Rect bounds, String valueText, boolean focused, int alpha) {
+    private void buildValueBox(PanelUiTree.Scope scope, PanelLayout.Rect bounds, String valueText, boolean focused, int alpha) {
         Color boxBase = MD3Theme.isLightTheme() ? MD3Theme.SURFACE_CONTAINER : MD3Theme.SURFACE_CONTAINER_HIGH;
         Color boxHover = MD3Theme.SURFACE_CONTAINER_HIGHEST;
         Color boxColor = focused ? MD3Theme.INVERSE_SURFACE : MD3Theme.withAlpha(MD3Theme.lerp(boxBase, boxHover, 0.85f), alpha);
         Color textColor = focused ? MD3Theme.INVERSE_ON_SURFACE : MD3Theme.withAlpha(MD3Theme.TEXT_PRIMARY, alpha);
-        roundRectRenderer.addRoundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), 6.0f, boxColor);
+        scope.roundRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), 6.0f, boxColor);
         float textScale = 0.52f;
         float textWidth = textRenderer.getWidth(valueText, textScale);
         float textHeight = textRenderer.getHeight(textScale);
         float textX = bounds.x() + (bounds.width() - textWidth) / 2.0f;
         float textY = bounds.y() + (bounds.height() - textHeight) / 2.0f - 1.0f;
-        textRenderer.addText(valueText, textX, textY, textScale, textColor);
+        scope.text(valueText, textX, textY, textScale, textColor);
         if (focused) {
             float caretX = textX + textRenderer.getWidth(valueText.substring(0, Math.min(cursorIndex, valueText.length())), textScale);
-            rectRenderer.addRect(caretX, bounds.y() + 3.0f, 1.0f, bounds.height() - 6.0f, MD3Theme.INVERSE_ON_SURFACE);
+            scope.rect(caretX, bounds.y() + 3.0f, 1.0f, bounds.height() - 6.0f, MD3Theme.INVERSE_ON_SURFACE);
         }
     }
 
-    private void drawCheckerboard(PanelLayout.Rect bounds, int alpha) {
+    private void buildCheckerboard(PanelUiTree.Scope scope, PanelLayout.Rect bounds, int alpha) {
         float inset = 2.0f;
         float cell = 4.0f;
         Color dark = MD3Theme.withAlpha(MD3Theme.SURFACE_CONTAINER, alpha);
@@ -349,7 +354,7 @@ public class ColorPickerPopup implements PanelPopupHost.Popup {
                 Color color = ((ix + iy) & 1) == 0 ? light : dark;
                 float width = Math.min(cell, bounds.right() - inset - x);
                 float height = Math.min(cell, bounds.bottom() - inset - y);
-                roundRectRenderer.addRoundRect(x, y, width, height, 0.0f, color);
+                scope.roundRect(x, y, width, height, 0.0f, color);
             }
         }
     }
