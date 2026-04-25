@@ -1,6 +1,7 @@
 package com.github.epsilon.gui.panel.panel.clientsettings;
 
 import com.github.epsilon.Epsilon;
+import com.github.epsilon.assets.holders.TranslateHolder;
 import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.graphics.renderers.RectRenderer;
@@ -32,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public final class ConfigClientSettingTab implements ClientSettingTabView {
 
@@ -416,7 +418,7 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
             state.setConfigScroll(0.0f);
         } catch (Exception exception) {
             Epsilon.LOGGER.error("保存配置失败", exception);
-            openErrorPopup(saveErrorComponent.getTranslatedName(), exception);
+            openErrorPopup(saveErrorComponent::getTranslatedName, exception);
         }
     }
 
@@ -426,7 +428,7 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
             markDirty();
         } catch (Exception exception) {
             Epsilon.LOGGER.error("重载配置失败", exception);
-            openErrorPopup(reloadErrorComponent.getTranslatedName(), exception);
+            openErrorPopup(reloadErrorComponent::getTranslatedName, exception);
         }
     }
 
@@ -436,7 +438,7 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
             openExportSuccessPopup(exported);
         } catch (Exception exception) {
             Epsilon.LOGGER.error("导出配置失败", exception);
-            openErrorPopup(exportErrorComponent.getTranslatedName(), exception);
+            openErrorPopup(exportErrorComponent::getTranslatedName, exception);
         }
     }
 
@@ -451,7 +453,7 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
             inputField.setCursorToEnd();
             state.setConfigScroll(0.0f);
         } catch (Exception exception) {
-            openErrorPopup(importErrorComponent.getTranslatedName(), exception);
+            openErrorPopup(importErrorComponent::getTranslatedName, exception);
         }
     }
 
@@ -465,14 +467,14 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
             inputField.setCursorToEnd();
         } catch (Exception exception) {
             Epsilon.LOGGER.error("切换配置失败", exception);
-            openErrorPopup(switchErrorComponent.getTranslatedName(), exception);
+            openErrorPopup(switchErrorComponent::getTranslatedName, exception);
         }
     }
 
     private void tryDeleteConfig(String configName) {
         try {
             if (!ConfigManager.INSTANCE.deleteConfig(configName)) {
-                openErrorPopup(deleteErrorComponent.getTranslatedName(), deleteLastErrorComponent.getTranslatedName());
+                openErrorPopup(deleteErrorComponent::getTranslatedName, deleteLastErrorComponent.getTranslatedName());
                 return;
             }
             if (Objects.equals(inputField.getText().trim(), configName)) {
@@ -481,7 +483,7 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
             }
         } catch (Exception exception) {
             Epsilon.LOGGER.error("删除配置失败", exception);
-            openErrorPopup(deleteErrorComponent.getTranslatedName(), exception);
+            openErrorPopup(deleteErrorComponent::getTranslatedName, exception);
         }
     }
 
@@ -490,11 +492,11 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
         PanelLayout.Rect popupBounds = popupHost.getCenteredBounds(popupWidth, 82.0f);
         popupHost.open(new ConfirmActionPopup(
                 popupBounds,
-                deleteConfirmTitleComponent.getTranslatedName(),
-                deleteConfirmMessageComponent.getTranslatedName(),
+                deleteConfirmTitleComponent::getTranslatedName,
+                deleteConfirmMessageComponent::getTranslatedName,
                 trimToWidth(configName, 0.60f, popupWidth - 24.0f),
-                deleteConfirmConfirmComponent.getTranslatedName(),
-                deleteConfirmCancelComponent.getTranslatedName(),
+                deleteConfirmConfirmComponent::getTranslatedName,
+                deleteConfirmCancelComponent::getTranslatedName,
                 () -> {
                     tryDeleteConfig(configName);
                     markDirty();
@@ -502,19 +504,19 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
         ));
     }
 
-    private void openErrorPopup(String actionMessage, Exception exception) {
-        openErrorPopup(actionMessage, buildErrorDetail(exception));
+    private void openErrorPopup(Supplier<String> actionMessageSupplier, Exception exception) {
+        openErrorPopup(actionMessageSupplier, buildErrorDetail(exception));
     }
 
-    private void openErrorPopup(String actionMessage, String detail) {
+    private void openErrorPopup(Supplier<String> actionMessageSupplier, String detail) {
         float popupWidth = 220.0f;
         float popupHeight = 84.0f;
         popupHost.open(new MessagePopup(
                 popupHost.getCenteredBounds(popupWidth, popupHeight),
-                errorTitleComponent.getTranslatedName(),
-                actionMessage,
+                errorTitleComponent::getTranslatedName,
+                actionMessageSupplier,
                 trimToWidth(detail, 0.52f, popupWidth - 24.0f),
-                errorOkComponent.getTranslatedName()
+                errorOkComponent::getTranslatedName
         ));
     }
 
@@ -528,10 +530,10 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
         }
         popupHost.open(new MessagePopup(
                 popupHost.getCenteredBounds(popupWidth, popupHeight),
-                exportSuccessTitleComponent.getTranslatedName(),
-                exportSuccessMessageComponent.getTranslatedName(),
+                exportSuccessTitleComponent::getTranslatedName,
+                exportSuccessMessageComponent::getTranslatedName,
                 trimToWidth(detail, 0.52f, popupWidth - 24.0f),
-                errorOkComponent.getTranslatedName()
+                errorOkComponent::getTranslatedName
         ));
     }
 
@@ -566,6 +568,7 @@ public final class ConfigClientSettingTab implements ClientSettingTabView {
 
     private long buildContentSignature(List<String> configs, String activeConfig) {
         long signature = 17L;
+        signature = signature * 31L + TranslateHolder.INSTANCE.getRevision();
         signature = signature * 31L + Float.floatToIntBits(state.getConfigScroll());
         signature = signature * 31L + activeConfig.hashCode();
         for (String config : configs) {

@@ -10,13 +10,15 @@ import com.github.epsilon.utils.render.animation.Easing;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
 
+import java.util.function.Supplier;
+
 public final class MessagePopup implements PanelPopupHost.Popup {
 
     private final PanelLayout.Rect bounds;
-    private final String title;
-    private final String message;
+    private final Supplier<String> titleSupplier;
+    private final Supplier<String> messageSupplier;
     private final String detail;
-    private final String buttonLabel;
+    private final Supplier<String> buttonLabelSupplier;
 
     private final Animation openAnimation = new Animation(Easing.EASE_OUT_CUBIC, 160L);
     private final Animation buttonHoverAnimation = new Animation(Easing.EASE_OUT_CUBIC, 120L);
@@ -25,11 +27,15 @@ public final class MessagePopup implements PanelPopupHost.Popup {
     private PanelLayout.Rect buttonBounds;
 
     public MessagePopup(PanelLayout.Rect bounds, String title, String message, String detail, String buttonLabel) {
+        this(bounds, () -> title, () -> message, detail, () -> buttonLabel);
+    }
+
+    public MessagePopup(PanelLayout.Rect bounds, Supplier<String> titleSupplier, Supplier<String> messageSupplier, String detail, Supplier<String> buttonLabelSupplier) {
         this.bounds = bounds;
-        this.title = title;
-        this.message = message;
+        this.titleSupplier = titleSupplier;
+        this.messageSupplier = messageSupplier;
         this.detail = detail;
-        this.buttonLabel = buttonLabel;
+        this.buttonLabelSupplier = buttonLabelSupplier;
         this.openAnimation.setStartValue(0.0f);
         this.buttonHoverAnimation.setStartValue(0.0f);
         updateLayout(bounds.y());
@@ -58,6 +64,9 @@ public final class MessagePopup implements PanelPopupHost.Popup {
             float messageScale = 0.56f;
             float detailScale = 0.52f;
             float textX = bounds.x() + 12.0f;
+            String title = titleSupplier.get();
+            String message = messageSupplier.get();
+            String buttonLabel = buttonLabelSupplier.get();
             scope.text(title, textX, popupY + 10.0f, titleScale, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS);
             scope.text(message, textX, popupY + 25.0f, messageScale, MD3Theme.TEXT_SECONDARY);
             if (detail != null && !detail.isBlank()) {

@@ -1,5 +1,6 @@
 package com.github.epsilon.gui.panel.panel;
 
+import com.github.epsilon.assets.holders.TranslateHolder;
 import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.graphics.renderers.RectRenderer;
@@ -63,6 +64,7 @@ public class ModuleDetailPanel {
     private static final TranslateComponent noneComponent = EpsilonTranslateComponent.create("keybind", "none");
     private static final TranslateComponent visibleComponent = EpsilonTranslateComponent.create("module", "visible");
     private static final TranslateComponent hiddenComponent = EpsilonTranslateComponent.create("module", "hidden");
+    private static final TranslateComponent noModuleComponent = EpsilonTranslateComponent.create("gui", "no_module");
 
     public ModuleDetailPanel(PanelState state, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, ShadowRenderer shadowRenderer, TextRenderer textRenderer, PanelPopupHost popupHost) {
         this.state = state;
@@ -86,7 +88,7 @@ public class ModuleDetailPanel {
         int effectiveMouseY = popupConsumesHover ? Integer.MIN_VALUE : mouseY;
 
         Module module = state.getSelectedModule();
-        String detailTitle = module == null ? "No Module" : module.getTranslatedName();
+        String detailTitle = module == null ? noModuleComponent.getTranslatedName() : module.getTranslatedName();
         PanelUiTree headerTree = PanelUiTree.build(scope -> scope.text(detailTitle, bounds.x() + MD3Theme.PANEL_TITLE_INSET, bounds.y() + 10.0f, 0.78f, MD3Theme.TEXT_PRIMARY, StaticFontLoader.DUCKSANS));
         PanelUiCompiler.render(headerTree, roundRectRenderer, rectRenderer, textRenderer);
 
@@ -408,7 +410,7 @@ public class ModuleDetailPanel {
 
     private String formatKeybind(int keyCode) {
         if (keyCode < 0) {
-            return "None";
+            return noneComponent.getTranslatedName();
         }
         return InputConstants.Type.KEYSYM.getOrCreate(keyCode).getDisplayName().getString();
     }
@@ -458,6 +460,7 @@ public class ModuleDetailPanel {
 
     private long buildContentSignature(Module module, List<Setting<?>> settings) {
         long signature = 17L;
+        signature = signature * 31L + TranslateHolder.INSTANCE.getRevision();
         signature = signature * 31L + module.getName().hashCode();
         signature = signature * 31L + module.getBindMode().ordinal();
         signature = signature * 31L + module.getKeyBind();

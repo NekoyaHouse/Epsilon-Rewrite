@@ -1,5 +1,6 @@
 package com.github.epsilon.gui.panel.panel.clientsettings;
 
+import com.github.epsilon.assets.holders.TranslateHolder;
 import com.github.epsilon.assets.i18n.EpsilonTranslateComponent;
 import com.github.epsilon.assets.i18n.TranslateComponent;
 import com.github.epsilon.graphics.renderers.RectRenderer;
@@ -349,6 +350,7 @@ public final class FriendClientSettingTab implements ClientSettingTabView {
 
     private long buildContentSignature(List<String> friends) {
         long signature = 17L;
+        signature = signature * 31L + TranslateHolder.INSTANCE.getRevision();
         signature = signature * 31L + Float.floatToIntBits(state.getFriendScroll());
         for (String friend : friends) {
             signature = signature * 31L + friend.hashCode();
