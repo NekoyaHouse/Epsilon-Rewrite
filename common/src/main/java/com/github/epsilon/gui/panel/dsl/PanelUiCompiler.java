@@ -11,15 +11,40 @@ import java.awt.*;
 
 import java.util.List;
 
+/**
+ * 将 {@link PanelUiTree} 编译为具体 renderer 调用的编译器。
+ * <p>
+ * 该类只负责把声明式节点翻译进对应批次，不直接负责真正的 draw/flush 时机。
+ */
 public final class PanelUiCompiler {
 
     private PanelUiCompiler() {
     }
 
+    /**
+     * 将 UI 树编译进不含阴影的目标 renderer 组合。
+     *
+     * @param tree 待编译的 UI 树
+     * @param roundRectRenderer 圆角矩形 renderer
+     * @param rectRenderer 矩形 renderer
+     * @param textRenderer 文本 renderer
+     */
     public static void render(PanelUiTree tree, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer) {
         render(tree, null, roundRectRenderer, rectRenderer, textRenderer);
     }
 
+    /**
+     * 将 UI 树编译进完整的 renderer 组合。
+     * <p>
+     * 若树中包含 viewport 节点，其子树会被继续编译到对应的 {@link PanelContentBuffer} 中，
+     * 并在后续 flush 阶段按裁剪区域输出。
+     *
+     * @param tree 待编译的 UI 树
+     * @param shadowRenderer 阴影 renderer，可为空
+     * @param roundRectRenderer 圆角矩形 renderer
+     * @param rectRenderer 矩形 renderer
+     * @param textRenderer 文本 renderer
+     */
     public static void render(PanelUiTree tree, ShadowRenderer shadowRenderer, RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer) {
         renderNodes(tree.nodes(), new RenderTarget(shadowRenderer, roundRectRenderer, rectRenderer, textRenderer));
     }

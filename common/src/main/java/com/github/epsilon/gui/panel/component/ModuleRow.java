@@ -15,6 +15,12 @@ import com.mojang.blaze3d.platform.InputConstants;
 
 import java.awt.*;
 
+/**
+ * 模块列表中的单行展示组件。
+ * <p>
+ * 一行通常包含模块名称、来源 addon、副标题、快捷键提示以及启用开关。
+ * 该类既可以直接渲染，也可以把自身内容写入外部 DSL 作用域。
+ */
 public class ModuleRow {
 
     public static final float HEIGHT = 34.0f;
@@ -25,29 +31,65 @@ public class ModuleRow {
 
     private static final TranslateComponent noneComponent = EpsilonTranslateComponent.create("keybind", "none");
 
+    /**
+     * 创建一个模块行实例。
+     *
+     * @param module 模块视图模型
+     * @param bounds 行布局区域
+     */
     public ModuleRow(ModuleViewModel module, PanelLayout.Rect bounds) {
         this.module = module;
         this.bounds = bounds;
         this.toggleBounds = PanelElements.switchBounds(bounds);
     }
 
+    /**
+     * 返回该行对应的模块视图模型。
+     */
     public ModuleViewModel getModule() {
         return module;
     }
 
+    /**
+     * 返回整行的命中区域。
+     */
     public PanelLayout.Rect getBounds() {
         return bounds;
     }
 
+    /**
+     * 返回行内开关控件的命中区域。
+     */
     public PanelLayout.Rect getToggleBounds() {
         return toggleBounds;
     }
 
+    /**
+     * 直接将模块行编译并写入给定 renderer。
+     *
+     * @param roundRectRenderer 圆角矩形 renderer
+     * @param rectRenderer 矩形 renderer
+     * @param textRenderer 文本 renderer
+     * @param hoverProgress 行悬停进度
+     * @param selectedProgress 行选中进度
+     * @param toggleProgress 开关进度
+     * @param toggleHoverProgress 开关悬停进度
+     */
     public void render(RoundRectRenderer roundRectRenderer, RectRenderer rectRenderer, TextRenderer textRenderer, float hoverProgress, float selectedProgress, float toggleProgress, float toggleHoverProgress) {
         PanelUiTree tree = PanelUiTree.build(scope -> buildUi(scope, textRenderer, hoverProgress, selectedProgress, toggleProgress, toggleHoverProgress));
         PanelUiCompiler.render(tree, roundRectRenderer, rectRenderer, textRenderer);
     }
 
+    /**
+     * 将模块行内容写入外部 UI DSL 作用域。
+     *
+     * @param scope 目标 DSL 作用域
+     * @param textRenderer 用于测量文本尺寸的 renderer
+     * @param hoverProgress 行悬停进度
+     * @param selectedProgress 行选中进度
+     * @param toggleProgress 开关进度
+     * @param toggleHoverProgress 开关悬停进度
+     */
     public void buildUi(PanelUiTree.Scope scope, TextRenderer textRenderer, float hoverProgress, float selectedProgress, float toggleProgress, float toggleHoverProgress) {
         float titleScale = 0.70f;
         float subScale = 0.60f;

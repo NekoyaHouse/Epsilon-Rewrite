@@ -26,6 +26,12 @@ import net.minecraft.client.input.MouseButtonEvent;
 import java.awt.Color;
 import java.util.*;
 
+/**
+ * 模块列表面板。
+ * <p>
+ * 负责渲染分类下的模块列表、搜索框、滚动视口与模块行缓存，
+ * 并维护与列表内容相关的输入状态、滚动状态和重建签名。
+ */
 public class ModuleListPanel {
 
     protected final PanelState state;
@@ -64,6 +70,12 @@ public class ModuleListPanel {
         this.searchFocusAnimation.setStartValue(0.0f);
     }
 
+    /**
+     * 提取并编译模块列表面板当前帧的 UI。
+     * <p>
+     * 面板标题与搜索框会直接写入主批次；滚动列表内容则写入独立的 viewport 缓冲，
+     * 并在之后的统一 flush 阶段输出。
+     */
     public void render(GuiGraphicsExtractor GuiGraphicsExtractor, PanelLayout.Rect bounds, int mouseX, int mouseY, float partialTick) {
         this.bounds = bounds;
         this.guiHeight = GuiGraphicsExtractor.guiHeight();
@@ -120,18 +132,32 @@ public class ModuleListPanel {
         }
     }
 
+    /**
+     * 输出并清空列表视口缓冲中的内容。
+     */
     public void flushContent() {
         contentBuffer.flush();
     }
 
+    /**
+     * 将列表内容标记为脏，以便在下次渲染时触发重建。
+     */
     public void markDirty() {
         contentState.markDirty();
     }
 
+    /**
+     * 返回列表内容是否仍包含未结束的动画。
+     */
     public boolean hasActiveAnimations() {
         return contentState.hasActiveAnimations();
     }
 
+    /**
+     * 处理列表区域中的点击事件。
+     * <p>
+     * 该方法会优先处理滚动条拖拽，其次处理搜索框聚焦，最后处理模块行选择与启用切换。
+     */
     public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {
         if (bounds == null || event.button() != 0) {
             return false;
@@ -191,6 +217,9 @@ public class ModuleListPanel {
         return false;
     }
 
+    /**
+     * 当鼠标位于列表视口内时，处理滚轮滚动。
+     */
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         PanelLayout.Rect viewport = getViewport();
         if (bounds != null && viewport.contains(mouseX, mouseY)) {
@@ -201,6 +230,9 @@ public class ModuleListPanel {
         return false;
     }
 
+    /**
+     * 处理搜索框处于焦点状态时的键盘事件。
+     */
     public boolean keyPressed(KeyEvent event) {
         if (!searchFocused) {
             return false;
@@ -242,6 +274,9 @@ public class ModuleListPanel {
         };
     }
 
+    /**
+     * 处理搜索框的字符输入。
+     */
     public boolean charTyped(CharacterEvent event) {
         if (!searchFocused || !event.isAllowedChatCharacter()) {
             return false;
@@ -254,6 +289,11 @@ public class ModuleListPanel {
         return true;
     }
 
+    /**
+     * 处理来自面板外层的全局点击通知。
+     * <p>
+     * 若点击位置不在搜索框内，则会取消搜索框焦点。
+     */
     public void handleGlobalClick(double mouseX, double mouseY) {
         if (bounds == null) {
             return;
