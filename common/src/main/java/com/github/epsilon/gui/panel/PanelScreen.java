@@ -73,13 +73,13 @@ public class PanelScreen extends Screen {
         return false;
     }
 
-    @Override
     /**
      * 提取面板当前帧的渲染状态。
      * <p>
      * 该方法会计算布局、推动动画、让各个子面板把 UI 编译进共享批次，
      * 最后在统一的 render 提交阶段执行 flush。
      */
+    @Override
     public void extractRenderState(@NonNull GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
 
         final var window = minecraft.getWindow();
@@ -198,9 +198,6 @@ public class PanelScreen extends Screen {
 
 
     @Override
-    /**
-     * 处理鼠标点击事件，并根据当前模式把事件路由到弹窗或主面板区域。
-     */
     public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {
         double mouseX = event.x();
         double mouseY = event.y();
@@ -229,11 +226,6 @@ public class PanelScreen extends Screen {
     }
 
     @Override
-    /**
-     * 处理滚轮事件。
-     * <p>
-     * 弹窗优先级最高；若没有弹窗，则根据当前是否处于客户端设置模式选择不同的内容面板。
-     */
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (popupHost.mouseScrolled(mouseX, mouseY, scrollX, scrollY)) {
             dirtyState.markAllDirty();
@@ -258,7 +250,7 @@ public class PanelScreen extends Screen {
     }
 
     @Override
-    public boolean mouseReleased(MouseButtonEvent event) {
+    public boolean mouseReleased(@NonNull MouseButtonEvent event) {
         if (inputRouter.routeMouseReleased(event, popupHost, moduleDetailPanel, moduleListPanel, clientSettingPanel, state.isClientSettingMode())) {
             dirtyState.markAllDirty();
             return true;
@@ -267,7 +259,7 @@ public class PanelScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(MouseButtonEvent event, double mouseX, double mouseY) {
+    public boolean mouseDragged(@NonNull MouseButtonEvent event, double mouseX, double mouseY) {
         if (inputRouter.routeMouseDragged(event, mouseX, mouseY, popupHost, moduleDetailPanel, moduleListPanel, clientSettingPanel, state.isClientSettingMode())) {
             dirtyState.markAllDirty();
             return true;
@@ -276,12 +268,7 @@ public class PanelScreen extends Screen {
     }
 
     @Override
-    /**
-     * 处理键盘按下事件。
-     * <p>
-     * 若内部输入路由器未消费该事件，则允许 ESC 关闭整个面板。
-     */
-    public boolean keyPressed(KeyEvent event) {
+    public boolean keyPressed(@NonNull KeyEvent event) {
         if (inputRouter.routeKeyPressed(event, popupHost, moduleDetailPanel, moduleListPanel, clientSettingPanel, state.isClientSettingMode())) {
             dirtyState.markAllDirty();
             return true;
@@ -294,7 +281,7 @@ public class PanelScreen extends Screen {
     }
 
     @Override
-    public boolean charTyped(CharacterEvent event) {
+    public boolean charTyped(@NonNull CharacterEvent event) {
         if (inputRouter.routeCharTyped(event, popupHost, moduleDetailPanel, moduleListPanel, clientSettingPanel, state.isClientSettingMode())) {
             dirtyState.markAllDirty();
             return true;
@@ -309,9 +296,6 @@ public class PanelScreen extends Screen {
     }
 
     @Override
-    /**
-     * 关闭面板时清理 IME 焦点状态。
-     */
     public void onClose() {
         IMEFocusHelper.deactivate();
         super.onClose();
@@ -322,7 +306,7 @@ public class PanelScreen extends Screen {
      *
      * @return 当前渲染目标；首次渲染前可能为 {@code null}
      */
-    public LuminRenderSystem.LuminRenderTarget getRenderTarget() {
+    public @Nullable LuminRenderSystem.LuminRenderTarget getRenderTarget() {
         return renderTarget;
     }
 }
