@@ -6,6 +6,7 @@ import com.github.epsilon.graphics.buffer.BufferUtils;
 import com.github.epsilon.graphics.buffer.LuminRingBuffer;
 import com.github.epsilon.graphics.text.GlyphDescriptor;
 import com.github.epsilon.graphics.text.ITextRenderer;
+import com.github.epsilon.modules.impl.ClientSetting;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.buffers.Std140Builder;
@@ -103,11 +104,14 @@ public class TtfTextRenderer implements ITextRenderer {
         LuminRenderSystem.applyOrthoProjection();
 
         if (ttfInfoUniformBuf == null) {
-            final var size = new Std140SizeCalculator().putFloat().get();
+            final var size = new Std140SizeCalculator().putFloat().putFloat().get();
             ttfInfoUniformBuf = RenderSystem.getDevice().createBuffer(() -> "Lumin TTF UBO", GpuBuffer.USAGE_UNIFORM | GpuBuffer.USAGE_MAP_WRITE, size);
-            try (GpuBuffer.MappedView mappedView = RenderSystem.getDevice().createCommandEncoder().mapBuffer(ttfInfoUniformBuf, false, true)) {
-                Std140Builder.intoBuffer(mappedView.data()).putFloat(0.5f);
-            }
+        }
+
+        try (GpuBuffer.MappedView mappedView = RenderSystem.getDevice().createCommandEncoder().mapBuffer(ttfInfoUniformBuf, false, true)) {
+            Std140Builder.intoBuffer(mappedView.data())
+                    .putFloat(0.5f)
+                    .putFloat(ClientSetting.INSTANCE.fontAntiAliasing.getValue() ? 1.0f : 0.0f);
         }
 
         GpuTextureView colorView = LuminRenderSystem.resolveColorView();
