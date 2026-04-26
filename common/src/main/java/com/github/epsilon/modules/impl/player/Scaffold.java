@@ -261,7 +261,6 @@ public class Scaffold extends Module {
         final Vector2f requestedRotation = getRotation(targetBlockInfo);
 
         RotationManager.INSTANCE.applyRotation(requestedRotation, rotationSpeed.getValue(), requestPriority, record -> {
-            if (!isEnabled() || nullCheck()) return;
             if (record.selectedPriorityValue() != requestPriority) return;
             if (blockInfo == null || !blockInfo.equals(targetBlockInfo)) return;
             place(targetBlockInfo, item, record.currentRotation());

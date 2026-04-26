@@ -72,7 +72,6 @@ public class KillAura extends Module {
 
     public LivingEntity target;
     private final List<LivingEntity> targets = new ArrayList<>();
-    private boolean rotationReady;
 
     private int switchIndex = 0;
     private float attacks = 0;
@@ -82,7 +81,6 @@ public class KillAura extends Module {
         target = null;
         targets.clear();
         switchIndex = 0;
-        rotationReady = false;
     }
 
     @EventHandler
@@ -105,7 +103,6 @@ public class KillAura extends Module {
 
         if (targets.isEmpty()) {
             target = null;
-            rotationReady = false;
             return;
         }
 
@@ -121,7 +118,6 @@ public class KillAura extends Module {
         attacks += MathUtils.getRandom(cps.getValue().floatValue(), maxCps.getValue().floatValue()) / 20f;
 
         if (target != null) {
-            rotationReady = false;
             final LivingEntity requestedTarget = target;
             final int requestPriority = Priority.Medium.priority;
             RotationManager.INSTANCE.applyRotation(
@@ -129,20 +125,16 @@ public class KillAura extends Module {
                     rotationSpeed.getValue().floatValue(),
                     requestPriority,
                     record -> {
-                        if (!isEnabled() || nullCheck()) return;
                         if (target != requestedTarget) return;
                         if (record.selectedPriorityValue() != requestPriority) return;
-                        rotationReady = true;
+                        doClick();
                     }
             );
         }
     }
 
-    @EventHandler
-    public void onClick(TickEvent.Pre event) {
-        if (nullCheck()) return;
+    public void doClick() {
         if (target == null) return;
-        if (!rotationReady) return;
         if (mc.player.isUsingItem() || mc.player.isBlocking()) return;
         if (mc.player.getAttackStrengthScale(0.5f) < 1.0f && mode.is(Mode.OnePointNinePlus)) return;
 
