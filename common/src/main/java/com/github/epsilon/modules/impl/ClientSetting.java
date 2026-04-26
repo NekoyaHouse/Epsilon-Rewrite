@@ -41,6 +41,8 @@ public class ClientSetting extends Module {
 
     public final BoolSetting i18nFallback = boolSetting("I18n Fallback", true);
 
+    public final BoolSetting fontAntiAliasing = boolSetting("Font Anti Aliasing", true);
+
     public final BoolSetting closeOnOutside = boolSetting("Close Gui On Outside", false);
 
     public final EnumSetting<ThemeMode> themeMode = enumSetting("Theme Mode", ThemeMode.Dark);
